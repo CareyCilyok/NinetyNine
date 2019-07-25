@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Model
 {
+    /// <summary>
+    /// Represents a single player's turn
+    /// </summary>
     class Frame
     {
         public bool BreakBonus { get; set; } = false;
