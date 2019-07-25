@@ -9,6 +9,9 @@ this version are below.
 ## Rules
 ### Object of the Game:
 '99' is played with nine object balls numbered one through nine, and a cue ball.
+For those familiar with 'playing the Ghost', '99' is like playing the 9-ball Ghost
+but a partial score is awarded for breaking well and pocketing balls.
+
 Play is divided into Nine Innings (Racks) for each player, with a maximum Rack
 Score of 11 (Eleven) Points, and thus a maximum Game Score of 99 Points.
 On each shot AFTER the break, the first ball contacted by the
@@ -30,10 +33,8 @@ the one ball is the top ball, and in the second Rack the two ball is the first b
 and so on. In the ninth Rack, when the nine ball must become the top ball,
 the one ball is placed in the center of the rack. In each inning, except for the
 nineball and the inning ball, all the other balls are racked in random order.### Beginning Play:
-Players begin each inning with the cue ball “in- hand” behind the head
-string. A player is not required to contact the lowest numbered ball first during
-the break, because the first, or top, ball is not always the lowest ball.
-After the break, no matter what the outcome, the player begins with ball in hand anywhere on the table, and continues until he or she fails to legally pocket
+Players begin each inning with the cue ball “in-hand” behind the head
+string. After the break, no matter what the outcome, the player begins with ball in hand anywhere on the table, and continues until he or she fails to legally pocket
 a ball, pockets all the balls, or legally pockets the nine ball at any point.
 Balls pocketed on the break and all legally pocketed balls after the break,
 count as one point each toward the player’s “Ball Count” points (see Scoring).
