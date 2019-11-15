@@ -10,6 +10,8 @@ namespace Model
         public DateTime WhenPlayed { get; set; }
         public Player Player { get; set; }
 
+        public TableSize TableSize { get; set; } = TableSize.Unknown;
+
         public List<Frame> Frames { get; set; } = new List<Frame>(9);
     }
 }
