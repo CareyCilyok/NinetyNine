@@ -49,14 +49,14 @@ counted as one point, remains off the table and the player continues the inning.
 A nine ball made on a legal break is counted as 9 “Ball Count” points.
 
 ### Scoring:
-####Ball Count – The total number of object balls pocketed both during and legally
+#### Ball Count – The total number of object balls pocketed both during and legally
 after the break during an inning. A maximum of 9 “Ball Count” points are
 available in each inning.
 
-####Break Bonus – If the player legally pockets one or more balls on the break,
+#### Break Bonus – If the player legally pockets one or more balls on the break,
 they are awarded 2 “Break Bonus” points.
 
-####Scratch on the Break – Balls pocketed during a scratch on the break are counted
+#### Scratch on the Break – Balls pocketed during a scratch on the break are counted
 toward a players “Ball Count” for the inning, however the Break Bonus is not
 awarded because of the scratch. A maximum of 11 points can be awarded
 in each inning (2 “Break Bonus” points plus 9 “Ball Count” points).
