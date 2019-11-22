@@ -1,4 +1,4 @@
-﻿namespace Model
+﻿namespace NinetyNine.Model
 {
     public enum TableSize
     {

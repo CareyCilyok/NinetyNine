@@ -1,14 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Model
+namespace NinetyNine.Model
 {
     /// <summary>
     /// Represents a single player's turn
     /// </summary>
-    class Frame
+    public class Frame
     {
+        public Guid FrameId { get; set; }
+
+        public Guid GameId { get; set; }
+        public Game Game { get; set; }
+
         public bool BreakBonus { get; set; } = false;
         public int BallCount { get; set; } = 0;
         public bool RunoutBonus { get; set; } = false;
