@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace NinetyNine.Model
 {
+    /// <summary>
+    /// Represents a single game
+    /// </summary>
     public class Game
     {
         public Guid GameId { get; set; }
