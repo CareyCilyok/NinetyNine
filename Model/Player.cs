@@ -10,6 +10,8 @@ namespace NinetyNine.Model
     {
         public Guid PlayerId { get; set; }
 
+        public string Username { get; set; } = String.Empty;
+
         public string EmailAddress { get; set; } = String.Empty;
         public string PhoneNumber { get; set; } = String.Empty;
         public string LastName { get; set; } = String.Empty;
