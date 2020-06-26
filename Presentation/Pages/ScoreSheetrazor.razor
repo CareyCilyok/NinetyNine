@@ -1,0 +1,32 @@
+﻿@page "/scoresheet"
+
+@using NinetyNine.Presentation.Data
+
+<h3>Score Sheet Prototype - literally just piecing it together right now</h3>
+
+<table>
+   <tr>
+      @for (int i = 1; i < 10; i++)
+      {
+         <td>
+            <table>
+               <tr class="InningHeading">
+                  <th colspan="2">Frame @i</th>
+               </tr>
+               <tr>
+                  <td class="InningBreakBonusCell"><span class="oi oi-check" aria-hidden="true"/></td>
+                  <td class="InningBallCountCell">#</td>
+               </tr>
+               <tr>
+                  <td class="RunningBallCountCell" colspan="2">##</td>
+               </tr>
+            </table>
+         </td>   
+       }
+    </tr>
+</table>
+
+@code {
+
+}
+
