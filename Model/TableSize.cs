@@ -25,6 +25,7 @@ namespace NinetyNine.Model
         Unknown = 0,
         SixFoot = 6,
         SevenFoot = 7,
+        EightFoot = 8,
         NineFoot = 9,
         TenFoot = 10
     }

@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace NinetyNine.Model
 {
@@ -34,26 +35,31 @@ namespace NinetyNine.Model
         /// <summary>
         /// Gets/Sets the unique identifier for a single <see cref="Game"/> played
         /// </summary>
-        public Guid GameId { get; set; }
+        public Guid GameId { get; set; } = new Guid();
 
         /// <summary>
         /// Gets/Sets the <see cref="NinetyNine.Model.Player"/> of this <see cref="Game"/>
         /// </summary>
-        public Player Player { get; set; }
+        [Required]
+        public Player Player { get; set; } = new Player();
 
         /// <summary>
         /// Gets/Sets the location where this game took place. <seealso cref="Venue"/>
         /// </summary>
-        public Venue LocationPlayed { get; set; }
+        [Required]
+        [ValidateComplexType]
+        public Venue LocationPlayed { get; set; } = new Venue();
 
         /// <summary>
         /// Gets/Sets the the date and time of this <see cref="Game"/>
         /// </summary>
-        public DateTime WhenPlayed { get; set; }
+        [Required]
+        public DateTime WhenPlayed { get; set; } = new DateTime();
 
         /// <summary>
         /// Gets/Sets the size of the pool table played on. <seealso cref="NinetyNine.Model.TableSize"/>
         /// </summary>
+        [Required]
         public TableSize TableSize { get; set; } = TableSize.Unknown;
 
         /// <summary>

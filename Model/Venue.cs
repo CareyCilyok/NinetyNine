@@ -19,6 +19,7 @@
 /// SOFTWARE.
 
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace NinetyNine.Model
 {
@@ -26,10 +27,17 @@ namespace NinetyNine.Model
     {
         public Guid VenueId { get; set; }
 
+        [Required]
         public bool Private { get; set; } = false;
 
+        [Required]   
         public string Name { get; set; } = String.Empty;
+
+        [Required]
         public string Address { get; set; } = String.Empty;
+
+        [Required]
+        [Phone]
         public string PhoneNumber { get; set; } = String.Empty;
     }
 }

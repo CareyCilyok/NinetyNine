@@ -1,0 +1,68 @@
+﻿@page "/newgame"
+
+@using NinetyNine.Model
+
+<h1>New Game Form Test</h1>
+
+<h4>Start New Game</h4>
+
+<EditForm Model="@newGame" OnValidSubmit="@CreateNewGame" class="form-group">
+    <ObjectGraphDataAnnotationsValidator />
+    <ValidationSummary />
+    <p>
+        <label>
+            Table Size
+            <InputSelect @bind-Value="newGame.TableSize">
+                @foreach (Enum size in Enum.GetValues(typeof(TableSize)))
+                {
+                    <option value="@size">@size.ToString()</option>
+                }
+            </InputSelect>
+        </label
+    </p>
+
+    <p>
+        <label>
+            Venue Name:
+            <InputText @bind-Value="newGame.LocationPlayed.Name" />
+        </label>
+    </p>
+
+    <p>
+        <label>
+            Private Venue?
+            <InputCheckbox @bind-Value="newGame.LocationPlayed.Private" />
+        </label>
+    </p>
+
+    <p>
+        <label>
+            Venue Address:
+            <InputText @bind-Value="newGame.LocationPlayed.Address" />
+        </label>
+    </p>
+
+    <p>
+        <label>
+            Venue Phone Number:
+            <InputText @bind-Value="newGame.LocationPlayed.PhoneNumber" />
+        </label>
+    </p>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+
+</EditForm>
+
+@code {
+
+    private Game newGame = new Game();
+
+    private async Task CreateNewGame()
+    {
+        newGame.GameId = Guid.NewGuid();
+        Console.WriteLine(newGame.GameId);
+    }
+    
+
+
+}

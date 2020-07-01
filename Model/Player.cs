@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace NinetyNine.Model
 {
@@ -30,11 +31,21 @@ namespace NinetyNine.Model
     {
         public Guid PlayerId { get; set; }
 
+        [Required]
         public string Username { get; set; } = String.Empty;
 
+        [Required]
+        [EmailAddress]
         public string EmailAddress { get; set; } = String.Empty;
+
+        [Required]
+        [Phone]
         public string PhoneNumber { get; set; } = String.Empty;
+
+        [Required]
         public string LastName { get; set; } = String.Empty;
+
+        [Required]
         public string FirstName { get; set; } = String.Empty;
         public string MiddleName { get; set; } = String.Empty;
 
