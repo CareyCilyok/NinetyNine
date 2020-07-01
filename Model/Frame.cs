@@ -29,6 +29,7 @@ namespace NinetyNine.Model
     {
         public Guid FrameId { get; set; }
 
+        // TODO: I think these can be removed since we can link the frames from the game.
         public Guid GameId { get; set; }
         public Game Game { get; set; }
 

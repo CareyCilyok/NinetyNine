@@ -60,7 +60,10 @@
     private async Task CreateNewGame()
     {
         newGame.GameId = Guid.NewGuid();
+        newGame.WhenPlayed = DateTime.UtcNow;
         Console.WriteLine(newGame.GameId);
+        Console.WriteLine(newGame.WhenPlayed);
+        Console.WriteLine(newGame.LocationPlayed.PhoneNumber);
     }
     
 
