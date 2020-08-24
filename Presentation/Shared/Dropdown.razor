@@ -1,0 +1,49 @@
+@typeparam TItem
+<div class="dropdown">
+    <button class="btn btn-primary dropdown-toggle mr-4" data-toggle="dropdown"
+            type="button" @onclick="ToggleDropdown"
+            aria-haspopup="true" aria-expanded="false">
+            @Tip
+    </button>
+    <CascadingValue name="Dropdown" Value="@this">
+    <div class="dropdown-menu @ShowText">
+        @ChildContent
+    </div>
+    </CascadingValue>
+</div>
+
+@code
+{
+    [Parameter]
+    public RenderFragment InitialTip { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public EventCallback<TItem> OnSelected { get; set; }
+
+    public string ShowText { get => show ? "show" : ""; }
+
+    private bool show = false;
+
+    private RenderFragment Tip;
+
+    protected override void OnInitialized()
+    { 
+        this.Tip = InitialTip;
+    }
+
+
+    public async Task HandleSelect(TItem item, RenderFragment<TItem> contentFragment)
+    {
+        this.Tip = contentFragment.Invoke(item);
+        StateHasChanged();
+        await this.OnSelected.InvokeAsync(item);
+    }
+
+    private void ToggleDropdown()
+    {
+        show = !show;
+    } 
+}

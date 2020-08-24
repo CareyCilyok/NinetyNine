@@ -37,6 +37,12 @@ namespace NinetyNine.Model
         public string Address { get; set; } = String.Empty;
 
         [Required]
+        public string City { get; set; } = String.Empty;
+
+        [Required]
+        public string State { get; set; } = String.Empty;
+
+        [Required]
         [Phone]
         public string PhoneNumber { get; set; } = String.Empty;
     }

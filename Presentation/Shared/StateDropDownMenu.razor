@@ -1,0 +1,83 @@
+<Dropdown TItem="string" OnSelected="@OnSelected">
+    <InitialTip>Choose a state</InitialTip>
+    <ChildContent>
+        @foreach (var state in states)
+        {
+            <DropdownItem Item=@state>
+                @state
+            </DropdownItem>
+        }
+        </ChildContent>
+</Dropdown>
+
+@code {
+    /// <summary>
+    /// Provides the list of all 50 United States.
+    /// </summary
+    List<string>states = new List<string>
+    {
+        "Alabama",
+        "Alaska",
+        "Arizona",
+        "Arkansas",
+        "California",
+        "Colorado",
+        "Connecticut",
+        "Delaware",
+        "Washington D.C.",
+        "Florida",
+        "Georgia",
+        "Hawaii",
+        "Idaho",
+        "Illinois",
+        "Indiana",
+        "Iowa",
+        "Kansas",
+        "Kentucky",
+        "Louisiana",
+        "Maine",
+        "Maryland",
+        "Massachusetts",
+        "Michigan",
+        "Minnesota",
+        "Mississippi",
+        "Missouri",
+        "Montana",
+        "Nebraska",
+        "Nevada",
+        "New Hampshire",
+        "New Jersey",
+        "New Mexico",
+        "New York",
+        "North Carolina",
+        "North Dakota",
+        "Ohio",
+        "Oklahoma",
+        "Oregon",
+        "Pennsylvania",
+        "Rhode Island",
+        "South Carolina",
+        "South Dakota",
+        "Tennessee",
+        "Texas",
+        "Utah",
+        "Vermont",
+        "Virginia",
+        "Washington",
+        "West Virginia",
+        "Wisconsin",
+        "Wyoming"
+    };
+
+    [ParameterAttribute]
+    public string Value { get; set; }
+
+    /// <summary>
+    /// Selection logic for the dropdown item.
+    /// <summary>
+    private void OnSelected(string selection)
+    {
+        Value = selection;
+        Console.WriteLine(selection);
+    }
+}

@@ -44,12 +44,26 @@
 
     <p>
         <label>
+            Venue City:
+            <InputText @bind-Value="newGame.LocationPlayed.City" />
+        </label>
+    </p>
+
+    <p>
+        <label>
+            Venue State:
+            <StateDropDownMenu />
+        </label>
+    </p>
+
+    <p>
+        <label>
             Venue Phone Number:
             <InputText @bind-Value="newGame.LocationPlayed.PhoneNumber" />
         </label>
     </p>
 
-    <button type="submit" class="btn btn-primary">Submit</button>
+    <button type="submit" class="btn btn-primary" @onclick=CreateNewGame>Submit</button>
 
 </EditForm>
 
