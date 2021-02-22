@@ -6,66 +6,52 @@
 
 <h4>Start New Game</h4>
 
-<EditForm Model="@newGame" OnValidSubmit="@CreateNewGame" class="form-group">
-    <ObjectGraphDataAnnotationsValidator />
-    <ValidationSummary />
-    <p>
-        <label>
-            Table Size
-            <InputSelect @bind-Value="newGame.TableSize">
+<div class="container">
+
+    <EditForm Model="@newGame" OnValidSubmit="@CreateNewGame" class="form-group">
+        <ObjectGraphDataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="field">
+            <label class="label">Table Size</label>
+            <InputSelect @bind-Value="newGame.TableSize" class="input">
                 @foreach (Enum size in Enum.GetValues(typeof(TableSize)))
                 {
                     <option value="@size">@size.ToString()</option>
                 }
             </InputSelect>
-        </label
-    </p>
+        </div>
+        <div class="field">
+            <label class="label">Venue Name</label>
+            <InputText @bind-Value="newGame.LocationPlayed.Name" class="input"/>
+        </div>
+        <div class="field">
+            <label class="checkbox">
+                <InputCheckbox @bind-Value="newGame.LocationPlayed.Private"/>
+                Private Venue
+            </label>
+        </div>
+        <div class="field">
+            <label class="label">Venue Address</label>
+            <InputText @bind-Value="newGame.LocationPlayed.Address" class="input"/>
+        </div>
+        <div class="field">
+            <label class="label">Venue City</label>
+            <InputText @bind-Value="newGame.LocationPlayed.City" class="input"/>
+        </div>
+        <div class="field">
+            <label class="label">Venue State</label>
+            <StateDropDownMenu/>
+        </div>
+        <div class="field">
+            <label class="label">Venue Phone Number</label>
+            <InputText @bind-Value="newGame.LocationPlayed.PhoneNumber" class="input" type="tel"/>
+        </div>
 
-    <p>
-        <label>
-            Venue Name:
-            <InputText @bind-Value="newGame.LocationPlayed.Name" />
-        </label>
-    </p>
+        <button type="submit" class="btn btn-primary" @onclick=CreateNewGame>Submit</button>
 
-    <p>
-        <label>
-            Private Venue?
-            <InputCheckbox @bind-Value="newGame.LocationPlayed.Private" />
-        </label>
-    </p>
+    </EditForm>
 
-    <p>
-        <label>
-            Venue Address:
-            <InputText @bind-Value="newGame.LocationPlayed.Address" />
-        </label>
-    </p>
-
-    <p>
-        <label>
-            Venue City:
-            <InputText @bind-Value="newGame.LocationPlayed.City" />
-        </label>
-    </p>
-
-    <p>
-        <label>
-            Venue State:
-            <StateDropDownMenu />
-        </label>
-    </p>
-
-    <p>
-        <label>
-            Venue Phone Number:
-            <InputText @bind-Value="newGame.LocationPlayed.PhoneNumber" />
-        </label>
-    </p>
-
-    <button type="submit" class="btn btn-primary" @onclick=CreateNewGame>Submit</button>
-
-</EditForm>
+</div>
 
 @code {
 

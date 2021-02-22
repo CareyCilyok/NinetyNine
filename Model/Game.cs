@@ -46,8 +46,6 @@ namespace NinetyNine.Model
         /// <summary>
         /// Gets/Sets the location where this game took place. <seealso cref="Venue"/>
         /// </summary>
-        [Required]
-        [ValidateComplexType]
         public Venue LocationPlayed { get; set; } = new Venue();
 
         /// <summary>

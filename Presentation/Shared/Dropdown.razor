@@ -1,15 +1,19 @@
 @typeparam TItem
-<div class="dropdown">
-    <button class="btn btn-primary dropdown-toggle mr-4" data-toggle="dropdown"
+<div class="dropdown is-active">
+    <div class="dropdown-trigger">
+        <button class="button" data-toggle="dropdown"
             type="button" @onclick="ToggleDropdown"
             aria-haspopup="true" aria-expanded="false">
             @Tip
-    </button>
-    <CascadingValue name="Dropdown" Value="@this">
-    <div class="dropdown-menu @ShowText">
-        @ChildContent
+        </button>
     </div>
-    </CascadingValue>
+    <div class="dropdown-menu">
+        <CascadingValue name="Dropdown" Value="@this">
+            <div class="dropdown-content @ShowText">
+                @ChildContent
+            </div>
+        </CascadingValue>
+    </div>
 </div>
 
 @code
@@ -23,7 +27,7 @@
     [Parameter]
     public EventCallback<TItem> OnSelected { get; set; }
 
-    public string ShowText { get => show ? "show" : ""; }
+    public string ShowText { get => show ? "" : "is-hidden"; }
 
     private bool show = false;
 
@@ -34,10 +38,10 @@
         this.Tip = InitialTip;
     }
 
-
     public async Task HandleSelect(TItem item, RenderFragment<TItem> contentFragment)
     {
         this.Tip = contentFragment.Invoke(item);
+        ToggleDropdown();
         StateHasChanged();
         await this.OnSelected.InvokeAsync(item);
     }
