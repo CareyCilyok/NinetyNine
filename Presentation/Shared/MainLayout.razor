@@ -1,15 +1,27 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="sidebar">
+<!--<div class="menu">
     <NavMenu />
-</div>
+</div>-->
 
 <div class="main">
-    <div class="top-row px-4">
-        <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+    <div class="navbar">
+            <div class="container">
+                <img src="img/99logo.png" width="75" height="250">
+            </div>
     </div>
 
-    <div class="content px-4">
-        @Body
+    <div class="columns">
+        <div class="column is-one-third">
+            <div class="menu has-background-dark"> 
+                <NavMenu/>
+            </div>
+        </div>
+
+        <div class="column">
+            <div class="">
+                @Body
+            </div>
+        </div>
     </div>
 </div>

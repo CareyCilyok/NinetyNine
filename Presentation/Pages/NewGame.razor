@@ -2,58 +2,67 @@
 
 @using NinetyNine.Model
 
-<h1>New Game Form Test</h1>
+<div class="modal @IsActiveText">
+    <div class="modal-background has-background-white-bis"></div>
+    <div class="modal-content">
+        <EditForm Model="@newGame" OnValidSubmit="@CreateNewGame" class="form-group">
+            <ObjectGraphDataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="field">
+                <label class="label">Table Size</label>
+                <InputSelect @bind-Value="newGame.TableSize" class="input">
+                    @foreach (Enum size in Enum.GetValues(typeof(TableSize)))
+                    {
+                        <option value="@size">@size.ToString()</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="field">
+                <label class="label">Venue Name</label>
+                <InputText @bind-Value="newGame.LocationPlayed.Name" class="input"/>
+            </div>
+            <div class="field">
+                <label class="checkbox">
+                    <InputCheckbox @bind-Value="newGame.LocationPlayed.Private"/>
+                    Private Venue
+                </label>
+            </div>
+            <div class="field">
+                <label class="label">Venue Address</label>
+                <InputText @bind-Value="newGame.LocationPlayed.Address" class="input"/>
+            </div>
+            <div class="field">
+                <label class="label">Venue City</label>
+                <InputText @bind-Value="newGame.LocationPlayed.City" class="input"/>
+            </div>
+            <div class="field">
+                <label class="label">Venue State</label>
+                <StateDropDownMenu/>
+            </div>
+            <div class="field">
+                <label class="label">Venue Phone Number</label>
+                <InputText @bind-Value="newGame.LocationPlayed.PhoneNumber" class="input" type="tel"/>
+            </div>
 
-<h4>Start New Game</h4>
+            <button type="submit" class="button">Submit</button>
 
-<div class="container">
+        </EditForm>
+    </div>
 
-    <EditForm Model="@newGame" OnValidSubmit="@CreateNewGame" class="form-group">
-        <ObjectGraphDataAnnotationsValidator />
-        <ValidationSummary />
-        <div class="field">
-            <label class="label">Table Size</label>
-            <InputSelect @bind-Value="newGame.TableSize" class="input">
-                @foreach (Enum size in Enum.GetValues(typeof(TableSize)))
-                {
-                    <option value="@size">@size.ToString()</option>
-                }
-            </InputSelect>
-        </div>
-        <div class="field">
-            <label class="label">Venue Name</label>
-            <InputText @bind-Value="newGame.LocationPlayed.Name" class="input"/>
-        </div>
-        <div class="field">
-            <label class="checkbox">
-                <InputCheckbox @bind-Value="newGame.LocationPlayed.Private"/>
-                Private Venue
-            </label>
-        </div>
-        <div class="field">
-            <label class="label">Venue Address</label>
-            <InputText @bind-Value="newGame.LocationPlayed.Address" class="input"/>
-        </div>
-        <div class="field">
-            <label class="label">Venue City</label>
-            <InputText @bind-Value="newGame.LocationPlayed.City" class="input"/>
-        </div>
-        <div class="field">
-            <label class="label">Venue State</label>
-            <StateDropDownMenu/>
-        </div>
-        <div class="field">
-            <label class="label">Venue Phone Number</label>
-            <InputText @bind-Value="newGame.LocationPlayed.PhoneNumber" class="input" type="tel"/>
-        </div>
-
-        <button type="submit" class="btn btn-primary" @onclick=CreateNewGame>Submit</button>
-
-    </EditForm>
+    <button class="modal-close is-large has-background-dark" @onclick="ToggleNewGameForm" aria-label="close"></button>
 
 </div>
 
 @code {
+    public void ToggleNewGameForm()
+    {
+        show = !show;
+        StateHasChanged();
+    }
+
+    private bool show = false;
+
+    public string IsActiveText { get => show ? "is-active" : ""; }
 
     private Game newGame = new Game();
 
@@ -64,6 +73,7 @@
         Console.WriteLine(newGame.GameId);
         Console.WriteLine(newGame.WhenPlayed);
         Console.WriteLine(newGame.LocationPlayed.PhoneNumber);
+        ToggleNewGameForm();
     }
     
 
