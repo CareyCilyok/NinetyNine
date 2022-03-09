@@ -28,7 +28,7 @@ begin the next frame and continue in the same manner for each frame.
 The object balls are racked in a normal 9-ball diamond shape. With the 1-ball on 
 the foot spot, the 9-ball in the center and the remaing balls racked randomly.
 
-### Begframe Play:
+### Beginning Play:
 Players begin each frame with the cue ball “in hand” behind the head
 string. After the break, no matter what the outcome, the player begins with ball in 
 hand anywhere on the table, and continues until the player fails to legally pocket
@@ -43,24 +43,28 @@ off the table and the player continues the frame. A nine ball made on a any brea
 is counted as 2 “Ball Count” points.
 
 ### Scoring:
-Ball Count – The total number of object balls pocketed both during and legally
+#### Ball Count
+The total number of object balls pocketed both during and legally
 after the break during an frame. A maximum of 10 “Ball Count” points are
 available in each frame. The 9-ball has a value of 2 "Ball Count" points and
 each of the other balls has a value of 1 "Ball Count" point.
 
-Pocketing the 9-ball - Pocketing the 9-ball on the break shot or as a combination
+#### Pocketing the 9-ball
+Pocketing the 9-ball on the break shot or as a combination
 during the frame does not end the frame. The 9-Ball is counted as 2 "Ball Count"
 points and the player continues until a missed shot or pocketing the remaing balls.
 
-Break Bonus – If the player legally pockets one or more balls on the break,
+#### Break Bonus
+If the player legally pockets one or more balls on the break,
 they are awarded 1 “Break Bonus” point.
 
-Scratch on the Break – Balls pocketed during a scratch on the break are counted
+#### Scratch on the Break
+Balls pocketed during a scratch on the break are counted
 toward a players “Ball Count” for the frame, however the Break Bonus is not
 awarded because of the scratch. A maximum of 11 points can be awarded
 in each frame (1 “Break Bonus” point plus 10 “Ball Count” points).
 
-### Fouls:
+#### Fouls
 Balls pocketed on a Scratch (except on the break), foul or other illegal
 shot DO NOT count toward a player’s score and end the frame.
 Touching an object ball is not a foul (cue ball fouls only), but a disturbed
@@ -70,6 +74,6 @@ ends the player’s frame. An un-pocketed object ball is considered to be driven
 the table if it comes to rest anywhere other than the playing surface. Un-pocketed balls
 occuring on the break shot will be spotted.
 
-### Equipment:
+#### Equipment
 The use of break cues and jump cues is allowed.
 
