@@ -70,3 +70,6 @@ ends the player’s frame. An un-pocketed object ball is considered to be driven
 the table if it comes to rest anywhere other than the playing surface. Un-pocketed balls
 occuring on the break shot will be spotted.
 
+### Equipment:
+The use of break cues and jump cues is allowed.
+
