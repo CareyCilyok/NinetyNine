@@ -19,7 +19,7 @@ cue ball must be the lowest numbered ball on the table.
 When this requirement is met on a legal shot, any ball pocketed as a result
 is scored and allows the player to continue their inning. A player’s inning will
 end when they miss pocketing a legal ball, commit a foul, or complete the
-inning by legally scoring the nine ball, or pocketing all the balls on the table.
+inning by legally pocketing the last ball.
 The incoming player then begins their inning with a new Rack and play rotates
 after each inning ends. If the player is playing alone, they re-rack the balls and
 begin the next inning and continue in the same manner for each inning.
@@ -35,31 +35,36 @@ the one ball is placed in the center of the rack. In each inning, except for the
 nineball and the inning ball, all the other balls are racked in random order.
 
 ### Beginning Play:
-Players begin each inning with the cue ball “in-hand” behind the head
+Players begin each inning with the cue ball “in hand” behind the head
 string. After the break, no matter what the outcome, the player begins with ball in 
-hand anywhere on the table, and continues until he or she fails to legally pocket
-a ball, pockets all the balls, or legally pockets the nine ball at any point.
+hand anywhere on the table, and continues until the player fails to legally pocket
+a ball or pockets all the balls.
 Balls pocketed on the break and all legally pocketed balls after the break,
 count as one point each toward the player’s “Ball Count” points (see Scoring).
 Scratching on the break does NOT end the player’s inning, and balls made on
 a “Scratch Break” are treated just as if the player did not scratch. They stay off
-the table and ARE counted in the player’s “Ball Count” score for the inning.
-However, if the nine ball is made on a break in which the player scratches, it is only
-counted as one point, remains off the table and the player continues the inning.
-A nine ball made on a legal break is counted as 9 “Ball Count” points.
+the table and are counted in the player’s “Ball Count” score for the inning.
+However, if the nine ball is made on a break in which the player scratches, remains 
+off the table and the player continues the inning. A nine ball made on a any break
+is counted as 2 “Ball Count” points.
 
 ### Scoring:
 Ball Count – The total number of object balls pocketed both during and legally
-after the break during an inning. A maximum of 9 “Ball Count” points are
-available in each inning.
+after the break during an inning. A maximum of 10 “Ball Count” points are
+available in each inning. The 9-ball has a value of 2 "Ball Count" points and
+each of the other balls has a value of 1 "Ball Count" point.
+
+Pocketing the 9-ball - Pocketing the 9-ball on the break shot or as a combination
+during the inning does not end the inning. The 9-Ball is counted as 2 "Ball Count"
+points and the player continues until a missed shot or pocketing the remaing balls.
 
 Break Bonus – If the player legally pockets one or more balls on the break,
-they are awarded 2 “Break Bonus” points.
+they are awarded 1 “Break Bonus” point.
 
 Scratch on the Break – Balls pocketed during a scratch on the break are counted
 toward a players “Ball Count” for the inning, however the Break Bonus is not
 awarded because of the scratch. A maximum of 11 points can be awarded
-in each inning (2 “Break Bonus” points plus 9 “Ball Count” points).
+in each inning (1 “Break Bonus” point plus 10 “Ball Count” points).
 
 ### Fouls:
 Balls pocketed on a Scratch (except on the break), foul or other illegal
@@ -68,5 +73,6 @@ Touching an object ball is not a foul (cue ball fouls only), but a disturbed
 object ball must be replaced as close as possible to its original position.
 Driving an object ball off the table on any shot (except on the break) is a foul and
 ends the player’s inning. An un-pocketed object ball is considered to be driven off
-the table if it comes to rest anywhere other than the playing surface.
+the table if it comes to rest anywhere other than the playing surface. Un-pocketed balls
+occuring on the break shot will be spotted.
 
