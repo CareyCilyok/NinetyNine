@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Avalonia.Presentation.ViewModels
+namespace NinetyNine.Presentation.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase
     {
-        public string Greeting => "Welcome to Avalonia!";
+        public MainWindowViewModel()
+        {
+        }
     }
 }

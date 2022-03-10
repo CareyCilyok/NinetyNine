@@ -1,10 +1,10 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Presentation.ViewModels;
-using Avalonia.Presentation.Views;
+using NinetyNine.Presentation.ViewModels;
+using NinetyNine.Presentation.Views;
 
-namespace Avalonia.Presentation
+namespace NinetyNine.Presentation
 {
     public partial class App : Application
     {
