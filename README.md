@@ -18,7 +18,7 @@ On each shot after the break, the first ball contacted by the
 cue ball must be the lowest numbered ball on the table.
 When this requirement is met on a legal shot, any ball pocketed as a result
 is scored and allows the player to continue their frame. A player’s frame will
-end when they miss pocketing a legal ball, commit a foul, or complete the
+end when they fail to legally pocket a ball, commit a foul, or complete the
 frame by legally pocketing the last ball.
 The incoming player then begins their frame with a new rack and play rotates
 after each frame ends. If the player is playing alone, they re-rack the balls and
