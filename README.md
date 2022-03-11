@@ -62,8 +62,7 @@ they are awarded 1 “Break Bonus” point.
 #### Scratch on the Break
 Balls pocketed during a scratch on the break are counted
 toward a players “Ball Count” for the frame, however the Break Bonus is not
-awarded because of the scratch. A maximum of 11 points can be awarded
-in each frame (1 “Break Bonus” point plus 10 “Ball Count” points).
+awarded because of the scratch.
 
 #### Fouls
 Balls pocketed on a Scratch (except on the break), foul or other illegal
