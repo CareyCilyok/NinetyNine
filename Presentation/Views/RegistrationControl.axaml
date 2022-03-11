@@ -29,7 +29,7 @@
 									VerticalAlignment="Center" 
 									Name="textBoxUsername"/>
 						<TextBlock Grid.Row="1"
-                             Grid.ColumnSpan="1"
+                             Grid.ColumnSpan="2"
 									  Text="Select an authentication mechanism... We don't care. We don't want your identity and don't give a fuck about storing any of it. If the word 'fuck' just offended you, you're not a good fit for this game. Go away."
 								     VerticalAlignment="Stretch"
 								     HorizontalAlignment="Center">
