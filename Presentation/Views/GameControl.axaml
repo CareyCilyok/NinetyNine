@@ -9,7 +9,7 @@
 		<!-- Set Defaults -->
 		<Setter Property="Template">
 			<ControlTemplate>
-				<Grid Margin="0"
+				<Grid Margin="5"
 						HorizontalAlignment="Center"
 						VerticalAlignment="Center">
 					<Grid.ColumnDefinitions>
