@@ -7,7 +7,7 @@
 	<TrimMode>copyused</TrimMode>
 	<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 	<RootNamespace>NinetyNine.Presentation</RootNamespace>
-	<AssemblyName>NinetyNine.Presentation</AssemblyName>
+	<AssemblyName>Presentation</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Models\" />
