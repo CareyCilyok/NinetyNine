@@ -9,8 +9,53 @@
     <!-- Set Defaults -->
     <Setter Property="Template">
       <ControlTemplate>
-        <TextBlock Text="Templated Control" />
-      </ControlTemplate>
+			<Grid Margin="0"
+					HorizontalAlignment="Center"
+					VerticalAlignment="Center">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="25" />
+					<ColumnDefinition Width="25"/>
+				</Grid.ColumnDefinitions>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+					<RowDefinition Height="25"/>
+				</Grid.RowDefinitions>
+				<Button Grid.Row="0"
+							 Grid.Column="0"
+							 VerticalAlignment="Stretch"
+							 HorizontalAlignment="Stretch">
+					<Button.Content>
+						<Viewbox>
+							<TextBlock>1</TextBlock>
+						</Viewbox>
+					</Button.Content>
+				</Button>
+
+				<Button Grid.Row="0"
+							  Grid.Column="1"
+							  VerticalAlignment="Stretch"
+						  HorizontalAlignment="Stretch">
+					<Button.Content>
+						<Viewbox>
+							<TextBlock>10</TextBlock>
+						</Viewbox>
+					</Button.Content>
+				</Button>
+
+				<Button Grid.Row="1"
+						  Grid.Column="0"
+						  Grid.RowSpan="2" Grid.ColumnSpan="2"
+						  VerticalAlignment="Stretch"
+						  HorizontalAlignment="Stretch">
+					<Button.Content>
+						<Viewbox>
+							<TextBlock>11</TextBlock>
+						</Viewbox>
+					</Button.Content>
+				</Button>
+			</Grid>
+		</ControlTemplate>
     </Setter>
   </Style>
 </Styles>
