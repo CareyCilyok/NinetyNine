@@ -46,7 +46,7 @@ is counted as 2 “Ball Count” points.
 ### Scoring:
 #### Ball Count
 The total number of object balls pocketed both during and legally
-after the break during an frame. A maximum of 10 “Ball Count” points are
+after the break during a frame. A maximum of 10 “Ball Count” points are
 available in each frame. The 9-ball has a value of 2 "Ball Count" points and
 each of the other balls has a value of 1 "Ball Count" point.
 
