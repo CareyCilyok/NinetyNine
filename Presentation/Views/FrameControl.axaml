@@ -38,7 +38,7 @@
 						  HorizontalAlignment="Stretch">
 					<Button.Content>
 						<Viewbox>
-							<TextBlock>10</TextBlock>
+							<TextBlock>9</TextBlock>
 						</Viewbox>
 					</Button.Content>
 				</Button>
@@ -50,7 +50,7 @@
 						  HorizontalAlignment="Stretch">
 					<Button.Content>
 						<Viewbox>
-							<TextBlock>11</TextBlock>
+							<TextBlock>0</TextBlock>
 						</Viewbox>
 					</Button.Content>
 				</Button>

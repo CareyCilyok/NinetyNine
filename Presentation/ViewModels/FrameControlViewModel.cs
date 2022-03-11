@@ -19,17 +19,17 @@
 /// SOFTWARE.
 
 using System;
+using System.Collections.Generic;
+using System.Text;
+using NinetyNine.Model;
 
-namespace NinetyNine.Model
+namespace NinetyNine.Presentation.ViewModels
 {
-    public class Venue
-    {
-        public Guid VenueId { get; set; }
-
-        public bool Private { get; set; } = false;
-
-        public string Name { get; set; } = String.Empty;
-        public string Address { get; set; } = String.Empty;
-        public string PhoneNumber { get; set; } = String.Empty;
-    }
+   public class FrameControliewModel : ViewModelBase
+   {
+      public FrameControliewModel()
+      {
+         Frame frame = new Frame();
+      }
+   }
 }
