@@ -18,7 +18,7 @@ On each shot after the break, the first ball contacted by the
 cue ball must be the lowest numbered ball on the table.
 When this requirement is met on a legal shot, any ball pocketed as a result
 is scored and allows the player to continue their frame. A player’s frame will
-end when they miss pocketing a legal ball, commit a foul, or complete the
+end when they fail to legally pocket a ball, commit a foul, or complete the
 frame by legally pocketing the last ball.
 The incoming player then begins their frame with a new rack and play rotates
 after each frame ends. If the player is playing alone, they re-rack the balls and
@@ -26,7 +26,8 @@ begin the next frame and continue in the same manner for each frame.
 
 ### Racking the Balls:
 The object balls are racked in a normal 9-ball diamond shape. With the 1-ball on 
-the foot spot, the 9-ball in the center and the remaing balls racked randomly.
+the foot spot, the 9-ball in the center and the remaing balls racked randomly. Each
+player racks for themself.
 
 ### Beginning Play:
 Players begin each frame with the cue ball “in hand” behind the head
@@ -75,5 +76,5 @@ the table if it comes to rest anywhere other than the playing surface. Un-pocket
 occuring on the break shot will be spotted.
 
 #### Equipment
-The use of break cues and jump cues is allowed.
+The use of break cues and jump cues is allowed. Use of template ("magic") racks is legal.
 
