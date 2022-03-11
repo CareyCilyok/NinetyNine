@@ -16,7 +16,7 @@
 							<ColumnDefinition Width="*"/>
 						</Grid.ColumnDefinitions>
 						<Grid.RowDefinitions>
-							<RowDefinition Height="*"/>
+							<RowDefinition Height="30"/>
 							<RowDefinition Height="*"/>
 						</Grid.RowDefinitions>
 						<TextBlock Grid.Row="0" Grid.Column="0"
@@ -26,14 +26,15 @@
 									  Text="Username:"/>
 						<TextBox Grid.Row="0" Grid.Column="1"
 									HorizontalAlignment="Left" 
-									VerticalAlignment="Center" 
+									VerticalAlignment="Top" 
 									Name="textBoxUsername"/>
 						<TextBlock Grid.Row="1"
                              Grid.ColumnSpan="2"
 									  Text="Select an authentication mechanism... We don't care. We don't want your identity and don't give a fuck about storing any of it. If the word 'fuck' just offended you, you're not a good fit for this game. Go away."
-								     VerticalAlignment="Stretch"
+								     VerticalAlignment="Center"
 								     HorizontalAlignment="Center">
-Select an authentication mechanism... 
+Select an authentication mechanism...
+
 We don't care. We don't want your
 identity and don't give a fuck about
 storing any of it. If the word 'fuck'
