@@ -72,7 +72,7 @@ object ball must be replaced as close as possible to its original position.
 Driving an object ball off the table on any shot (except on the break) is a foul and
 ends the player’s frame. An un-pocketed object ball is considered to be driven off
 the table if it comes to rest anywhere other than the playing surface. balls driven off 
-the table on the break shot will be spotted.
+the table on the break shot will be spotted as closely as possible to the foot spot.
 
 #### Equipment
 The use of break cues and jump cues is allowed. Use of template ("magic") racks is legal.
