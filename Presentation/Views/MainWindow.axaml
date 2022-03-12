@@ -1,26 +1,46 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:NinetyNine.Presentation.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="400"
-        x:Class="NinetyNine.Presentation.Views.MainWindow"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="NinetyNine"
-        TransparencyLevelHint="AcrylicBlur"
+        xmlns:vw="using:NinetyNine.Presentation.Views"
+		  mc:Ignorable="d"
+		  x:Name="win"
+		  x:Class="NinetyNine.Presentation.Views.MainWindow"
+		  TransparencyLevelHint="{Binding #combobox.SelectedItem.Content}"
         Background="Transparent"
-        ExtendClientAreaToDecorationsHint="True"
-        >
-	<Panel VerticalAlignment="Stretch"
-			 HorizontalAlignment="Stretch">
-		<ExperimentalAcrylicBorder IsHitTestVisible="False">
-			<ExperimentalAcrylicBorder.Material>
-				<ExperimentalAcrylicMaterial
-						  BackgroundSource="Digger"
-						  TintColor="Black"
-						  TintOpacity="1"
-						  MaterialOpacity="0.65" />
-			</ExperimentalAcrylicBorder.Material>
-		</ExperimentalAcrylicBorder>
-	</Panel>
+		  WindowState="Maximized"
+        WindowStartupLocation="CenterScreen"
+        Icon="avares://Presentation/Assets/AuraUILogo_icon.png"
+        MinHeight="492"
+		  ExtendClientAreaToDecorationsHint="true"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="-1"
+        Title="NinetyNine"
+        TransparencyBackgroundFallback="Transparent"
+        Classes="us_c">
+        <!-- MinWidth="1171"  -->
+   <Grid Margin="{Binding #win.OffScreenMargin}" >
+      <vw:MainView/>
+
+      <Border Name="DragBorder"
+              Background="Transparent"
+              VerticalAlignment="Top"
+              Height="19"/>
+      <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
+         <StackPanel.Styles>
+            <Style Selector="ComboBox">
+               <Setter Property="VirtualizationMode" Value="Simple"/>
+            </Style>
+         </StackPanel.Styles>
+         <ComboBox
+               Name="combobox" PlaceholderText="Window Transparency Level"
+               SelectedItem="{Binding #s}" >
+            <ComboBoxItem>None</ComboBoxItem>
+            <ComboBoxItem>Transparent</ComboBoxItem>
+            <ComboBoxItem>Blur</ComboBoxItem>
+            <ComboBoxItem>AcrylicBlur</ComboBoxItem>
+            <ComboBoxItem Name="s">Mica</ComboBoxItem>
+         </ComboBox>
+      </StackPanel>
+   </Grid>
 </Window>
