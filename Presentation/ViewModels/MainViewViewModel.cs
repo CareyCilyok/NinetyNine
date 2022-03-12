@@ -32,9 +32,9 @@ namespace NinetyNine.Presentation.ViewModels
 
    public class Descriptions
    {
-      public string GameCard => "Create a new game.";
-      public string StatisticsCard => "View player statistics";
-      public string ProfileCard => "Edit player profile";
+      public string GameCard => "Create a new game of 99.";
+      public string StatisticsCard => "View player statistics. See your win/loss history, average score, handicap and more.";
+      public string ProfileCard => "Edit your profile";
       public string VenueCard => "Add or edit venues";
    }
 

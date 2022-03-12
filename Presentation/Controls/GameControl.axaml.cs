@@ -22,7 +22,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 
-namespace NinetyNine.Presentation.Views
+namespace NinetyNine.Presentation.Controls
 {
 	public class GameControl : TemplatedControl
 	{

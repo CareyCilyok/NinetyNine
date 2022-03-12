@@ -11,14 +11,14 @@
 		  WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
         Icon="avares://Presentation/Assets/AuraUILogo_icon.png"
-        MinHeight="492"
+        MinHeight="500"
+        MinWidth="500"
 		  ExtendClientAreaToDecorationsHint="true"
         ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="-1"
-        Title="NinetyNine"
+        Title="NinetyNine Score Keeper"
         TransparencyBackgroundFallback="Transparent"
         Classes="us_c">
-        <!-- MinWidth="1171"  -->
    <Grid Margin="{Binding #win.OffScreenMargin}" >
       <vw:MainView/>
 
@@ -32,15 +32,6 @@
                <Setter Property="VirtualizationMode" Value="Simple"/>
             </Style>
          </StackPanel.Styles>
-         <ComboBox
-               Name="combobox" PlaceholderText="Window Transparency Level"
-               SelectedItem="{Binding #s}" >
-            <ComboBoxItem>None</ComboBoxItem>
-            <ComboBoxItem>Transparent</ComboBoxItem>
-            <ComboBoxItem>Blur</ComboBoxItem>
-            <ComboBoxItem>AcrylicBlur</ComboBoxItem>
-            <ComboBoxItem Name="s">Mica</ComboBoxItem>
-         </ComboBox>
       </StackPanel>
    </Grid>
 </Window>

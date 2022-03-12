@@ -14,22 +14,26 @@
              BorderBrush="Black"
              BorderThickness="0.7"
              x:Class="NinetyNine.Presentation.Views.MainView">
+
    <UserControl.DataContext>
       <vm:MainViewViewModel/>
    </UserControl.DataContext>
-   <NavigationView Header="NinetyNine"
+
+   <NavigationView Header=""
                    AlwaysOpen="False"
                    IsFloatingHeader="True"
                    OpenPaneLength="300">
+
       <NavigationView.PanelMaterial>
          <ExperimentalAcrylicMaterial BackgroundSource="Digger"
                                       TintColor="{DynamicResource SystemAltMediumLowColor}"
                                       TintOpacity="0.2"
                                       MaterialOpacity="0.4"/>
       </NavigationView.PanelMaterial>
-      <NavigationViewItem  Header="NinetyNine"
+
+      <NavigationViewItem  Header="Home"
                 Icon="{DynamicResource Zondicons.Announcement}"
-                Title="NinetyNine">
+                Title="Ninety Nine">
          <NavigationViewItem.Content>
             <GroupBox Margin="10" Grid.Row="1"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -58,59 +62,34 @@
             </GroupBox>
          </NavigationViewItem.Content>
       </NavigationViewItem>
-      <!--<Separator/>-->
-      <NavigationViewItem Header="Basic Input" Title="Basic Input"
-                Icon="{DynamicResource FontAwesome.CheckSquareRegular}">
-         <NavigationViewItem.Content>
-            <GroupBox Margin="10,0" Padding="0"
-                TextBlock.FontSize="20" Header="{x:Null}">
-               <flex:FlexPanel Direction="Row"
-                       Wrap="Wrap"
-                       AlignContent="FlexStart"
-                       AlignItems="Center"
-                       JustifyContent="FlexStart"
-                       ColumnSpacing="10"
-                       RowSpacing="10">
-                  <NavigationViewLinker Icon="{DynamicResource BoxIcons.RegularCodeAlt}"
-                              Title="{Binding Titles.GameCard}" LinkTo="{Binding #game}"
-                              Content="{Binding Descriptions.GameCard}"/>
-                  <NavigationViewLinker Icon="{DynamicResource VSImageLib2019.Slider_16x}"
-                              Title="{Binding Titles.StatisticsCard}" LinkTo="{Binding #statistics}"
-                              Content="{Binding Descriptions.StatisticsCard}"/>
-                  <NavigationViewLinker Icon="{DynamicResource VSImageLib2019.ShapeArcRing_16x}"
-                              Title="{Binding Titles.ProfileCard}" LinkTo="{Binding #profile}"
-                              Content="{Binding Descriptions.ProfileCard}" TopContent="Updated"/>
-                  <NavigationViewLinker Icon="{DynamicResource Material.CircleSlice}"
-                              Title="{Binding Titles.VenueCard}" LinkTo="{Binding #venue}"
-                              Content="{Binding Descriptions.VenueCard}" TopContent="Updated"/>
 
-               </flex:FlexPanel>
-            </GroupBox>
+      <NavigationViewItem Name="game" Header="{Binding Titles.GameCard}" Title="{Binding Titles.GameCard}"
+                Icon="{DynamicResource BoxIcons.RegularCodeAlt}">
+         <NavigationViewItem.Content>
+            <pg:GamePage/>
          </NavigationViewItem.Content>
-         <NavigationViewItem Name="game" Header="{Binding Titles.GameCard}" Title="{Binding Titles.GameCard}"
-                   Icon="{DynamicResource BoxIcons.RegularCodeAlt}">
-            <NavigationViewItem.Content>
-               <pg:GamePage/>
-            </NavigationViewItem.Content>
-         </NavigationViewItem>
-         <NavigationViewItem Name="statistics" Header="{Binding Titles.StatisticsCard}"  Title="{Binding Titles.StatisticsCard}"
-                   Icon="{DynamicResource VSImageLib2019.Slider_16x}">
-            <NavigationViewItem.Content>
-               <pg:StatisticsPage/>
-            </NavigationViewItem.Content>
-         </NavigationViewItem>
-         <NavigationViewItem Name="profile" Header="{Binding Titles.ProfileCard}" Title="{Binding Titles.ProfileCard}"
-                   Icon="{DynamicResource VSImageLib2019.ShapeArcRing_16x}">
-            <NavigationViewItem.Content>
-               <pg:ProfilePage/>
-            </NavigationViewItem.Content>
-         </NavigationViewItem>
-         <NavigationViewItem Name="venue" Header="{Binding Titles.VenueCard}" Title="{Binding Titles.VenueCard}"
-                             Icon="{DynamicResource Material.CircleSlice}">
-            <NavigationViewItem.Content>
-               <pg:VenuePage/>
-            </NavigationViewItem.Content>
-         </NavigationViewItem>
       </NavigationViewItem>
+
+      <NavigationViewItem Name="statistics" Header="{Binding Titles.StatisticsCard}"  Title="{Binding Titles.StatisticsCard}"
+                Icon="{DynamicResource VSImageLib2019.Slider_16x}">
+         <NavigationViewItem.Content>
+            <pg:StatisticsPage/>
+         </NavigationViewItem.Content>
+      </NavigationViewItem>
+
+      <NavigationViewItem Name="profile" Header="{Binding Titles.ProfileCard}" Title="{Binding Titles.ProfileCard}"
+                Icon="{DynamicResource VSImageLib2019.ShapeArcRing_16x}">
+         <NavigationViewItem.Content>
+            <pg:ProfilePage/>
+         </NavigationViewItem.Content>
+      </NavigationViewItem>
+
+      <NavigationViewItem Name="venue" Header="{Binding Titles.VenueCard}" Title="{Binding Titles.VenueCard}"
+                          Icon="{DynamicResource Material.CircleSlice}">
+         <NavigationViewItem.Content>
+            <pg:VenuePage/>
+         </NavigationViewItem.Content>
+      </NavigationViewItem>
+
    </NavigationView>
 </UserControl>
