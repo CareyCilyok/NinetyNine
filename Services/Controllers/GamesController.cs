@@ -1,60 +1,97 @@
-using AutoFixture;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using NinetyNine.Model;
+using NinetyNine.Repository;
 
 namespace Services.Controllers;
 
 [ApiController]
-[Route("api/v0/[controller]")]
+[ApiVersion("0.0")]
+[Route("api/{v:apiVersion}/[controller]")]
 public class GamesController : ControllerBase
 {
-    private static Fixture _fixture = new Fixture();
+    private readonly LocalContext _context;
 
-    private IEnumerable<Game> _games;
-
-    public GamesController()
+    public GamesController(LocalContext dbContext)
     {
-        _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-            .ForEach(b => _fixture.Behaviors.Remove(b));
-        _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-        _games = _fixture.CreateMany<Game>(15);
+        _context = dbContext;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Game>>> GetGames()
     {
-        return _games.ToArray();
+        return await _context.Games.ToListAsync();
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Game>> GetGame(Guid id)
     {
-        return Ok();
-    }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateGame(Guid id, Game game)
-    {
-        return NotFound();
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<Game>> CreateGame(Game newGame)
-    {
-
-        return Ok();
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteGame(Guid Id)
-    {
-        var game = _games.FirstOrDefault(x => x.GameId == Id);
-
+        var game = await _context.Games.FindAsync(id);
+        
         if (game == null)
         {
             return NotFound();
         }
         
-        return Ok();
+        return game;
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateGame(Guid id, Game game)
+    {
+        if (id != game.GameId)
+        {
+            return BadRequest();
+        }
+
+        var oldGame = await _context.Games.FindAsync(id);
+
+        if (oldGame == null)
+        {
+            return NotFound();
+        }
+
+        oldGame = game;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException) when (!GameExists(id))
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Game>> CreateGame(Game newGame)
+    {
+        _context.Games.Add(newGame);
+        await _context.SaveChangesAsync();
+        
+        return CreatedAtAction(nameof(GetGame), new {id = newGame.GameId}, newGame);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteGame(Guid id)
+    {
+        var game = await _context.Games.FindAsync(id);
+
+        if (game == null)
+        {
+            return NotFound();
+        }
+
+        _context.Games.Remove(game);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    private bool GameExists(Guid id)
+    {
+        return _context.Games.Any(x => x.GameId == id);
     }
 }

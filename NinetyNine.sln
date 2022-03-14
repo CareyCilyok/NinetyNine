@@ -12,7 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E388D797-8E26-4F2F-B8F8-FBC8962D09FD}"
 	ProjectSection(SolutionItems) = preProject
-		UI\NinetyNine.db = UI\NinetyNine.db
 		README.md = README.md
 	EndProjectSection
 EndProject
