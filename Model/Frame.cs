@@ -19,6 +19,7 @@
 /// SOFTWARE.
 
 using System;
+using System.Text.Json.Serialization;
 
 namespace NinetyNine.Model
 {
@@ -30,6 +31,8 @@ namespace NinetyNine.Model
         public Guid FrameId { get; set; }
 
         public Guid GameId { get; set; }
+        
+        [JsonIgnore]
         public Game Game { get; set; }
 
         public bool BreakBonus { get; set; } = false;

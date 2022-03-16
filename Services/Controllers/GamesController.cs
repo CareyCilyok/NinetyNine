@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NinetyNine.Model;
-using NinetyNine.Repository;
 
 namespace Services.Controllers;
 
@@ -10,9 +9,9 @@ namespace Services.Controllers;
 [Route("api/{v:apiVersion}/[controller]")]
 public class GamesController : ControllerBase
 {
-    private readonly LocalContext _context;
+    private readonly NinetyNineContext _context;
 
-    public GamesController(LocalContext dbContext)
+    public GamesController(NinetyNineContext dbContext)
     {
         _context = dbContext;
     }
@@ -66,7 +65,7 @@ public class GamesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Game>> CreateGame(Game newGame)
+    public async Task<ActionResult<Game>> CreateGame([Bind("Players, LocationPlayed, WhenPlayed, TableSize, Frames")] Game newGame)
     {
         _context.Games.Add(newGame);
         await _context.SaveChangesAsync();

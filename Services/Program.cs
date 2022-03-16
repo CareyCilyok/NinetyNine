@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using NinetyNine.Repository;
+using Microsoft.EntityFrameworkCore;
+using Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +16,8 @@ builder.Services.AddApiVersioning(x =>
     x.AssumeDefaultVersionWhenUnspecified = true;
     x.ReportApiVersions = true;
 });
-builder.Services.AddDbContext<LocalContext>();
+builder.Services.AddDbContext<NinetyNineContext>(opt =>
+    opt.UseInMemoryDatabase("NinetyNine"));
 
 var app = builder.Build();
 

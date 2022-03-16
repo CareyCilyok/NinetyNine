@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace NinetyNine.Model
 {
@@ -39,6 +40,7 @@ namespace NinetyNine.Model
         /// <summary>
         /// Gets/Sets the <see cref="NinetyNine.Model.Player"/> of this <see cref="Game"/>
         /// </summary>
+        [JsonIgnore]
         public Player Player { get; set; }
 
         /// <summary>

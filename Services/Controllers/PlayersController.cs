@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NinetyNine.Model;
-using NinetyNine.Repository;
 
 namespace Services.Controllers;
 
@@ -10,9 +9,9 @@ namespace Services.Controllers;
 [Route("api/{v:apiVersion}/[controller]")]
 public class PlayersController : ControllerBase
 {
-    private readonly LocalContext _context;
+    private readonly NinetyNineContext _context;
 
-    public PlayersController(LocalContext dbContext)
+    public PlayersController(NinetyNineContext dbContext)
     {
         _context = dbContext;
     }
