@@ -20,11 +20,20 @@
 
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
+using Avalonia.Markup.Xaml;
 
 namespace NinetyNine.Presentation.Controls
 {
-	public class FrameControl : TemplatedControl
-	{
-	}
+   public partial class FrameControl : UserControl
+   {
+      public FrameControl()
+      {
+         InitializeComponent();
+      }
+
+      private void InitializeComponent()
+      {
+         AvaloniaXamlLoader.Load(this);
+      }
+   }
 }

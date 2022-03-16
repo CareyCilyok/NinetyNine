@@ -1,94 +1,20 @@
-<Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="using:NinetyNine.Presentation.Controls">
-	<Design.PreviewWith>
-		<controls:GameControl />
-	</Design.PreviewWith>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="NinetyNine.Presentation.Controls.GameControl"
+             xmlns:controls="using:NinetyNine.Presentation.Controls">
 
-	<Style Selector="controls|GameControl">
-		<!-- Set Defaults -->
-		<Setter Property="Template">
-			<ControlTemplate>
-				<Grid Margin="0"
-						HorizontalAlignment="Center"
-						VerticalAlignment="Center">
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition Width="50"/>
-						<ColumnDefinition Width="50"/>
-						<ColumnDefinition Width="50"/>
-						<ColumnDefinition Width="50"/>
-						<ColumnDefinition Width="50"/>
-						<ColumnDefinition Width="50"/>
-						<ColumnDefinition Width="50"/>
-						<ColumnDefinition Width="50"/>
-						<ColumnDefinition Width="50"/>
-					</Grid.ColumnDefinitions>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="75"/>
-					</Grid.RowDefinitions>
-
-               <Button Grid.Row="0" Grid.Column="0"
-							  VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-							<controls:FrameControl />
-               </Button>
-
-               <Button Grid.Row="0" Grid.Column="1"
-							  VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                  <Button.Content>
-                     <controls:FrameControl/>
-                  </Button.Content>
-               </Button>
-
-               <Button Grid.Row="0" Grid.Column="2"
-							  VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                  <Button.Content>
-                     <controls:FrameControl/>
-                  </Button.Content>
-               </Button>
-
-               <Button Grid.Row="0" Grid.Column="3"
-							  VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                  <Button.Content>
-                     <controls:FrameControl/>
-                  </Button.Content>
-               </Button>
-
-               <Button Grid.Row="0" Grid.Column="4"
-							  VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                  <Button.Content>
-                     <controls:FrameControl/>
-                  </Button.Content>
-               </Button>
-
-               <Button Grid.Row="0" Grid.Column="5"
-							  VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                  <Button.Content>
-                     <controls:FrameControl/>
-                  </Button.Content>
-               </Button>
-
-               <Button Grid.Row="0" Grid.Column="6"
-							  VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                  <Button.Content>
-                     <controls:FrameControl/>
-                  </Button.Content>
-               </Button>
-
-               <Button Grid.Row="0" Grid.Column="7"
-							  VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                  <Button.Content>
-                     <controls:FrameControl/>
-                  </Button.Content>
-               </Button>
-
-               <Button Grid.Row="0" Grid.Column="8"
-							  VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                  <Button.Content>
-                     <controls:FrameControl/>
-                  </Button.Content>
-               </Button>
-				</Grid>
-			</ControlTemplate>
-		</Setter>
-	</Style>
-</Styles>
+   <StackPanel Orientation="Horizontal" Spacing="3" >
+         <controls:FrameControl Grid.Column="0" Height="75" Width="50" VerticalContentAlignment="Center"/>
+         <controls:FrameControl Grid.Column="1" Height="75" Width="50" VerticalContentAlignment="Center"/>
+         <controls:FrameControl Grid.Column="2" Height="75" Width="50" VerticalContentAlignment="Center"/>
+         <controls:FrameControl Grid.Column="3" Height="75" Width="50" VerticalContentAlignment="Center"/>
+         <controls:FrameControl Grid.Column="4" Height="75" Width="50" VerticalContentAlignment="Center"/>
+         <controls:FrameControl Grid.Column="5" Height="75" Width="50" VerticalContentAlignment="Center"/>
+         <controls:FrameControl Grid.Column="6" Height="75" Width="50" VerticalContentAlignment="Center"/>
+         <controls:FrameControl Grid.Column="7" Height="75" Width="50" VerticalContentAlignment="Center"/>
+         <controls:FrameControl Grid.Column="8" Height="75" Width="50" VerticalContentAlignment="Center"/>
+   </StackPanel>
+</UserControl>
