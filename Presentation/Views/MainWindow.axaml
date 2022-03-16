@@ -10,7 +10,7 @@
         Background="Transparent"
 		  WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
-        Icon="avares://Presentation/Assets/AuraUILogo_icon.png"
+        Icon="avares://Presentation/Assets/png/globe-americas-solid.png"
         MinHeight="500"
         MinWidth="500"
 		  ExtendClientAreaToDecorationsHint="true"
