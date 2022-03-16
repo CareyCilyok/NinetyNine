@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace NinetyNine.Model
 {
@@ -37,7 +38,7 @@ namespace NinetyNine.Model
         public string LastName { get; set; } = String.Empty;
         public string FirstName { get; set; } = String.Empty;
         public string MiddleName { get; set; } = String.Empty;
-
+        [JsonIgnore]
         public List<Game> Games { get; set; } = new List<Game>();
     }
 }

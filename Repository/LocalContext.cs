@@ -19,14 +19,24 @@
 /// SOFTWARE.
 
 using Microsoft.EntityFrameworkCore;
+using NinetyNine.Model;
 
 namespace NinetyNine.Repository
 {
     public class LocalContext : NinetyNineContext
     {
-        public LocalContext() : base("LocalDatabase") { }
+        public DbSet<Game> Games { get; set; }
+
+        public DbSet<Player> Players { get; set; }
+
+        public DbSet<Venue> Venues { get; set; }
+
+        public LocalContext() : base("LocalDatabase") 
+        {
+
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseSqlite(@"Data Source=NinetyNine.db");
+            => options.UseInMemoryDatabase("NinetyNineDatabase");
     }
 }
