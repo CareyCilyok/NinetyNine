@@ -25,11 +25,48 @@ using NinetyNine.Model;
 
 namespace NinetyNine.Presentation.ViewModels
 {
-   public class FrameControliewModel : ViewModelBase
+   public class FrameControlViewModel : ViewModelBase
    {
-      public FrameControliewModel()
+      private Frame frame = new Frame();
+
+      public FrameControlViewModel()
       {
-         Frame frame = new Frame();
+      }
+
+      public Frame Frame { get { return frame; } }
+
+      public int BreakBonus
+      {
+         get
+         {
+            return frame.BreakBonus;
+         }
+         set
+         {
+            frame.BreakBonus = value;
+            frame.RunningTotal += frame.BallCount + frame.BreakBonus;
+         }
+      }
+
+      public int BallCount
+      {
+         get
+         {
+            return frame.BallCount;
+         }
+         set
+         {
+            frame.BallCount = value;
+            frame.RunningTotal += frame.BallCount + frame.BreakBonus;
+         }
+      }
+
+      public int RunningTotal
+      {
+         get
+         {
+            return frame.RunningTotal;
+         }
       }
    }
 }

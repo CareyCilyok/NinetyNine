@@ -2,8 +2,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:converters="clr-namespace:Avalonia.Controls.Converters;assembly=Avalonia.Controls"
+				 xmlns:flex="clr-namespace:Avalonia.Flexbox;assembly=Avalonia.Flexbox"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:col="clr-namespace:System.Collections;assembly=mscorlib"
+             xmlns:l="using:System.Collections"
+				 xmlns:pg="using:NinetyNine.Presentation.Pages"
+             xmlns:vm="using:NinetyNine.Presentation.ViewModels"
              mc:Ignorable="d"
              x:Class="NinetyNine.Presentation.Controls.FrameControl">
+   
+   <UserControl.DataContext>
+      <vm:FrameControlViewModel/>
+   </UserControl.DataContext>
+   
    <Grid Margin="0"
          MaxHeight="300"
          MaxWidth="200"
@@ -21,28 +33,28 @@
          <RowDefinition Height="1*"/>
       </Grid.RowDefinitions>
 
-      <Viewbox Name="breakBonus" Stretch="Fill"
+      <Viewbox Stretch="Fill"
               Grid.Row="0" Grid.Column="0"
               VerticalAlignment="Center" HorizontalAlignment="Center">
          <Button>
-            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center">1</TextBlock>
+            <TextBlock Name="breakBonus" Text="{Binding BreakBonus}" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/>
          </Button>
       </Viewbox>
 
-      <Viewbox Name="ballCount" Stretch="Fill"
+      <Viewbox Stretch="Fill"
               Grid.Row="0" Grid.Column="1"
               VerticalAlignment="Center" HorizontalAlignment="Center">
          <Button>
-            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center">10</TextBlock>
+            <TextBlock Name="ballCount" Text="{Binding BallCount}" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/>
          </Button>
       </Viewbox>
       
-      <Viewbox Name="runningScore" Stretch="Fill"
+      <Viewbox Stretch="Fill"
               Grid.Row="1" Grid.Column="0"
               Grid.RowSpan="2" Grid.ColumnSpan="2"
               VerticalAlignment="Center" HorizontalAlignment="Center">
          <Button>
-            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center">99</TextBlock>
+            <TextBlock Name="runningTotal" Text="{Binding RunningTotal}" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/>
          </Button>
       </Viewbox>
       

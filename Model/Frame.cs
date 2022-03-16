@@ -35,9 +35,8 @@ namespace NinetyNine.Model
         [JsonIgnore]
         public Game Game { get; set; }
 
-        public bool BreakBonus { get; set; } = false;
+        public int BreakBonus { get; set; } = 0;
         public int BallCount { get; set; } = 0;
-        public bool RunoutBonus { get; set; } = false;
         public int RunningTotal { get; set; } = 0;
     }
 }
