@@ -32,20 +32,18 @@ namespace NinetyNine.Presentation.ViewModels
 
    public class Descriptions
    {
-      public string GameCard => "Create a new game of 99.";
-      public string StatisticsCard => "View player statistics. See your win/loss history, average score, handicap and more.";
-      public string ProfileCard => "Edit your profile";
-      public string VenueCard => "Add or edit venues";
+      public string Game => "Create a new game single or multi player of 99.";
+      public string Statistics => "View player statistics. See your win/loss history, average score, handicap and more.";
+      public string Profile => "Edit your profile";
+      public string Venues => "Add or edit venues where you play or hangout";
    }
 
    public class Titles
    {
-      public string GameCard => GetTitle();
-      public string StatisticsCard => GetTitle();
-      public string ProfileCard => GetTitle();
-      public string VenueCard => GetTitle();
-
-      public string GetTitle([CallerMemberName] string title = "title") => title;
+      public string Game => "Game";
+      public string Statistics => "Statistics";
+      public string Profile => "Profile";
+      public string Venues => "Venues";
    }
 
    public class NavigationViewItemViewModel
@@ -55,13 +53,13 @@ namespace NinetyNine.Presentation.ViewModels
          get;
          set;
       }
-      public object Header
+      public string Header
       {
          get;
          set;
       }
 
-      public object Title
+      public string Title
       {
          get;
          set;

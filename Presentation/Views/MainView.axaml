@@ -9,17 +9,20 @@
              xmlns:l="using:System.Collections"
 				 xmlns:pg="using:NinetyNine.Presentation.Pages"
              xmlns:vm="using:NinetyNine.Presentation.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="792" d:DesignHeight="398"
              Background="{x:Null}"
              BorderBrush="Black"
              BorderThickness="0.7"
              x:Class="NinetyNine.Presentation.Views.MainView">
-
+   
+             <!-- Magic numbers above for design height/width are to 
+                  find the minimal current size without scrolling -->
+   
    <UserControl.DataContext>
       <vm:MainViewViewModel/>
    </UserControl.DataContext>
 
-   <NavigationView Header=""
+   <NavigationView Header="NinentyNine"
                    AlwaysOpen="False"
                    IsFloatingHeader="True"
                    OpenPaneLength="300">
@@ -31,61 +34,59 @@
                                       MaterialOpacity="0.4"/>
       </NavigationView.PanelMaterial>
 
-      <NavigationViewItem  Header="Home"
-                Icon="{DynamicResource Zondicons.Announcement}"
-                Title="Ninety Nine">
+      <NavigationViewItem Header="Home"
+                          Icon="/Assets/png/warehouse-solid.png"
+                          Title="Score Keeper">
          <NavigationViewItem.Content>
-            <GroupBox Margin="10" Grid.Row="1"
-                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                    Header="Choose an activity"
-                    TextBlock.FontSize="20">
+            <GroupBox Margin="0" Grid.Row="1"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                <flex:FlexPanel Direction="Row"
                        Wrap="Wrap"
                        AlignContent="FlexStart"
                        AlignItems="Center"
                        JustifyContent="FlexStart"
-                       ColumnSpacing="10"
-                       RowSpacing="10">
-                  <NavigationViewLinker Icon="{DynamicResource BoxIcons.RegularCodeAlt}"
-                              Title="{Binding Titles.GameCard}" LinkTo="{Binding #game}"
-                              Content="{Binding Descriptions.GameCard}" TopContent="Updated"/>
-                  <NavigationViewLinker Icon="{DynamicResource VSImageLib2019.Slider_16x}"
-                              Title="{Binding Titles.StatisticsCard}" LinkTo="{Binding #statistics}"
-                              Content="{Binding Descriptions.StatisticsCard}"/>
-                  <NavigationViewLinker Icon="{DynamicResource VSImageLib2019.ShapeArcRing_16x}"
-                              Title="{Binding Titles.ProfileCard}" LinkTo="{Binding #profile}"
-                              Content="{Binding Descriptions.ProfileCard}" TopContent="Updated"/>
-                  <NavigationViewLinker Icon="{DynamicResource VSImageLib.GroupBox_16x}"
-                              Title="VenueCard" LinkTo="{Binding #venue}"
-                              Content="{Binding Descriptions.VenueCard}"/>
+                       ColumnSpacing="0"
+                       RowSpacing="0">
+                  <NavigationViewLinker Icon="/Assets/png/circle.png"
+                                        Title="{Binding Titles.Game}" LinkTo="{Binding #game}"
+                                        Content="{Binding Descriptions.Game}"/>
+                  <NavigationViewLinker Icon="/Assets/png/chart-bar.png"
+                                        Title="{Binding Titles.Statistics}" LinkTo="{Binding #statistics}"
+                                        Content="{Binding Descriptions.Statistics}"/>
+                  <NavigationViewLinker Icon="/Assets/png/id-card-solid.png"
+                                        Title="{Binding Titles.Profile}" LinkTo="{Binding #profile}"
+                                        Content="{Binding Descriptions.Profile}"/>
+                  <NavigationViewLinker Icon="/Assets/png/building.png"
+                                        Title="{Binding Titles.Venues}" LinkTo="{Binding #venue}"
+                                        Content="{Binding Descriptions.Venues}"/>
                </flex:FlexPanel>
             </GroupBox>
          </NavigationViewItem.Content>
       </NavigationViewItem>
 
-      <NavigationViewItem Name="game" Header="{Binding Titles.GameCard}" Title="{Binding Titles.GameCard}"
-                Icon="{DynamicResource BoxIcons.RegularCodeAlt}">
+      <NavigationViewItem Name="game" Header="{Binding Titles.Game}" Title="{Binding Titles.Game}"
+                Icon="/Assets/png/circle.png">
          <NavigationViewItem.Content>
             <pg:GamePage/>
          </NavigationViewItem.Content>
       </NavigationViewItem>
 
-      <NavigationViewItem Name="statistics" Header="{Binding Titles.StatisticsCard}"  Title="{Binding Titles.StatisticsCard}"
-                Icon="{DynamicResource VSImageLib2019.Slider_16x}">
+      <NavigationViewItem Name="statistics" Header="{Binding Titles.Statistics}"  Title="{Binding Titles.Statistics}"
+                Icon="/Assets/png/chart-bar.png">
          <NavigationViewItem.Content>
             <pg:StatisticsPage/>
          </NavigationViewItem.Content>
       </NavigationViewItem>
 
-      <NavigationViewItem Name="profile" Header="{Binding Titles.ProfileCard}" Title="{Binding Titles.ProfileCard}"
-                Icon="{DynamicResource VSImageLib2019.ShapeArcRing_16x}">
+      <NavigationViewItem Name="profile" Header="{Binding Titles.Profile}" Title="{Binding Titles.Profile}"
+                Icon="/Assets/png/id-card-solid.png">
          <NavigationViewItem.Content>
             <pg:ProfilePage/>
          </NavigationViewItem.Content>
       </NavigationViewItem>
 
-      <NavigationViewItem Name="venue" Header="{Binding Titles.VenueCard}" Title="{Binding Titles.VenueCard}"
-                          Icon="{DynamicResource Material.CircleSlice}">
+      <NavigationViewItem Name="venue" Header="{Binding Titles.Venues}" Title="{Binding Titles.Venues}"
+                          Icon="/Assets/png/building.png">
          <NavigationViewItem.Content>
             <pg:VenuePage/>
          </NavigationViewItem.Content>
