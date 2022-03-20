@@ -44,7 +44,16 @@ off the table and the player continues the frame. A nine ball made on a any brea
 is counted as 2 “Ball Count” points.
 
 ### Scoring:
-#### Ball Count
+#### Break Bonus
+If the player legally pockets one or more balls on the break,
+they are awarded 1 “Break Bonus” point.
+
+#### Scratch on the Break
+Balls pocketed during a scratch on the break are counted
+toward a players “Ball Count” for the frame, however the Break Bonus is not
+awarded because of the scratch.
+
+##### Ball Count
 The total number of object balls pocketed both during and legally
 after the break during a frame. A maximum of 10 “Ball Count” points are
 available in each frame. The 9-ball has a value of 2 "Ball Count" points and
@@ -54,15 +63,6 @@ each of the other balls has a value of 1 "Ball Count" point.
 Pocketing the 9-ball on the break shot or as a combination
 during the frame does not end the frame. The 9-Ball is counted as 2 "Ball Count"
 points and the player continues until a missed shot or pocketing the remaing balls.
-
-#### Break Bonus
-If the player legally pockets one or more balls on the break,
-they are awarded 1 “Break Bonus” point.
-
-#### Scratch on the Break
-Balls pocketed during a scratch on the break are counted
-toward a players “Ball Count” for the frame, however the Break Bonus is not
-awarded because of the scratch.
 
 #### Fouls
 Balls pocketed on a Scratch (except on the break), foul or other illegal
