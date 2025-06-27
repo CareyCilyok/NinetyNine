@@ -19,10 +19,12 @@
 /// SOFTWARE.
 
 using System;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.ReactiveUI;
 using NinetyNine.Presentation;
+using Serilog;
 
 namespace NinetyNine.Application
 {
@@ -32,8 +34,41 @@ namespace NinetyNine.Application
       // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
       // yet and stuff might break.
       [STAThread]
-      public static void Main(string[] args) => BuildAvaloniaApp()
-          .StartWithClassicDesktopLifetime(args);
+      public static void Main(string[] args)
+      {
+         // Configure Serilog before anything else
+         ConfigureLogger();
+         
+         try
+         {
+            Log.Information("Starting NinetyNine application...");
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+         }
+         catch (Exception ex)
+         {
+            Log.Fatal(ex, "Application terminated unexpectedly");
+         }
+         finally
+         {
+            Log.CloseAndFlush();
+         }
+      }
+
+      private static void ConfigureLogger()
+      {
+         var logsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NinetyNine", "Logs");
+         Directory.CreateDirectory(logsDirectory);
+
+         Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .WriteTo.File(
+               Path.Combine(logsDirectory, "ninetynine-.log"),
+               rollingInterval: RollingInterval.Day,
+               retainedFileCountLimit: 7,
+               outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {Message:lj} {Properties}{NewLine}{Exception}")
+            .CreateLogger();
+      }
 
       // Avalonia configuration, don't remove; also used by visual designer.
       public static AppBuilder BuildAvaloniaApp()

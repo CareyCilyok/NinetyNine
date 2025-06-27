@@ -21,6 +21,7 @@ using System.Text;
 using Avalonia.Media;
 using System.Text.Json;
 using System.IO;
+using Serilog;
 
 namespace NinetyNine.Presentation
 {
@@ -28,9 +29,11 @@ namespace NinetyNine.Presentation
    {
       public override void Initialize()
       {
+         Log.Information("Initializing NinetyNine application");
          var settings_prov = new JsonSettingsProvider();
          Settings = settings_prov.Load<AppSettings>();
 
+         Log.Information("Applying {Theme} theme", Settings.Theme);
          switch (Settings.Theme)
          {
             case Theme.Light:
@@ -47,10 +50,11 @@ namespace NinetyNine.Presentation
 
       public override void OnFrameworkInitializationCompleted()
       {
+         Log.Information("Framework initialization completed");
          // NavigationViewStatic();
          if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
          {
-
+            Log.Information("Starting desktop application");
             desktop.MainWindow = new MainWindow
             {
                DataContext = new MainWindowViewModel()
@@ -58,11 +62,21 @@ namespace NinetyNine.Presentation
 
             desktop.Exit += (s, e) =>
             {
-               new JsonSettingsProvider().Save(Settings);
+               Log.Information("Application is shutting down, saving settings");
+               try
+               {
+                  new JsonSettingsProvider().Save(Settings);
+                  Log.Information("Settings saved successfully");
+               }
+               catch (Exception ex)
+               {
+                  Log.Error(ex, "Failed to save settings during application shutdown");
+               }
             };
          }
          else if (ApplicationLifetime is ISingleViewApplicationLifetime single)
          {
+            Log.Information("Starting single view application");
             single.MainView = new MainView()
             {
                DataContext = new MainWindowViewModel()
@@ -76,6 +90,7 @@ namespace NinetyNine.Presentation
 
       public async Task SetTheme(Theme theme)
       {
+         Log.Information("Switching theme from {CurrentTheme} to {NewTheme}", Settings.Theme, theme);
          try
          {
             await Dispatcher.UIThread.InvokeAsync(() =>
@@ -95,10 +110,11 @@ namespace NinetyNine.Presentation
             }, (DispatcherPriority)1);
 
             Settings.Theme = theme;
+            Log.Information("Theme successfully changed to {Theme}", theme);
          }
-         catch (Exception)
+         catch (Exception ex)
          {
-            Console.WriteLine($"some error has executed");
+            Log.Error(ex, "Error occurred while switching theme to {Theme}", theme);
          }
       }
 
@@ -157,17 +173,20 @@ namespace NinetyNine.Presentation
 
          if (!File.Exists(filePath))
          {
+            Log.Debug("Settings file {FileName} not found, using default settings", fileName);
             return new T();
          }
 
          try
          {
             var json = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<T>(json, _jsonOptions) ?? new T();
+            var result = JsonSerializer.Deserialize<T>(json, _jsonOptions) ?? new T();
+            Log.Debug("Successfully loaded settings from {FileName}", fileName);
+            return result;
          }
          catch (Exception ex)
          {
-            Console.WriteLine($"Error loading settings: {ex.Message}");
+            Log.Error(ex, "Failed to load settings for type {SettingsType}", typeof(T).Name);
             return new T();
          }
       }
@@ -181,10 +200,11 @@ namespace NinetyNine.Presentation
          {
             var json = JsonSerializer.Serialize(settings, _jsonOptions);
             File.WriteAllText(filePath, json);
+            Log.Debug("Successfully saved settings to {FileName}", fileName);
          }
          catch (Exception ex)
          {
-            Console.WriteLine($"Error saving settings: {ex.Message}");
+            Log.Error(ex, "Failed to save settings for type {SettingsType}", typeof(T).Name);
          }
       }
    }

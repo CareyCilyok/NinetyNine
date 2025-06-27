@@ -49,6 +49,9 @@
 	<PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="3.116.1" />
 	<PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="3.116.1" />
 	<PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" Version="3.116.1" />
+	<!-- Serilog Logging Framework -->
+	<PackageReference Include="Serilog" Version="4.2.0" />
+	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Model\Model.csproj" />
