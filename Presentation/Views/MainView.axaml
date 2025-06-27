@@ -9,6 +9,7 @@
              xmlns:l="using:System.Collections"
 				 xmlns:pg="using:NinetyNine.Presentation.Pages"
              xmlns:vm="using:NinetyNine.Presentation.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              mc:Ignorable="d" d:DesignWidth="792" d:DesignHeight="398"
              Background="{x:Null}"
              BorderBrush="Black"
@@ -22,75 +23,22 @@
       <vm:MainViewViewModel/>
    </UserControl.DataContext>
 
-   <NavigationView Header="NinentyNine"
-                   AlwaysOpen="False"
-                   IsFloatingHeader="True"
-                   OpenPaneLength="300">
-
-      <NavigationView.PanelMaterial>
-         <ExperimentalAcrylicMaterial BackgroundSource="Digger"
-                                      TintColor="{DynamicResource SystemAltMediumLowColor}"
-                                      TintOpacity="0.2"
-                                      MaterialOpacity="0.4"/>
-      </NavigationView.PanelMaterial>
-
-      <NavigationViewItem Header="Home"
-                          Icon="/Assets/png/warehouse-solid.png"
-                          Title="Score Keeper">
-         <NavigationViewItem.Content>
-            <GroupBox Margin="0" Grid.Row="1"
-                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-               <flex:FlexPanel Direction="Row"
-                       Wrap="Wrap"
-                       AlignContent="FlexStart"
-                       AlignItems="Center"
-                       JustifyContent="FlexStart"
-                       ColumnSpacing="0"
-                       RowSpacing="0">
-                  <NavigationViewLinker Icon="/Assets/png/circle.png"
-                                        Title="{Binding Titles.Game}" LinkTo="{Binding #game}"
-                                        Content="{Binding Descriptions.Game}"/>
-                  <NavigationViewLinker Icon="/Assets/png/chart-bar.png"
-                                        Title="{Binding Titles.Statistics}" LinkTo="{Binding #statistics}"
-                                        Content="{Binding Descriptions.Statistics}"/>
-                  <NavigationViewLinker Icon="/Assets/png/id-card-solid.png"
-                                        Title="{Binding Titles.Profile}" LinkTo="{Binding #profile}"
-                                        Content="{Binding Descriptions.Profile}"/>
-                  <NavigationViewLinker Icon="/Assets/png/building.png"
-                                        Title="{Binding Titles.Venues}" LinkTo="{Binding #venue}"
-                                        Content="{Binding Descriptions.Venues}"/>
-               </flex:FlexPanel>
-            </GroupBox>
-         </NavigationViewItem.Content>
-      </NavigationViewItem>
-
-      <NavigationViewItem Name="game" Header="{Binding Titles.Game}" Title="{Binding Titles.Game}"
-                Icon="/Assets/png/circle.png">
-         <NavigationViewItem.Content>
-            <pg:GamePage/>
-         </NavigationViewItem.Content>
-      </NavigationViewItem>
-
-      <NavigationViewItem Name="statistics" Header="{Binding Titles.Statistics}"  Title="{Binding Titles.Statistics}"
-                Icon="/Assets/png/chart-bar.png">
-         <NavigationViewItem.Content>
-            <pg:StatisticsPage/>
-         </NavigationViewItem.Content>
-      </NavigationViewItem>
-
-      <NavigationViewItem Name="profile" Header="{Binding Titles.Profile}" Title="{Binding Titles.Profile}"
-                Icon="/Assets/png/id-card-solid.png">
-         <NavigationViewItem.Content>
-            <pg:ProfilePage/>
-         </NavigationViewItem.Content>
-      </NavigationViewItem>
-
-      <NavigationViewItem Name="venue" Header="{Binding Titles.Venues}" Title="{Binding Titles.Venues}"
-                          Icon="/Assets/png/building.png">
-         <NavigationViewItem.Content>
-            <pg:VenuePage/>
-         </NavigationViewItem.Content>
-      </NavigationViewItem>
-
-   </NavigationView>
+   <ui:NavigationView Header="NinentyNine"
+                      IsBackEnabled="False"
+                      OpenPaneLength="300">
+      <ui:NavigationView.MenuItems>
+         <ui:NavigationViewItem Content="Home" />
+         <ui:NavigationViewItem Name="game" Content="{Binding Titles.Game}" />
+         <ui:NavigationViewItem Name="statistics" Content="{Binding Titles.Statistics}" />
+         <ui:NavigationViewItem Name="profile" Content="{Binding Titles.Profile}" />
+         <ui:NavigationViewItem Name="venue" Content="{Binding Titles.Venues}" />
+      </ui:NavigationView.MenuItems>
+      
+      <!-- Main content area - this will change based on selected navigation item -->
+      <Grid>
+         <TextBlock Text="Select a navigation item to view content" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center"/>
+      </Grid>
+   </ui:NavigationView>
 </UserControl>

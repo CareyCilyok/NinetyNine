@@ -38,6 +38,27 @@ namespace NinetyNine.Model
         public string LastName { get; set; } = String.Empty;
         public string FirstName { get; set; } = String.Empty;
         public string MiddleName { get; set; } = String.Empty;
+        
+        public string Name
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(FirstName) || !string.IsNullOrEmpty(LastName))
+                {
+                    return $"{FirstName} {LastName}".Trim();
+                }
+                return Username;
+            }
+            set
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    var parts = value.Split(' ', 2);
+                    FirstName = parts[0];
+                    LastName = parts.Length > 1 ? parts[1] : "";
+                }
+            }
+        }
         [JsonIgnore]
         public List<Game> Games { get; set; } = new List<Game>();
     }

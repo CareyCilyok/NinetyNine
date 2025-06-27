@@ -29,7 +29,6 @@
       <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
          <StackPanel.Styles>
             <Style Selector="ComboBox">
-               <Setter Property="VirtualizationMode" Value="Simple"/>
             </Style>
          </StackPanel.Styles>
       </StackPanel>

@@ -2,7 +2,195 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:vm="using:NinetyNine.Presentation.ViewModels"
+             xmlns:controls="using:NinetyNine.Presentation.Controls"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="NinetyNine.Presentation.Pages.GamePage">
-  Welcome to Avalonia!
+
+   <UserControl.DataContext>
+      <vm:GamePageViewModel/>
+   </UserControl.DataContext>
+
+   <Grid Margin="10">
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+         <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+
+      <!-- Game Header -->
+      <Border Grid.Row="0" 
+              Background="LightBlue" 
+              CornerRadius="5" 
+              Padding="10" 
+              Margin="0,0,0,10">
+         <StackPanel>
+            <TextBlock Text="Ninety-Nine Pool Game Scorekeeper" 
+                       FontSize="18" 
+                       FontWeight="Bold" 
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="{Binding GameStatus}" 
+                       FontSize="14" 
+                       HorizontalAlignment="Center" 
+                       Margin="0,5,0,0"/>
+         </StackPanel>
+      </Border>
+
+      <!-- New Game Controls -->
+      <Border Grid.Row="1" 
+              Background="LightGray" 
+              CornerRadius="5" 
+              Padding="10" 
+              Margin="0,0,0,10"
+              IsVisible="{Binding !IsGameInProgress}">
+         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <TextBlock Text="Player:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <TextBox Text="{Binding PlayerName}" Width="100" Margin="0,0,10,0"/>
+            
+            <TextBlock Text="Venue:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <TextBox Text="{Binding VenueName}" Width="100" Margin="0,0,10,0"/>
+            
+            <TextBlock Text="Table:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <ComboBox Width="80" Margin="0,0,10,0">
+               <ComboBoxItem Content="7-Foot"/>
+               <ComboBoxItem Content="9-Foot" IsSelected="True"/>
+               <ComboBoxItem Content="10-Foot"/>
+            </ComboBox>
+            
+            <Button Command="{Binding NewGameCommand}" 
+                    Content="New Game" 
+                    Padding="10,5"/>
+         </StackPanel>
+      </Border>
+
+      <!-- Frame Controls Display -->
+      <Border Grid.Row="2" 
+              Background="White" 
+              BorderBrush="Gray" 
+              BorderThickness="1" 
+              CornerRadius="5" 
+              Padding="10" 
+              Margin="0,0,0,10">
+         <StackPanel>
+            <TextBlock Text="Game Frames (9 Total)" 
+                       FontSize="14" 
+                       FontWeight="Bold" 
+                       HorizontalAlignment="Center" 
+                       Margin="0,0,0,10"/>
+            
+            <!-- Frame Controls Container -->
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+               <ItemsControl ItemsSource="{Binding FrameViewModels}">
+                  <ItemsControl.ItemsPanel>
+                     <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="5"/>
+                     </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                     <DataTemplate>
+                        <controls:FrameControl DataContext="{Binding}"/>
+                     </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+               </ItemsControl>
+            </ScrollViewer>
+         </StackPanel>
+      </Border>
+
+      <!-- Current Frame Scoring Area -->
+      <Border Grid.Row="3" 
+              Background="LightYellow" 
+              BorderBrush="Orange" 
+              BorderThickness="2" 
+              CornerRadius="5" 
+              Padding="15" 
+              IsVisible="{Binding IsGameInProgress}">
+         <StackPanel>
+            <TextBlock Text="{Binding CurrentFrameNumber, StringFormat='Current Frame: {0}'}" 
+                       FontSize="16" 
+                       FontWeight="Bold" 
+                       HorizontalAlignment="Center" 
+                       Margin="0,0,0,15"/>
+
+            <!-- Scoring Instructions -->
+            <StackPanel HorizontalAlignment="Center" Margin="0,0,0,15">
+               <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">
+                  <TextBlock.Text>
+                     <MultiBinding StringFormat="Use the + and - buttons in Frame {0} above to set your Break Bonus (0-1) and Ball Count (0-10).">
+                        <Binding Path="CurrentFrameNumber"/>
+                     </MultiBinding>
+                  </TextBlock.Text>
+               </TextBlock>
+               <TextBlock Text="Maximum 11 points per frame. The 9-ball counts as 2 points." 
+                          HorizontalAlignment="Center" 
+                          TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <!-- Frame Action Buttons -->
+            <StackPanel Orientation="Horizontal" 
+                        HorizontalAlignment="Center" 
+                        Spacing="10">
+               <Button Command="{Binding CompleteFrameCommand}" 
+                       Content="Complete Frame" 
+                       Padding="15,8" 
+                       Background="Green" 
+                       Foreground="White"
+                       FontWeight="Bold"/>
+               <Button Command="{Binding ResetFrameCommand}" 
+                       Content="Reset Frame" 
+                       Padding="15,8" 
+                       Background="Orange" 
+                       Foreground="White"/>
+               <Button Command="{Binding CompleteGameCommand}" 
+                       Content="End Game" 
+                       Padding="15,8" 
+                       Background="Red" 
+                       Foreground="White"/>
+            </StackPanel>
+         </StackPanel>
+      </Border>
+
+      <!-- Game Completed Display -->
+      <Border Grid.Row="3" 
+              Background="Gold" 
+              BorderBrush="DarkGoldenrod" 
+              BorderThickness="2" 
+              CornerRadius="5" 
+              Padding="20" 
+              IsVisible="{Binding IsGameCompleted}">
+         <StackPanel HorizontalAlignment="Center">
+            <TextBlock Text="🎉 GAME COMPLETED! 🎉" 
+                       FontSize="20" 
+                       FontWeight="Bold" 
+                       HorizontalAlignment="Center" 
+                       Margin="0,0,0,10"/>
+            <TextBlock Text="{Binding TotalScore, StringFormat='Final Score: {0} / 99'}" 
+                       FontSize="16" 
+                       HorizontalAlignment="Center" 
+                       Margin="0,0,0,10"/>
+            <Button Command="{Binding NewGameCommand}" 
+                    Content="Start New Game" 
+                    Padding="15,8" 
+                    HorizontalAlignment="Center"/>
+         </StackPanel>
+      </Border>
+
+      <!-- Footer -->
+      <Border Grid.Row="4" 
+              Background="DarkGray" 
+              CornerRadius="5" 
+              Padding="10" 
+              Margin="0,10,0,0">
+         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <TextBlock Text="Total Score: " FontWeight="Bold" Foreground="White"/>
+            <TextBlock Text="{Binding TotalScore}" FontWeight="Bold" Foreground="White" Margin="0,0,20,0"/>
+            <TextBlock Text="Frame: " FontWeight="Bold" Foreground="White"/>
+            <TextBlock Text="{Binding CurrentFrameNumber}" FontWeight="Bold" Foreground="White" Margin="0,0,5,0"/>
+            <TextBlock Text="/ 9" FontWeight="Bold" Foreground="White"/>
+         </StackPanel>
+      </Border>
+
+   </Grid>
 </UserControl>

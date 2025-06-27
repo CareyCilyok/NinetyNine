@@ -25,15 +25,20 @@ namespace NinetyNine.Repository
 {
     public class LocalContext : NinetyNineContext
     {
-        public DbSet<Game> Games { get; set; }
+        public new DbSet<Game> Games { get; set; }
 
-        public DbSet<Player> Players { get; set; }
+        public new DbSet<Player> Players { get; set; }
 
-        public DbSet<Venue> Venues { get; set; }
+        public new DbSet<Venue> Venues { get; set; }
 
         public LocalContext() : base("LocalDatabase") 
         {
 
+        }
+
+        public LocalContext(DbContextOptions<LocalContext> options) : base(options)
+        {
+            
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)

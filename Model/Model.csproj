@@ -2,7 +2,7 @@
 
    <PropertyGroup>
       <OutputType>Library</OutputType>
-      <TargetFramework>net6.0</TargetFramework>
+      <TargetFramework>net8.0</TargetFramework>
       <Nullable>enable</Nullable>
       <TrimMode>copyused</TrimMode>
       <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -11,7 +11,7 @@
    </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="6.0.2" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
 </Project>

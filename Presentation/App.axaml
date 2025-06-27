@@ -1,20 +1,15 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NinetyNine.Presentation"
-             x:Class="NinetyNine.Presentation.App">
+             x:Class="NinetyNine.Presentation.App"
+             RequestedThemeVariant="Default">
    <Application.Styles>
-      <StyleInclude Source="avares://Avalonia.Themes.Default/Accents/BaseLight.xaml"/>
-      <FluentTheme Mode="Dark"/>
-      <StyleInclude Source="avares://AvaloniaEdit/AvaloniaEdit.xaml"/>
+      <FluentTheme />
       <Style Selector="TextBlock">
          <Setter Property="TextWrapping" Value="Wrap"/>
       </Style>
       <Style Selector="TextBox">
          <Setter Property="TextWrapping" Value="Wrap"/>
-      </Style>
-      <Style Selector="NavigationViewLinker">
-         <Setter Property="Height" Value="150"/>
-         <Setter Property="Width" Value="400"/>
       </Style>
       <Style Selector="TextBlock.ts">
          <Setter Property="FontSize" Value="16"/>

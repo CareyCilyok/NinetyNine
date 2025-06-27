@@ -22,6 +22,7 @@ using System;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.ReactiveUI;
+using NinetyNine.Presentation;
 
 namespace NinetyNine.Application
 {
@@ -40,8 +41,6 @@ namespace NinetyNine.Application
             .UsePlatformDetect()
             .With(new Win32PlatformOptions
             {
-               AllowEglInitialization = true,
-               UseDeferredRendering = true,
                OverlayPopups = true,
             })
             .With(new X11PlatformOptions

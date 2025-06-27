@@ -33,6 +33,11 @@ namespace NinetyNine.Repository
             //this.Database.GetDbConnection().ConnectionString = dbConnectionString;
         }
 
+        public NinetyNineContext(DbContextOptions options) : base(options)
+        {
+            
+        }
+
         public DbSet<Player> Players { get; set; }
         public DbSet<Venue> Venues { get; set; }
         public DbSet<Game> Games { get; set; }

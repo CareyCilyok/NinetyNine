@@ -23,11 +23,7 @@ namespace NinetyNine.Presentation.ViewModels
 
       public Titles Titles { get; }
       public Descriptions Descriptions { get; }
-      public IReadOnlyList<NavigationViewItemViewModel> NavItems
-      {
-         get;
-         set;
-      }
+      public IReadOnlyList<NavigationViewItemViewModel> NavItems { get; set; } = new List<NavigationViewItemViewModel>();
    }
 
    public class Descriptions
@@ -48,33 +44,10 @@ namespace NinetyNine.Presentation.ViewModels
 
    public class NavigationViewItemViewModel
    {
-      public IImage Icon
-      {
-         get;
-         set;
-      }
-      public string Header
-      {
-         get;
-         set;
-      }
-
-      public string Title
-      {
-         get;
-         set;
-      }
-
-      public object Content
-      {
-         get;
-         set;
-      }
-
-      public IReadOnlyList<NavigationViewItemViewModel> NavItems
-      {
-         get;
-         set;
-      }
+      public IImage? Icon { get; set; }
+      public string Header { get; set; } = string.Empty;
+      public string Title { get; set; } = string.Empty;
+      public object? Content { get; set; }
+      public IReadOnlyList<NavigationViewItemViewModel> NavItems { get; set; } = new List<NavigationViewItemViewModel>();
    }
 }

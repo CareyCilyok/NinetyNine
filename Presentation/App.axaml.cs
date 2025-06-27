@@ -1,6 +1,5 @@
 using NinetyNine.Presentation.ViewModels;
 using NinetyNine.Presentation.Views;
-using AuraUtilities.Configuration;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -14,12 +13,14 @@ using System.Reactive;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using System.Threading;
-using Aura.UI.Controls.Navigation;
+using FluentAvalonia.UI.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using System.Text;
 using Avalonia.Media;
+using System.Text.Json;
+using System.IO;
 
 namespace NinetyNine.Presentation
 {
@@ -27,7 +28,7 @@ namespace NinetyNine.Presentation
    {
       public override void Initialize()
       {
-         var settings_prov = new SettingsProvider();
+         var settings_prov = new JsonSettingsProvider();
          Settings = settings_prov.Load<AppSettings>();
 
          switch (Settings.Theme)
@@ -57,7 +58,7 @@ namespace NinetyNine.Presentation
 
             desktop.Exit += (s, e) =>
             {
-               new SettingsProvider().Save(Settings);
+               new JsonSettingsProvider().Save(Settings);
             };
          }
          else if (ApplicationLifetime is ISingleViewApplicationLifetime single)
@@ -70,11 +71,7 @@ namespace NinetyNine.Presentation
 
          base.OnFrameworkInitializationCompleted();
       }
-      private AppSettings Settings
-      {
-         get;
-         set;
-      }
+      private AppSettings Settings { get; set; } = new();
       public Theme GetTheme() => Settings.Theme;
 
       public async Task SetTheme(Theme theme)
@@ -83,14 +80,17 @@ namespace NinetyNine.Presentation
          {
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-               switch (theme)
+               if (Application.Current != null)
                {
-                  case Theme.Light:
-                     Application.Current.Styles[0] = App.FluentLight;
-                     break;
-                  case Theme.Dark:
-                     Application.Current.Styles[0] = App.FluentDark;
-                     break;
+                  switch (theme)
+                  {
+                     case Theme.Light:
+                        Application.Current.Styles[0] = App.FluentLight;
+                        break;
+                     case Theme.Dark:
+                        Application.Current.Styles[0] = App.FluentDark;
+                        break;
+                  }
                }
             }, (DispatcherPriority)1);
 
@@ -107,10 +107,6 @@ namespace NinetyNine.Presentation
             new StyleInclude(new Uri("avares://NinetyNine.Presentation/Styles"))
             {
                 Source = new Uri("avares://Avalonia.Themes.Fluent/FluentDark.xaml")
-            },
-            new StyleInclude(new Uri("avares://NinetyNine.Presentation/Styles"))
-            {
-                Source = new Uri("avares://Aura.UI.FluentTheme/AuraUI.xaml")
             }
         };
 
@@ -119,28 +115,77 @@ namespace NinetyNine.Presentation
             new StyleInclude(new Uri("avares://NinetyNine.Presentation/Styles"))
             {
                 Source = new Uri("avares://Avalonia.Themes.Fluent/FluentLight.xaml")
-            },
-            new StyleInclude(new Uri("avares://NinetyNine.Presentation/Styles"))
-            {
-                Source = new Uri("avares://Aura.UI.FluentTheme/AuraUI.xaml")
             }
         };
    }
 
-   [Serializable]
-   public class AppSettings : ISettings
+   public class AppSettings
    {
-      public Theme Theme
-      {
-         get;
-         set;
-      }
+      public Theme Theme { get; set; } = Theme.Light;
    }
 
-   [Serializable]
    public enum Theme
    {
       Light,
       Dark
+   }
+
+   /// <summary>
+   /// JSON-based settings provider to replace deprecated BinaryFormatter
+   /// </summary>
+   public class JsonSettingsProvider
+   {
+      private readonly string _settingsDirectory;
+      private readonly JsonSerializerOptions _jsonOptions;
+
+      public JsonSettingsProvider()
+      {
+         _settingsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NinetyNine");
+         _jsonOptions = new JsonSerializerOptions
+         {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+         };
+
+         Directory.CreateDirectory(_settingsDirectory);
+      }
+
+      public T Load<T>() where T : new()
+      {
+         var fileName = $"{typeof(T).Name}.json";
+         var filePath = Path.Combine(_settingsDirectory, fileName);
+
+         if (!File.Exists(filePath))
+         {
+            return new T();
+         }
+
+         try
+         {
+            var json = File.ReadAllText(filePath);
+            return JsonSerializer.Deserialize<T>(json, _jsonOptions) ?? new T();
+         }
+         catch (Exception ex)
+         {
+            Console.WriteLine($"Error loading settings: {ex.Message}");
+            return new T();
+         }
+      }
+
+      public void Save<T>(T settings)
+      {
+         var fileName = $"{typeof(T).Name}.json";
+         var filePath = Path.Combine(_settingsDirectory, fileName);
+
+         try
+         {
+            var json = JsonSerializer.Serialize(settings, _jsonOptions);
+            File.WriteAllText(filePath, json);
+         }
+         catch (Exception ex)
+         {
+            Console.WriteLine($"Error saving settings: {ex.Message}");
+         }
+      }
    }
 }
