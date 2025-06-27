@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NinetyNine.Model;
@@ -7,6 +8,7 @@ namespace Services.Controllers;
 [ApiController]
 [ApiVersion("0.0")]
 [Route("api/{v:apiVersion}/[controller]")]
+[Authorize]
 public class GamesController : ControllerBase
 {
     private readonly NinetyNineContext _context;
