@@ -45,14 +45,15 @@ public class GamesController : ControllerBase
             return BadRequest();
         }
 
-        var oldGame = await _context.Games.FindAsync(id);
+        var existingGame = await _context.Games.FindAsync(id);
 
-        if (oldGame == null)
+        if (existingGame == null)
         {
             return NotFound();
         }
 
-        oldGame = game;
+        // Update properties from the incoming game object
+        _context.Entry(existingGame).CurrentValues.SetValues(game);
 
         try
         {

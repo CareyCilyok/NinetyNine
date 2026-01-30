@@ -13,6 +13,7 @@ namespace NinetyNine.Presentation.ViewModels
         private readonly IVenueService _venueService;
         private readonly IStatisticsService _statisticsService;
         private Venue? _selectedVenue;
+        private Venue? _venueBackup;
         private VenueStatistics? _selectedVenueStatistics;
         private bool _isLoading;
         private bool _isEditing;
@@ -275,6 +276,16 @@ namespace NinetyNine.Presentation.ViewModels
         {
             if (SelectedVenue != null)
             {
+                // Create backup of the venue before editing
+                _venueBackup = new Venue
+                {
+                    VenueId = SelectedVenue.VenueId,
+                    Name = SelectedVenue.Name,
+                    Address = SelectedVenue.Address,
+                    PhoneNumber = SelectedVenue.PhoneNumber,
+                    Private = SelectedVenue.Private
+                };
+
                 IsEditing = true;
                 this.RaisePropertyChanged(nameof(IsVenueDetailsVisible));
                 this.RaisePropertyChanged(nameof(IsVenueFormVisible));
@@ -326,8 +337,22 @@ namespace NinetyNine.Presentation.ViewModels
             }
             else if (IsEditing)
             {
+                // Revert changes from backup
+                if (_venueBackup != null && SelectedVenue != null)
+                {
+                    SelectedVenue.Name = _venueBackup.Name;
+                    SelectedVenue.Address = _venueBackup.Address;
+                    SelectedVenue.PhoneNumber = _venueBackup.PhoneNumber;
+                    SelectedVenue.Private = _venueBackup.Private;
+
+                    _venueBackup = null;
+
+                    // Notify property changes
+                    this.RaisePropertyChanged(nameof(SelectedVenue));
+                    this.RaisePropertyChanged(nameof(EditingVenue));
+                }
+
                 IsEditing = false;
-                // TODO: Revert changes to selected venue
             }
 
             this.RaisePropertyChanged(nameof(IsVenueDetailsVisible));

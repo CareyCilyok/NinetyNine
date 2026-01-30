@@ -20,24 +20,85 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using NinetyNine.Model;
 
 namespace NinetyNine.Presentation.Services
 {
     /// <summary>
-    /// Service for managing venues and location data
+    /// Service for managing venues and location data with file-based persistence
     /// </summary>
     public class VenueService : IVenueService
     {
-        private readonly List<Venue> _venues;
+        private List<Venue> _venues;
         private readonly Random _random;
+        private readonly string _venuesFilePath;
+        private bool _isLoaded;
 
         public VenueService()
         {
             _random = new Random();
-            _venues = GenerateMockVenues();
+            _venues = new List<Venue>();
+
+            // Use application data folder for persistent storage
+            var appDataPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "NinetyNine");
+
+            if (!Directory.Exists(appDataPath))
+            {
+                Directory.CreateDirectory(appDataPath);
+            }
+
+            _venuesFilePath = Path.Combine(appDataPath, "venues.json");
+        }
+
+        private async Task EnsureLoadedAsync()
+        {
+            if (_isLoaded) return;
+
+            try
+            {
+                if (File.Exists(_venuesFilePath))
+                {
+                    var json = await File.ReadAllTextAsync(_venuesFilePath);
+                    var loaded = JsonSerializer.Deserialize<List<Venue>>(json, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    _venues = loaded ?? GenerateMockVenues();
+                }
+                else
+                {
+                    _venues = GenerateMockVenues();
+                    await SaveVenuesAsync();
+                }
+            }
+            catch
+            {
+                _venues = GenerateMockVenues();
+            }
+
+            _isLoaded = true;
+        }
+
+        private async Task SaveVenuesAsync()
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(_venues, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+                await File.WriteAllTextAsync(_venuesFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error saving venues: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -45,7 +106,8 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<List<Venue>> GetAllVenuesAsync()
         {
-            return await Task.FromResult(_venues.ToList());
+            await EnsureLoadedAsync();
+            return _venues.ToList();
         }
 
         /// <summary>
@@ -53,8 +115,8 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<Venue?> GetVenueByIdAsync(Guid venueId)
         {
-            var venue = _venues.FirstOrDefault(v => v.VenueId == venueId);
-            return await Task.FromResult(venue);
+            await EnsureLoadedAsync();
+            return _venues.FirstOrDefault(v => v.VenueId == venueId);
         }
 
         /// <summary>
@@ -62,9 +124,11 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<Venue> CreateVenueAsync(Venue venue)
         {
+            await EnsureLoadedAsync();
             venue.VenueId = Guid.NewGuid();
             _venues.Add(venue);
-            return await Task.FromResult(venue);
+            await SaveVenuesAsync();
+            return venue;
         }
 
         /// <summary>
@@ -72,13 +136,15 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<Venue> UpdateVenueAsync(Venue venue)
         {
+            await EnsureLoadedAsync();
             var existingVenue = _venues.FirstOrDefault(v => v.VenueId == venue.VenueId);
             if (existingVenue != null)
             {
                 var index = _venues.IndexOf(existingVenue);
                 _venues[index] = venue;
+                await SaveVenuesAsync();
             }
-            return await Task.FromResult(venue);
+            return venue;
         }
 
         /// <summary>
@@ -86,13 +152,15 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<bool> DeleteVenueAsync(Guid venueId)
         {
+            await EnsureLoadedAsync();
             var venue = _venues.FirstOrDefault(v => v.VenueId == venueId);
             if (venue != null)
             {
                 _venues.Remove(venue);
-                return await Task.FromResult(true);
+                await SaveVenuesAsync();
+                return true;
             }
-            return await Task.FromResult(false);
+            return false;
         }
 
         /// <summary>
@@ -100,14 +168,44 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<VenueStatistics> GetVenueStatisticsAsync(Guid venueId)
         {
+            await EnsureLoadedAsync();
             var venue = _venues.FirstOrDefault(v => v.VenueId == venueId);
             if (venue == null)
             {
-                return await Task.FromResult(new VenueStatistics());
+                return new VenueStatistics();
             }
 
-            // Mock statistics
-            var stats = new VenueStatistics
+            // Use game service to get real statistics
+            var gameService = new GameService();
+            var allGames = await gameService.GetAllGamesAsync();
+            var venueGames = allGames.Where(g => g.VenueId == venueId).ToList();
+
+            if (venueGames.Any())
+            {
+                var completedGames = venueGames.Where(g => g.IsCompleted).ToList();
+                var stats = new VenueStatistics
+                {
+                    TotalGamesPlayed = venueGames.Count,
+                    AverageScore = completedGames.Any() ? completedGames.Average(g => g.TotalScore) : 0,
+                    UniquePlayersCount = venueGames.Select(g => g.PlayerId).Distinct().Count(),
+                    FirstGameDate = venueGames.Min(g => g.WhenPlayed),
+                    LastGameDate = venueGames.Max(g => g.WhenPlayed)
+                };
+
+                // Calculate table usage from actual data
+                foreach (var game in venueGames)
+                {
+                    if (stats.TableUsage.ContainsKey(game.TableSize))
+                        stats.TableUsage[game.TableSize]++;
+                    else
+                        stats.TableUsage[game.TableSize] = 1;
+                }
+
+                return stats;
+            }
+
+            // Return mock statistics if no games found
+            var mockStats = new VenueStatistics
             {
                 TotalGamesPlayed = _random.Next(20, 100),
                 AverageScore = _random.Next(60, 85) + _random.NextDouble(),
@@ -116,12 +214,11 @@ namespace NinetyNine.Presentation.Services
                 LastGameDate = DateTime.Now.AddDays(-_random.Next(0, 7))
             };
 
-            // Mock table usage
-            stats.TableUsage[TableSize.SevenFoot] = _random.Next(0, 20);
-            stats.TableUsage[TableSize.NineFoot] = _random.Next(10, 40);
-            stats.TableUsage[TableSize.TenFoot] = _random.Next(0, 15);
+            mockStats.TableUsage[TableSize.SevenFoot] = _random.Next(0, 20);
+            mockStats.TableUsage[TableSize.NineFoot] = _random.Next(10, 40);
+            mockStats.TableUsage[TableSize.TenFoot] = _random.Next(0, 15);
 
-            return await Task.FromResult(stats);
+            return mockStats;
         }
 
         /// <summary>
@@ -129,18 +226,32 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<List<PopularVenue>> GetPopularVenuesAsync(int limit = 10)
         {
-            var popularVenues = _venues.Take(limit).Select(venue => new PopularVenue
-            {
-                VenueId = venue.VenueId,
-                Name = venue.Name,
-                Address = venue.Address ?? "Address not available",
-                TotalGames = _random.Next(20, 100),
-                AverageScore = _random.Next(60, 85) + _random.NextDouble(),
-                UniquePlayersCount = _random.Next(5, 25),
-                LastGameDate = DateTime.Now.AddDays(-_random.Next(0, 30))
-            }).OrderByDescending(v => v.TotalGames).ToList();
+            await EnsureLoadedAsync();
 
-            return await Task.FromResult(popularVenues);
+            // Try to get real stats from game service
+            var gameService = new GameService();
+            var allGames = await gameService.GetAllGamesAsync();
+
+            var popularVenues = _venues.Select(venue => {
+                var venueGames = allGames.Where(g => g.VenueId == venue.VenueId).ToList();
+                var completedGames = venueGames.Where(g => g.IsCompleted).ToList();
+
+                return new PopularVenue
+                {
+                    VenueId = venue.VenueId,
+                    Name = venue.Name,
+                    Address = venue.Address ?? "Address not available",
+                    TotalGames = venueGames.Any() ? venueGames.Count : _random.Next(20, 100),
+                    AverageScore = completedGames.Any() ? completedGames.Average(g => g.TotalScore) : _random.Next(60, 85) + _random.NextDouble(),
+                    UniquePlayersCount = venueGames.Any() ? venueGames.Select(g => g.PlayerId).Distinct().Count() : _random.Next(5, 25),
+                    LastGameDate = venueGames.Any() ? venueGames.Max(g => g.WhenPlayed) : DateTime.Now.AddDays(-_random.Next(0, 30))
+                };
+            })
+            .OrderByDescending(v => v.TotalGames)
+            .Take(limit)
+            .ToList();
+
+            return popularVenues;
         }
 
         /// <summary>
@@ -148,17 +259,19 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<List<Venue>> SearchVenuesAsync(string searchTerm)
         {
+            await EnsureLoadedAsync();
+
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
                 return await GetAllVenuesAsync();
             }
 
-            var results = _venues.Where(v => 
+            var results = _venues.Where(v =>
                 v.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                 (v.Address?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
             ).ToList();
 
-            return await Task.FromResult(results);
+            return results;
         }
 
         #region Private Methods

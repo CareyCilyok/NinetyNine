@@ -12,6 +12,7 @@ namespace NinetyNine.Presentation.ViewModels
     {
         private readonly IStatisticsService _statisticsService;
         private Player _currentPlayer;
+        private Player? _playerBackup;
         private PlayerStatistics? _playerStatistics;
         private bool _isEditing;
         private bool _isLoading;
@@ -182,6 +183,20 @@ namespace NinetyNine.Presentation.ViewModels
 
         private void ToggleEditMode()
         {
+            if (!IsEditing)
+            {
+                // Entering edit mode - create backup of current player
+                _playerBackup = new Player
+                {
+                    PlayerId = CurrentPlayer.PlayerId,
+                    FirstName = CurrentPlayer.FirstName,
+                    LastName = CurrentPlayer.LastName,
+                    Username = CurrentPlayer.Username,
+                    EmailAddress = CurrentPlayer.EmailAddress,
+                    PhoneNumber = CurrentPlayer.PhoneNumber,
+                    MiddleName = CurrentPlayer.MiddleName
+                };
+            }
             IsEditing = !IsEditing;
         }
 
@@ -190,12 +205,26 @@ namespace NinetyNine.Presentation.ViewModels
             try
             {
                 IsLoading = true;
-                
-                // TODO: Implement actual save to repository
-                await Task.Delay(500); // Simulate API call
-                
+
+                // Save to local storage (JSON file)
+                var profilePath = GetProfilePath();
+                var json = System.Text.Json.JsonSerializer.Serialize(CurrentPlayer, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                var directory = System.IO.Path.GetDirectoryName(profilePath);
+                if (!string.IsNullOrEmpty(directory) && !System.IO.Directory.Exists(directory))
+                {
+                    System.IO.Directory.CreateDirectory(directory);
+                }
+
+                await System.IO.File.WriteAllTextAsync(profilePath, json);
+
+                // Clear backup after successful save
+                _playerBackup = null;
                 IsEditing = false;
-                
+
                 // Notify property changes
                 this.RaisePropertyChanged(nameof(PlayerName));
             }
@@ -211,8 +240,30 @@ namespace NinetyNine.Presentation.ViewModels
 
         private void CancelEdit()
         {
-            // TODO: Revert any changes
+            // Revert to backup if available
+            if (_playerBackup != null)
+            {
+                CurrentPlayer.FirstName = _playerBackup.FirstName;
+                CurrentPlayer.LastName = _playerBackup.LastName;
+                CurrentPlayer.Username = _playerBackup.Username;
+                CurrentPlayer.EmailAddress = _playerBackup.EmailAddress;
+                CurrentPlayer.PhoneNumber = _playerBackup.PhoneNumber;
+                CurrentPlayer.MiddleName = _playerBackup.MiddleName;
+
+                _playerBackup = null;
+
+                // Notify property changes
+                this.RaisePropertyChanged(nameof(CurrentPlayer));
+                this.RaisePropertyChanged(nameof(PlayerName));
+            }
+
             IsEditing = false;
+        }
+
+        private string GetProfilePath()
+        {
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            return System.IO.Path.Combine(appData, "NinetyNine", "Profiles", $"{CurrentPlayer.PlayerId}.json");
         }
 
         private async Task RefreshDataAsync()

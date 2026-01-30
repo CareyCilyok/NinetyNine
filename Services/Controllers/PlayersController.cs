@@ -45,14 +45,15 @@ public class PlayersController : ControllerBase
             return BadRequest();
         }
 
-        var oldPlayer= await _context.Players.FindAsync(id);
+        var existingPlayer = await _context.Players.FindAsync(id);
 
-        if (oldPlayer == null)
+        if (existingPlayer == null)
         {
             return NotFound();
         }
 
-        oldPlayer = player;
+        // Update properties from the incoming player object
+        _context.Entry(existingPlayer).CurrentValues.SetValues(player);
 
         try
         {

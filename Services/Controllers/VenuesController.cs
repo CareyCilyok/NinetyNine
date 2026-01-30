@@ -45,14 +45,15 @@ public class VenuesController : ControllerBase
             return BadRequest();
         }
 
-        var oldVenue= await _context.Venues.FindAsync(id);
+        var existingVenue = await _context.Venues.FindAsync(id);
 
-        if (oldVenue == null)
+        if (existingVenue == null)
         {
             return NotFound();
         }
 
-        oldVenue = venue;
+        // Update properties from the incoming venue object
+        _context.Entry(existingVenue).CurrentValues.SetValues(venue);
 
         try
         {

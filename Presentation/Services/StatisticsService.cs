@@ -31,11 +31,37 @@ namespace NinetyNine.Presentation.Services
     /// </summary>
     public class StatisticsService : IStatisticsService
     {
-        private readonly List<Game> _mockGames;
+        private readonly GameService _gameService;
+        private List<Game>? _cachedGames;
 
         public StatisticsService()
         {
-            _mockGames = GenerateMockGameData();
+            _gameService = new GameService();
+        }
+
+        public StatisticsService(GameService gameService)
+        {
+            _gameService = gameService;
+        }
+
+        private async Task<List<Game>> GetGamesAsync()
+        {
+            if (_cachedGames == null)
+            {
+                _cachedGames = await _gameService.GetAllGamesAsync();
+
+                // If no games found, generate mock data for demo purposes
+                if (_cachedGames.Count == 0)
+                {
+                    _cachedGames = GenerateMockGameData();
+                }
+            }
+            return _cachedGames;
+        }
+
+        public void InvalidateCache()
+        {
+            _cachedGames = null;
         }
 
         /// <summary>
@@ -43,7 +69,8 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<PlayerStatistics> GetPlayerStatisticsAsync(Guid playerId)
         {
-            var playerGames = _mockGames.Where(g => g.PlayerId == playerId).ToList();
+            var allGames = await GetGamesAsync();
+            var playerGames = allGames.Where(g => g.PlayerId == playerId).ToList();
             
             if (!playerGames.Any())
             {
@@ -103,13 +130,14 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<List<Game>> GetRecentGamesAsync(Guid playerId, int limit = 10)
         {
-            var recentGames = _mockGames
+            var allGames = await GetGamesAsync();
+            var recentGames = allGames
                 .Where(g => g.PlayerId == playerId)
                 .OrderByDescending(g => g.WhenPlayed)
                 .Take(limit)
                 .ToList();
 
-            return await Task.FromResult(recentGames);
+            return recentGames;
         }
 
         /// <summary>
@@ -117,7 +145,8 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<VenueStatistics> GetVenueStatisticsAsync(Guid venueId)
         {
-            var venueGames = _mockGames.Where(g => g.VenueId == venueId).ToList();
+            var allGames = await GetGamesAsync();
+            var venueGames = allGames.Where(g => g.VenueId == venueId).ToList();
             
             if (!venueGames.Any())
             {
@@ -150,7 +179,8 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<List<LeaderboardEntry>> GetLeaderboardAsync(int limit = 10)
         {
-            var playerStats = _mockGames
+            var allGames = await GetGamesAsync();
+            var playerStats = allGames
                 .Where(g => g.IsCompleted)
                 .GroupBy(g => g.PlayerId)
                 .Select(group => new LeaderboardEntry
@@ -180,7 +210,8 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         public async Task<FrameAnalysis> GetFrameAnalysisAsync(Guid playerId)
         {
-            var playerGames = _mockGames.Where(g => g.PlayerId == playerId && g.IsCompleted).ToList();
+            var allGames = await GetGamesAsync();
+            var playerGames = allGames.Where(g => g.PlayerId == playerId && g.IsCompleted).ToList();
             var allFrames = playerGames.SelectMany(g => g.Frames).Where(f => f.IsCompleted).ToList();
 
             if (!allFrames.Any())
@@ -224,7 +255,8 @@ namespace NinetyNine.Presentation.Services
         public async Task<List<ProgressDataPoint>> GetProgressDataAsync(Guid playerId, int days = 30)
         {
             var cutoffDate = DateTime.Now.AddDays(-days);
-            var recentGames = _mockGames
+            var allGames = await GetGamesAsync();
+            var recentGames = allGames
                 .Where(g => g.PlayerId == playerId && g.WhenPlayed >= cutoffDate && g.IsCompleted)
                 .OrderBy(g => g.WhenPlayed)
                 .ToList();
