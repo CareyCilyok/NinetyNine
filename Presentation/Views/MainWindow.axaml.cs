@@ -1,6 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+#if DEBUG
+using Avalonia.Diagnostics;
+#endif
 
 namespace NinetyNine.Presentation.Views
 {

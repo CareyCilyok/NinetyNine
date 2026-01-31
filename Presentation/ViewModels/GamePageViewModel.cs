@@ -47,9 +47,6 @@ namespace NinetyNine.Presentation.ViewModels
             _gameService.CurrentGameChanged += OnCurrentGameChanged;
             _gameService.FrameCompleted += OnFrameCompleted;
             _gameService.GameCompleted += OnGameCompleted;
-
-            // Initialize with some demo data
-            InitializeDemoGame();
         }
 
         #region Properties
@@ -301,12 +298,6 @@ namespace NinetyNine.Presentation.ViewModels
                     FrameViewModels.Add(viewModel);
                 }
             }
-        }
-
-        private async void InitializeDemoGame()
-        {
-            // Create a demo game for testing
-            await CreateNewGameAsync();
         }
 
         #endregion

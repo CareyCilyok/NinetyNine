@@ -39,10 +39,22 @@ namespace NinetyNine.Presentation.Tests
         }
 
         [Fact]
-        public async Task NewGame_Initializes9Frames()
+        public void Constructor_WithNoGame_HasNoFrames()
+        {
+            // Arrange & Act
+            var viewModel = new GamePageViewModel(_mockGameService.Object, _mockCelebrationService.Object);
+
+            // Assert - No game on startup, so no frames
+            viewModel.FrameViewModels.Should().BeEmpty();
+            viewModel.IsGameInProgress.Should().BeFalse();
+        }
+
+        [Fact]
+        public void NewGameCommand_Initializes9Frames()
         {
             // Arrange
             var game = CreateGameWith9Frames();
+            game.GameState = GameState.InProgress;
             _mockGameService.Setup(x => x.CreateNewGameAsync(
                 It.IsAny<Player>(),
                 It.IsAny<Venue>(),
@@ -55,11 +67,12 @@ namespace NinetyNine.Presentation.Tests
 
             var viewModel = new GamePageViewModel(_mockGameService.Object, _mockCelebrationService.Object);
 
-            // Act - Give time for initialization
-            await Task.Delay(100);
+            // Act - User clicks "New Game" (subscribe to execute the command)
+            viewModel.NewGameCommand.Execute().Subscribe();
 
             // Assert
             viewModel.FrameViewModels.Should().HaveCount(9);
+            viewModel.IsGameInProgress.Should().BeTrue();
         }
 
         [Fact]
