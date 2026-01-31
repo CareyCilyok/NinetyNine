@@ -49,8 +49,7 @@
                     Content="-"
                     Width="18" Height="22"
                     FontSize="12"
-                    Padding="0"
-                    IsEnabled="{Binding CanEdit}"/>
+                    Padding="0"/>
             <TextBlock Text="{Binding BreakBonus}"
                        VerticalAlignment="Center"
                        HorizontalAlignment="Center"
@@ -63,8 +62,7 @@
                     Content="+"
                     Width="18" Height="22"
                     FontSize="12"
-                    Padding="0"
-                    IsEnabled="{Binding CanEdit}"/>
+                    Padding="0"/>
          </StackPanel>
 
          <!-- Ball Count Section -->
@@ -73,8 +71,7 @@
                     Content="-"
                     Width="18" Height="22"
                     FontSize="12"
-                    Padding="0"
-                    IsEnabled="{Binding CanEdit}"/>
+                    Padding="0"/>
             <TextBlock Text="{Binding BallCount}"
                        VerticalAlignment="Center"
                        HorizontalAlignment="Center"
@@ -87,8 +84,7 @@
                     Content="+"
                     Width="18" Height="22"
                     FontSize="12"
-                    Padding="0"
-                    IsEnabled="{Binding CanEdit}"/>
+                    Padding="0"/>
          </StackPanel>
 
          <!-- Labels -->

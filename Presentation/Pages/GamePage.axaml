@@ -118,7 +118,7 @@
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                      <DataTemplate>
-                        <controls:FrameControl DataContext="{Binding}"/>
+                        <controls:FrameControl/>
                      </DataTemplate>
                   </ItemsControl.ItemTemplate>
                </ItemsControl>
