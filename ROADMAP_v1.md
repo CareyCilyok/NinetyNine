@@ -10,19 +10,21 @@ See `README.md` for complete game rules.
 
 ---
 
-## Milestone A — Play + Save
+## Milestone A — Play + Save ✅ COMPLETE
 
 **Goal**: A single player can complete a game and have it persist.
 
-- [ ] Default player profile created on first launch (single profile, no multi-user)
-- [ ] Player profile loaded automatically on subsequent launches
-- [ ] New games use the persisted player ID
-- [ ] Completed games persist locally via **StorageService abstraction**
+- [x] Default player profile created on first launch (single profile, no multi-user)
+- [x] Player profile loaded automatically on subsequent launches
+- [x] New games use the persisted player ID
+- [x] Completed games persist locally via **StorageService abstraction**
   - Default location: `%APPDATA%\NinetyNine\` on Windows
-- [ ] Resume most recent in-progress game on app launch
+- [x] Resume most recent in-progress game on app launch
   - "Resume" = restore active frame number + completed frame scores + running total
 
 **Done gate**: Start game → complete 2 frames → close app → reopen → resume game → finish → game saved.
+
+**Commit**: `91cfee0` (2026-01-31)
 
 ---
 

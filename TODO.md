@@ -28,11 +28,11 @@
 
 Tracks `ROADMAP_v1.md` milestones. Complete in order.
 
-### Milestone A — Play + Save
-- [ ] Default player profile created/loaded on launch
-- [ ] New games use persisted player ID
-- [ ] Completed games persist via StorageService
-- [ ] Resume most recent in-progress game
+### Milestone A — Play + Save ✅
+- [x] Default player profile created/loaded on launch
+- [x] New games use persisted player ID
+- [x] Completed games persist via StorageService
+- [x] Resume most recent in-progress game
 
 ### Milestone B — Stats Are Real
 - [ ] Statistics pulls from persisted games
