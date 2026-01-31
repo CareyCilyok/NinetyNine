@@ -9,9 +9,7 @@
              x:Class="NinetyNine.Presentation.Pages.GamePage"
              Background="{DynamicResource BackgroundDeepBrush}">
 
-   <UserControl.DataContext>
-      <vm:GamePageViewModel/>
-   </UserControl.DataContext>
+   <!-- DataContext is provided by MainView navigation -->
 
    <Grid Margin="16">
       <Grid.RowDefinitions>

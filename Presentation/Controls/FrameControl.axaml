@@ -8,9 +8,7 @@
              Background="{Binding BackgroundBrush}"
              ToolTip.Tip="{Binding ToolTipText}">
 
-   <UserControl.DataContext>
-      <vm:FrameControlViewModel/>
-   </UserControl.DataContext>
+   <!-- DataContext is inherited from parent ItemsControl DataTemplate binding -->
 
    <Border BorderBrush="{Binding BorderBrush}"
            BorderThickness="2"

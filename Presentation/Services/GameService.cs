@@ -138,6 +138,16 @@ namespace NinetyNine.Presentation.Services
 
                 if (game != null)
                 {
+                    // Restore IsActive state (not serialized due to [JsonIgnore])
+                    if (game.IsInProgress)
+                    {
+                        var currentFrame = game.Frames.FirstOrDefault(f => f.FrameNumber == game.CurrentFrameNumber);
+                        if (currentFrame != null)
+                        {
+                            currentFrame.IsActive = true;
+                        }
+                    }
+
                     _gameCache[gameId] = game;
                     CurrentGame = game;
                 }
@@ -170,6 +180,16 @@ namespace NinetyNine.Presentation.Services
                     });
                     if (game != null)
                     {
+                        // Restore IsActive state (not serialized due to [JsonIgnore])
+                        if (game.IsInProgress)
+                        {
+                            var currentFrame = game.Frames.FirstOrDefault(f => f.FrameNumber == game.CurrentFrameNumber);
+                            if (currentFrame != null)
+                            {
+                                currentFrame.IsActive = true;
+                            }
+                        }
+
                         games.Add(game);
                         _gameCache[game.GameId] = game;
                     }
