@@ -49,12 +49,6 @@ namespace NinetyNine.Presentation.Services
             if (_cachedGames == null)
             {
                 _cachedGames = await _gameService.GetAllGamesAsync();
-
-                // If no games found, generate mock data for demo purposes
-                if (_cachedGames.Count == 0)
-                {
-                    _cachedGames = GenerateMockGameData();
-                }
             }
             return _cachedGames;
         }

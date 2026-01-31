@@ -73,6 +73,11 @@ namespace NinetyNine.Presentation.Services
         /// <param name="days">Number of days to look back</param>
         /// <returns>Progress data points</returns>
         Task<List<ProgressDataPoint>> GetProgressDataAsync(Guid playerId, int days = 30);
+
+        /// <summary>
+        /// Invalidates the internal cache to force fresh data on next query
+        /// </summary>
+        void InvalidateCache();
     }
 
     /// <summary>
