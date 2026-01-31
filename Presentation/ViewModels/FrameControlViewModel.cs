@@ -316,6 +316,9 @@ namespace NinetyNine.Presentation.ViewModels
                         _celebrationService?.TriggerPerfectFrame(FrameNumber);
                     }
                 };
+
+                // Initialize computed properties with current frame state
+                RefreshAll();
             }
         }
 
