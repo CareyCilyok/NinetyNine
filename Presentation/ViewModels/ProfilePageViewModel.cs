@@ -40,10 +40,16 @@ namespace NinetyNine.Presentation.ViewModels
             CancelEditCommand = ReactiveCommand.Create(CancelEdit,
                 this.WhenAnyValue(x => x.IsEditing));
             RefreshDataCommand = ReactiveCommand.CreateFromTask(RefreshDataAsync);
+            ExportDataCommand = ReactiveCommand.CreateFromTask(ExportDataAsync);
 
             // Load initial data
             _ = InitializeAndRefreshAsync();
         }
+
+        /// <summary>
+        /// App version text
+        /// </summary>
+        public string VersionText => "Version 1.0.0";
 
         #region Properties
 
@@ -180,6 +186,7 @@ namespace NinetyNine.Presentation.ViewModels
         public ReactiveCommand<Unit, Unit> SaveProfileCommand { get; }
         public ReactiveCommand<Unit, Unit> CancelEditCommand { get; }
         public ReactiveCommand<Unit, Unit> RefreshDataCommand { get; }
+        public ReactiveCommand<Unit, Unit> ExportDataCommand { get; }
 
         #endregion
 
@@ -270,6 +277,50 @@ namespace NinetyNine.Presentation.ViewModels
             }
 
             IsEditing = false;
+        }
+
+        private async Task ExportDataAsync()
+        {
+            try
+            {
+                IsLoading = true;
+
+                // Get all games
+                var recentGames = await _statisticsService.GetRecentGamesAsync(CurrentPlayer.PlayerId, 1000);
+
+                // Create export object
+                var exportData = new
+                {
+                    ExportDate = DateTime.Now,
+                    Version = "1.0.0",
+                    Player = CurrentPlayer,
+                    Statistics = PlayerStatistics,
+                    Games = recentGames
+                };
+
+                // Serialize to JSON
+                var json = System.Text.Json.JsonSerializer.Serialize(exportData, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                // Save to Documents folder
+                var documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                var fileName = $"NinetyNine_Export_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+                var filePath = System.IO.Path.Combine(documentsPath, fileName);
+
+                await System.IO.File.WriteAllTextAsync(filePath, json);
+
+                System.Diagnostics.Debug.WriteLine($"Data exported to: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error exporting data: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private async Task RefreshDataAsync()
