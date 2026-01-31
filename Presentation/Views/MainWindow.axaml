@@ -7,7 +7,7 @@
 		  x:Name="win"
 		  x:Class="NinetyNine.Presentation.Views.MainWindow"
 		  TransparencyLevelHint="None"
-        Background="{DynamicResource BackgroundDeepBrush}"
+        Background="#0D0D12"
 		  WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
         Icon="avares://Presentation/Assets/png/globe-americas-solid.png"
@@ -17,20 +17,9 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="0"
         Title="NinetyNine Score Keeper"
-        TransparencyBackgroundFallback="{DynamicResource BackgroundDeepBrush}"
+        TransparencyBackgroundFallback="#0D0D12"
         Classes="us_c">
-   <Grid Margin="{Binding #win.OffScreenMargin}" >
+   <Grid Margin="{Binding #win.OffScreenMargin}">
       <vw:MainView/>
-
-      <Border Name="DragBorder"
-              Background="Transparent"
-              VerticalAlignment="Top"
-              Height="19"/>
-      <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
-         <StackPanel.Styles>
-            <Style Selector="ComboBox">
-            </Style>
-         </StackPanel.Styles>
-      </StackPanel>
    </Grid>
 </Window>

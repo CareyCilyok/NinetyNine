@@ -13,10 +13,6 @@ namespace NinetyNine.Presentation.Views
 #if DEBUG
          this.AttachDevTools();
 #endif
-         DragBorder.PointerPressed += (s, e) =>
-         {
-            BeginMoveDrag(e);
-         };
       }
    }
 }
