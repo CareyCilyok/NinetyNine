@@ -43,7 +43,7 @@ namespace NinetyNine.Presentation.ViewModels
         public FrameControlViewModel(ICelebrationService? celebrationService)
         {
             _celebrationService = celebrationService;
-            // Initialize commands
+            // Initialize commands with canExecute based on CanEdit/CanReset
             IncrementBreakBonusCommand = ReactiveCommand.Create(IncrementBreakBonus, this.WhenAnyValue(x => x.CanEdit));
             DecrementBreakBonusCommand = ReactiveCommand.Create(DecrementBreakBonus, this.WhenAnyValue(x => x.CanEdit));
             IncrementBallCountCommand = ReactiveCommand.Create(IncrementBallCount, this.WhenAnyValue(x => x.CanEdit));

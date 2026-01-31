@@ -16,6 +16,7 @@ namespace NinetyNine.Presentation.ViewModels
         private readonly ICelebrationService _celebrationService;
         private Game? _currentGame;
         private Game? _inProgressGame;
+        private Frame? _subscribedFrame;
         private string _playerName = "Player 1";
         private string _venueName = "Home Table";
         private TableSize _selectedTableSize = TableSize.NineFoot;
@@ -107,12 +108,20 @@ namespace NinetyNine.Presentation.ViewModels
             {
                 this.RaiseAndSetIfChanged(ref _currentGame, value);
                 UpdateFrameViewModels();
+                WireActiveFrame();
+
                 this.RaisePropertyChanged(nameof(IsGameInProgress));
                 this.RaisePropertyChanged(nameof(IsGameCompleted));
                 this.RaisePropertyChanged(nameof(CurrentFrameNumber));
                 this.RaisePropertyChanged(nameof(TotalScore));
                 this.RaisePropertyChanged(nameof(GameStatus));
                 this.RaisePropertyChanged(nameof(ShowStartPanel));
+
+                // Refresh command predicates
+                this.RaisePropertyChanged(nameof(CanCompleteFrame));
+                this.RaisePropertyChanged(nameof(CanResetFrame));
+                this.RaisePropertyChanged(nameof(CanCompleteGame));
+                this.RaisePropertyChanged(nameof(CanUndoLastFrame));
             }
         }
 
@@ -193,6 +202,21 @@ namespace NinetyNine.Presentation.ViewModels
             new TableSizeItem(TableSize.NineFoot, "9-Foot"),
             new TableSizeItem(TableSize.TenFoot, "10-Foot")
         };
+
+        /// <summary>
+        /// Selected table size item for ComboBox binding
+        /// </summary>
+        public TableSizeItem? SelectedTableSizeItem
+        {
+            get => TableSizes.FirstOrDefault(t => t.Value == _selectedTableSize) ?? TableSizes[1];
+            set
+            {
+                if (value != null)
+                {
+                    SelectedTableSize = value.Value;
+                }
+            }
+        }
 
         /// <summary>
         /// Whether the last frame can be undone
@@ -359,6 +383,10 @@ namespace NinetyNine.Presentation.ViewModels
             try
             {
                 await _gameService.ResetCurrentFrameAsync();
+
+                // Refresh command predicates
+                this.RaisePropertyChanged(nameof(CanCompleteFrame));
+                this.RaisePropertyChanged(nameof(CanResetFrame));
             }
             catch (Exception ex)
             {
@@ -415,7 +443,15 @@ namespace NinetyNine.Presentation.ViewModels
             this.RaisePropertyChanged(nameof(TotalScore));
             this.RaisePropertyChanged(nameof(CurrentFrameNumber));
             this.RaisePropertyChanged(nameof(GameStatus));
+
+            // Wire to new active frame
+            WireActiveFrame();
+
+            // Refresh all command predicates
             this.RaisePropertyChanged(nameof(CanCompleteFrame));
+            this.RaisePropertyChanged(nameof(CanResetFrame));
+            this.RaisePropertyChanged(nameof(CanCompleteGame));
+            this.RaisePropertyChanged(nameof(CanUndoLastFrame));
         }
 
         private void OnGameCompleted(object? sender, Game game)
@@ -449,6 +485,35 @@ namespace NinetyNine.Presentation.ViewModels
                     var viewModel = new FrameControlViewModel(frame, _celebrationService);
                     FrameViewModels.Add(viewModel);
                 }
+            }
+        }
+
+        private void WireActiveFrame()
+        {
+            // Unsubscribe from previous frame
+            if (_subscribedFrame != null)
+            {
+                _subscribedFrame.PropertyChanged -= ActiveFrame_PropertyChanged;
+            }
+
+            // Subscribe to current active frame
+            _subscribedFrame = CurrentGame?.CurrentFrame;
+
+            if (_subscribedFrame != null)
+            {
+                _subscribedFrame.PropertyChanged += ActiveFrame_PropertyChanged;
+            }
+        }
+
+        private void ActiveFrame_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            // When frame values change, refresh command predicates
+            if (e.PropertyName == nameof(Frame.BreakBonus) ||
+                e.PropertyName == nameof(Frame.BallCount) ||
+                e.PropertyName == nameof(Frame.IsActive))
+            {
+                this.RaisePropertyChanged(nameof(CanCompleteFrame));
+                this.RaisePropertyChanged(nameof(CanResetFrame));
             }
         }
 

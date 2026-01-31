@@ -79,7 +79,7 @@
                   <TextBlock Text="Table:" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                   <ComboBox Width="100"
                             ItemsSource="{Binding TableSizes}"
-                            SelectedIndex="1"
+                            SelectedItem="{Binding SelectedTableSizeItem}"
                             DisplayMemberBinding="{Binding DisplayName}"/>
                </StackPanel>
 
