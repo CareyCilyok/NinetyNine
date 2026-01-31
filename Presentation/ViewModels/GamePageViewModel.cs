@@ -52,6 +52,8 @@ namespace NinetyNine.Presentation.ViewModels
                 this.WhenAnyValue(x => x.CanResetFrame));
             CompleteGameCommand = ReactiveCommand.CreateFromTask(CompleteGameAsync,
                 this.WhenAnyValue(x => x.CanCompleteGame));
+            UndoLastFrameCommand = ReactiveCommand.CreateFromTask(UndoLastFrameAsync,
+                this.WhenAnyValue(x => x.CanUndoLastFrame));
 
             // Subscribe to game service events
             _gameService.CurrentGameChanged += OnCurrentGameChanged;
@@ -183,6 +185,24 @@ namespace NinetyNine.Presentation.ViewModels
         }
 
         /// <summary>
+        /// Available table sizes for selection
+        /// </summary>
+        public TableSizeItem[] TableSizes { get; } = new[]
+        {
+            new TableSizeItem(TableSize.SevenFoot, "7-Foot"),
+            new TableSizeItem(TableSize.NineFoot, "9-Foot"),
+            new TableSizeItem(TableSize.TenFoot, "10-Foot")
+        };
+
+        /// <summary>
+        /// Whether the last frame can be undone
+        /// </summary>
+        public bool CanUndoLastFrame =>
+            CurrentGame?.IsInProgress == true &&
+            CurrentGame.CurrentFrameNumber > 1 &&
+            CurrentGame.Frames.Any(f => f.FrameNumber == CurrentGame.CurrentFrameNumber - 1 && f.IsCompleted);
+
+        /// <summary>
         /// Whether a game is currently in progress
         /// </summary>
         public bool IsGameInProgress => CurrentGame?.IsInProgress ?? false;
@@ -267,6 +287,7 @@ namespace NinetyNine.Presentation.ViewModels
         public ReactiveCommand<Unit, Unit> CompleteFrameCommand { get; }
         public ReactiveCommand<Unit, Unit> ResetFrameCommand { get; }
         public ReactiveCommand<Unit, Unit> CompleteGameCommand { get; }
+        public ReactiveCommand<Unit, Unit> UndoLastFrameCommand { get; }
 
         #endregion
 
@@ -357,6 +378,28 @@ namespace NinetyNine.Presentation.ViewModels
             }
         }
 
+        private async Task UndoLastFrameAsync()
+        {
+            if (CurrentGame == null || CurrentGame.CurrentFrameNumber <= 1) return;
+
+            try
+            {
+                await _gameService.UndoLastFrameAsync();
+
+                // Refresh UI
+                UpdateFrameViewModels();
+                this.RaisePropertyChanged(nameof(TotalScore));
+                this.RaisePropertyChanged(nameof(CurrentFrameNumber));
+                this.RaisePropertyChanged(nameof(GameStatus));
+                this.RaisePropertyChanged(nameof(CanCompleteFrame));
+                this.RaisePropertyChanged(nameof(CanUndoLastFrame));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error undoing last frame: {ex.Message}");
+            }
+        }
+
         #endregion
 
         #region Private Methods
@@ -410,5 +453,22 @@ namespace NinetyNine.Presentation.ViewModels
         }
 
         #endregion
+    }
+
+    /// <summary>
+    /// TableSize item for ComboBox binding with display text
+    /// </summary>
+    public class TableSizeItem
+    {
+        public TableSize Value { get; }
+        public string DisplayName { get; }
+
+        public TableSizeItem(TableSize value, string displayName)
+        {
+            Value = value;
+            DisplayName = displayName;
+        }
+
+        public override string ToString() => DisplayName;
     }
 }

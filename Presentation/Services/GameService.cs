@@ -403,5 +403,60 @@ namespace NinetyNine.Presentation.Services
                 .OrderByDescending(g => g.WhenPlayed)
                 .FirstOrDefault();
         }
+
+        /// <summary>
+        /// Undoes the most recently completed frame (reverts to previous frame)
+        /// </summary>
+        /// <returns>True if successful</returns>
+        public async Task<bool> UndoLastFrameAsync()
+        {
+            if (CurrentGame == null || CurrentGame.CurrentFrameNumber <= 1)
+                return false;
+
+            try
+            {
+                // Get the previous frame (the one we want to undo)
+                var previousFrameNumber = CurrentGame.CurrentFrameNumber - 1;
+                var previousFrame = CurrentGame.Frames.FirstOrDefault(f => f.FrameNumber == previousFrameNumber);
+
+                if (previousFrame == null || !previousFrame.IsCompleted)
+                    return false;
+
+                // Get current frame and deactivate it
+                var currentFrame = CurrentGame.CurrentFrame;
+                if (currentFrame != null)
+                {
+                    currentFrame.IsActive = false;
+                }
+
+                // Reset the previous frame
+                previousFrame.IsCompleted = false;
+                previousFrame.IsActive = true;
+                previousFrame.RunningTotal = 0;
+
+                // Decrement the current frame number
+                CurrentGame.CurrentFrameNumber = previousFrameNumber;
+
+                // Recalculate running totals for remaining frames
+                var runningTotal = 0;
+                foreach (var frame in CurrentGame.Frames.Where(f => f.FrameNumber < previousFrameNumber && f.IsCompleted))
+                {
+                    runningTotal += frame.FrameScore;
+                }
+
+                // Save the updated game
+                await SaveCurrentGameAsync();
+
+                // Notify UI of changes
+                CurrentGameChanged?.Invoke(this, CurrentGame);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error undoing last frame: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

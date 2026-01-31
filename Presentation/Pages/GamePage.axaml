@@ -79,11 +79,10 @@
 
                <StackPanel Orientation="Horizontal" Spacing="8">
                   <TextBlock Text="Table:" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                  <ComboBox Width="100" SelectedIndex="1">
-                     <ComboBoxItem Content="7-Foot" Tag="SevenFoot"/>
-                     <ComboBoxItem Content="9-Foot" Tag="NineFoot"/>
-                     <ComboBoxItem Content="10-Foot" Tag="TenFoot"/>
-                  </ComboBox>
+                  <ComboBox Width="100"
+                            ItemsSource="{Binding TableSizes}"
+                            SelectedIndex="1"
+                            DisplayMemberBinding="{Binding DisplayName}"/>
                </StackPanel>
 
                <Button Command="{Binding NewGameCommand}"
@@ -173,6 +172,10 @@
                        Classes="neon-green"
                        Padding="20,10"
                        FontWeight="Bold"/>
+               <Button Command="{Binding UndoLastFrameCommand}"
+                       Content="Undo Last"
+                       Classes="neon-blue"
+                       Padding="20,10"/>
                <Button Command="{Binding ResetFrameCommand}"
                        Content="Reset Frame"
                        Classes="neon-gold"
