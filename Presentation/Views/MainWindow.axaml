@@ -13,9 +13,9 @@
         Icon="avares://Presentation/Assets/png/globe-americas-solid.png"
         MinHeight="500"
         MinWidth="500"
-		  ExtendClientAreaToDecorationsHint="true"
-        ExtendClientAreaChromeHints="PreferSystemChrome"
-        ExtendClientAreaTitleBarHeightHint="-1"
+		  ExtendClientAreaToDecorationsHint="False"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="0"
         Title="NinetyNine Score Keeper"
         TransparencyBackgroundFallback="{DynamicResource BackgroundDeepBrush}"
         Classes="us_c">
