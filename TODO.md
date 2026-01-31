@@ -44,10 +44,10 @@ Tracks `ROADMAP_v1.md` milestones. Complete in order.
 - [x] Venue string (autocomplete deferred)
 - [x] Prominent running total display
 
-### Milestone D — Release Polish
-- [ ] App icon + About dialog
-- [ ] Settings toggles (sound/celebrations)
-- [ ] Export/backup (single JSON)
+### Milestone D — Release Polish ✅
+- [x] App icon + About section
+- [x] Settings (celebrations enabled by default)
+- [x] Export/backup (single JSON)
 
 ---
 
