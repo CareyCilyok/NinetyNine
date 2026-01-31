@@ -8,15 +8,13 @@ namespace NinetyNine.Repository.Tests;
 
 public class LocalContextTests : IDisposable
 {
+    private readonly SqliteTestHelper _helper;
     private readonly LocalContext _context;
 
     public LocalContextTests()
     {
-        var options = new DbContextOptionsBuilder<LocalContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        _context = new LocalContext(options);
+        _helper = new SqliteTestHelper();
+        _context = _helper.CreateContext();
     }
 
     [Fact]
@@ -118,9 +116,11 @@ public class LocalContextTests : IDisposable
         _context.Games.Add(game);
         _context.SaveChanges();
 
-        var retrievedGame = _context.Games
+        // Use a fresh context to ensure we're querying from the database
+        using var freshContext = _helper.CreateFreshContext();
+        var retrievedGame = freshContext.Games
             .Include(g => g.Frames)
-            .FirstOrDefault();
+            .FirstOrDefault(g => g.GameId == game.GameId);
 
         // Assert
         retrievedGame.Should().NotBeNull();
@@ -151,7 +151,9 @@ public class LocalContextTests : IDisposable
         game.GameState = GameState.InProgress;
         _context.SaveChanges();
 
-        var retrievedGame = _context.Games.FirstOrDefault();
+        // Use fresh context to verify persistence
+        using var freshContext = _helper.CreateFreshContext();
+        var retrievedGame = freshContext.Games.FirstOrDefault(g => g.GameId == game.GameId);
 
         // Assert
         retrievedGame.Should().NotBeNull();
@@ -162,9 +164,10 @@ public class LocalContextTests : IDisposable
     public void LocalContext_CanDeleteGame()
     {
         // Arrange
+        var gameId = Guid.NewGuid();
         var game = new Game
         {
-            GameId = Guid.NewGuid(),
+            GameId = gameId,
             WhenPlayed = DateTime.UtcNow
         };
 
@@ -175,14 +178,47 @@ public class LocalContextTests : IDisposable
         _context.Games.Remove(game);
         _context.SaveChanges();
 
-        var retrievedGame = _context.Games.FirstOrDefault();
+        // Use fresh context to verify deletion
+        using var freshContext = _helper.CreateFreshContext();
+        var retrievedGame = freshContext.Games.FirstOrDefault(g => g.GameId == gameId);
 
         // Assert
         retrievedGame.Should().BeNull();
     }
 
+    [Fact]
+    public void LocalContext_DeleteGameCascadesToFrames()
+    {
+        // Arrange
+        var game = new Game
+        {
+            GameId = Guid.NewGuid(),
+            WhenPlayed = DateTime.UtcNow,
+            GameState = GameState.InProgress
+        };
+
+        game.InitializeFrames();
+
+        _context.Games.Add(game);
+        _context.SaveChanges();
+
+        // Verify frames were added
+        var frameCount = _context.Frames.Count(f => f.GameId == game.GameId);
+        frameCount.Should().Be(9);
+
+        // Act - delete the game
+        _context.Games.Remove(game);
+        _context.SaveChanges();
+
+        // Assert - frames should also be deleted (cascade)
+        using var freshContext = _helper.CreateFreshContext();
+        var remainingFrames = freshContext.Frames.Count(f => f.GameId == game.GameId);
+        remainingFrames.Should().Be(0);
+    }
+
     public void Dispose()
     {
         _context.Dispose();
+        _helper.Dispose();
     }
 }
