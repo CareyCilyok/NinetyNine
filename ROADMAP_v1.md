@@ -28,15 +28,17 @@ See `README.md` for complete game rules.
 
 ---
 
-## Milestone B — Stats Are Real
+## Milestone B — Stats Are Real ✅ COMPLETE
 
 **Goal**: Statistics and Profile pages reflect actual persisted games.
 
-- [ ] Statistics page pulls from persisted games (not mock data)
-- [ ] Profile page reflects real totals: games played, average score, highest score
-- [ ] Stats refresh when navigating to page (new games appear immediately)
+- [x] Statistics page pulls from persisted games (not mock data)
+- [x] Profile page reflects real totals: games played, average score, highest score
+- [x] Stats refresh when navigating to page (new games appear immediately)
 
 **Done gate**: Complete 3 games → navigate to Statistics → see all 3 games with correct averages.
+
+**Commit**: `4489013` (2026-01-31)
 
 ---
 

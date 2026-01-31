@@ -34,9 +34,9 @@ Tracks `ROADMAP_v1.md` milestones. Complete in order.
 - [x] Completed games persist via StorageService
 - [x] Resume most recent in-progress game
 
-### Milestone B — Stats Are Real
-- [ ] Statistics pulls from persisted games
-- [ ] Profile reflects real totals
+### Milestone B — Stats Are Real ✅
+- [x] Statistics pulls from persisted games
+- [x] Profile reflects real totals
 
 ### Milestone C — Quality of Life
 - [ ] TableSize ComboBox enum-bound
