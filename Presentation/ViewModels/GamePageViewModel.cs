@@ -285,10 +285,16 @@ namespace NinetyNine.Presentation.ViewModels
         /// <summary>
         /// Whether the current frame can be completed
         /// </summary>
-        public bool CanCompleteFrame =>
-            CurrentGame?.IsInProgress == true &&
-            CurrentGame.CurrentFrame?.IsActive == true &&
-            CurrentGame.CurrentFrame.IsValidScore;
+        public bool CanCompleteFrame
+        {
+            get
+            {
+                if (CurrentGame?.IsInProgress != true) return false;
+                var frame = CurrentGame.CurrentFrame;
+                if (frame == null || !frame.IsActive) return false;
+                return frame.IsValidScore;
+            }
+        }
 
         /// <summary>
         /// Whether the current frame can be reset
