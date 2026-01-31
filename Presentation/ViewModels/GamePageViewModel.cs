@@ -3,7 +3,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using NinetyNine.Model;
 using NinetyNine.Presentation.Services;
 using ReactiveUI;
@@ -13,29 +12,40 @@ namespace NinetyNine.Presentation.ViewModels
     public class GamePageViewModel : ViewModelBase
     {
         private readonly IGameService _gameService;
+        private readonly IPlayerService _playerService;
         private readonly ICelebrationService _celebrationService;
         private Game? _currentGame;
+        private Game? _inProgressGame;
         private string _playerName = "Player 1";
         private string _venueName = "Home Table";
         private TableSize _selectedTableSize = TableSize.NineFoot;
         private bool _showConfetti;
+        private bool _isInitialized;
 
-        public GamePageViewModel() : this(new GameService(), CelebrationService.Instance)
+        public GamePageViewModel() : this(new GameService(), new PlayerService(), CelebrationService.Instance)
         {
         }
 
-        public GamePageViewModel(IGameService gameService) : this(gameService, CelebrationService.Instance)
+        public GamePageViewModel(IGameService gameService) : this(gameService, new PlayerService(), CelebrationService.Instance)
         {
         }
 
         public GamePageViewModel(IGameService gameService, ICelebrationService celebrationService)
+            : this(gameService, new PlayerService(), celebrationService)
+        {
+        }
+
+        public GamePageViewModel(IGameService gameService, IPlayerService playerService, ICelebrationService celebrationService)
         {
             _gameService = gameService;
+            _playerService = playerService;
             _celebrationService = celebrationService;
             FrameViewModels = new ObservableCollection<FrameControlViewModel>();
 
             // Initialize commands
             NewGameCommand = ReactiveCommand.CreateFromTask(CreateNewGameAsync);
+            ResumeGameCommand = ReactiveCommand.CreateFromTask(ResumeInProgressGameAsync,
+                this.WhenAnyValue(x => x.HasInProgressGame));
             CompleteFrameCommand = ReactiveCommand.CreateFromTask(CompleteCurrentFrameAsync,
                 this.WhenAnyValue(x => x.CanCompleteFrame));
             ResetFrameCommand = ReactiveCommand.CreateFromTask(ResetCurrentFrameAsync,
@@ -47,7 +57,41 @@ namespace NinetyNine.Presentation.ViewModels
             _gameService.CurrentGameChanged += OnCurrentGameChanged;
             _gameService.FrameCompleted += OnFrameCompleted;
             _gameService.GameCompleted += OnGameCompleted;
+
+            // Initialize asynchronously
+            _ = InitializeAsync();
         }
+
+        #region Initialization
+
+        private async Task InitializeAsync()
+        {
+            if (_isInitialized) return;
+
+            try
+            {
+                // Initialize player service (loads or creates default player)
+                await _playerService.InitializeAsync();
+
+                // Set player name from persisted profile
+                PlayerName = _playerService.CurrentPlayer.Name;
+
+                // Check for in-progress games
+                var inProgressGame = await _gameService.GetMostRecentInProgressGameAsync();
+                if (inProgressGame != null)
+                {
+                    InProgressGame = inProgressGame;
+                }
+
+                _isInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error initializing GamePageViewModel: {ex.Message}");
+            }
+        }
+
+        #endregion
 
         #region Properties
 
@@ -66,8 +110,45 @@ namespace NinetyNine.Presentation.ViewModels
                 this.RaisePropertyChanged(nameof(CurrentFrameNumber));
                 this.RaisePropertyChanged(nameof(TotalScore));
                 this.RaisePropertyChanged(nameof(GameStatus));
+                this.RaisePropertyChanged(nameof(ShowStartPanel));
             }
         }
+
+        /// <summary>
+        /// An in-progress game that can be resumed
+        /// </summary>
+        public Game? InProgressGame
+        {
+            get => _inProgressGame;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref _inProgressGame, value);
+                this.RaisePropertyChanged(nameof(HasInProgressGame));
+                this.RaisePropertyChanged(nameof(ResumeGameText));
+            }
+        }
+
+        /// <summary>
+        /// Whether there is an in-progress game to resume
+        /// </summary>
+        public bool HasInProgressGame => InProgressGame != null && CurrentGame == null;
+
+        /// <summary>
+        /// Text for the resume game button
+        /// </summary>
+        public string ResumeGameText
+        {
+            get
+            {
+                if (InProgressGame == null) return "Resume Game";
+                return $"Resume Game (Frame {InProgressGame.CurrentFrameNumber}, Score: {InProgressGame.TotalScore})";
+            }
+        }
+
+        /// <summary>
+        /// Whether to show the start panel (no game active)
+        /// </summary>
+        public bool ShowStartPanel => !IsGameInProgress && !IsGameCompleted;
 
         /// <summary>
         /// ViewModels for the 9 frame controls
@@ -160,16 +241,16 @@ namespace NinetyNine.Presentation.ViewModels
         /// <summary>
         /// Whether the current frame can be completed
         /// </summary>
-        public bool CanCompleteFrame => 
-            CurrentGame?.IsInProgress == true && 
+        public bool CanCompleteFrame =>
+            CurrentGame?.IsInProgress == true &&
             CurrentGame.CurrentFrame?.IsActive == true &&
             CurrentGame.CurrentFrame.IsValidScore;
 
         /// <summary>
         /// Whether the current frame can be reset
         /// </summary>
-        public bool CanResetFrame => 
-            CurrentGame?.IsInProgress == true && 
+        public bool CanResetFrame =>
+            CurrentGame?.IsInProgress == true &&
             CurrentGame.CurrentFrame?.IsActive == true;
 
         /// <summary>
@@ -182,6 +263,7 @@ namespace NinetyNine.Presentation.ViewModels
         #region Commands
 
         public ReactiveCommand<Unit, Unit> NewGameCommand { get; }
+        public ReactiveCommand<Unit, Unit> ResumeGameCommand { get; }
         public ReactiveCommand<Unit, Unit> CompleteFrameCommand { get; }
         public ReactiveCommand<Unit, Unit> ResetFrameCommand { get; }
         public ReactiveCommand<Unit, Unit> CompleteGameCommand { get; }
@@ -194,16 +276,42 @@ namespace NinetyNine.Presentation.ViewModels
         {
             try
             {
-                // Create demo player and venue
-                var player = new Player { PlayerId = Guid.NewGuid(), Name = PlayerName };
+                // Use persisted player
+                var player = _playerService.CurrentPlayer;
+
+                // Update player name if changed in UI
+                if (player.Name != PlayerName)
+                {
+                    player.Name = PlayerName;
+                    await _playerService.UpdatePlayerAsync(player);
+                }
+
                 var venue = new Venue { VenueId = Guid.NewGuid(), Name = VenueName };
 
                 await _gameService.CreateNewGameAsync(player, venue, SelectedTableSize);
+
+                // Clear the in-progress game reference since we're starting fresh
+                InProgressGame = null;
             }
             catch (Exception ex)
             {
-                // In a real app, show error dialog
                 System.Diagnostics.Debug.WriteLine($"Error creating new game: {ex.Message}");
+            }
+        }
+
+        private async Task ResumeInProgressGameAsync()
+        {
+            if (InProgressGame == null) return;
+
+            try
+            {
+                // Load the in-progress game
+                await _gameService.LoadGameAsync(InProgressGame.GameId);
+                InProgressGame = null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error resuming game: {ex.Message}");
             }
         }
 
@@ -215,8 +323,8 @@ namespace NinetyNine.Presentation.ViewModels
             {
                 var currentFrame = CurrentGame.CurrentFrame;
                 await _gameService.CompleteCurrentFrameAsync(
-                    currentFrame.BreakBonus, 
-                    currentFrame.BallCount, 
+                    currentFrame.BreakBonus,
+                    currentFrame.BallCount,
                     currentFrame.Notes);
             }
             catch (Exception ex)
@@ -273,6 +381,7 @@ namespace NinetyNine.Presentation.ViewModels
             this.RaisePropertyChanged(nameof(IsGameCompleted));
             this.RaisePropertyChanged(nameof(IsPerfectGame));
             this.RaisePropertyChanged(nameof(GameStatus));
+            this.RaisePropertyChanged(nameof(ShowStartPanel));
 
             // Trigger celebrations
             if (IsPerfectGame)

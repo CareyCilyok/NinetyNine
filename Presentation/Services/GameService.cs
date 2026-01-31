@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using NinetyNine.Model;
@@ -387,6 +388,20 @@ namespace NinetyNine.Presentation.Services
                 return false;
 
             return CurrentGame.ValidateGame();
+        }
+
+        /// <summary>
+        /// Gets the most recent in-progress game, if any exists
+        /// </summary>
+        /// <returns>The most recent in-progress game, or null if none</returns>
+        public async Task<Game?> GetMostRecentInProgressGameAsync()
+        {
+            var allGames = await GetAllGamesAsync();
+
+            return allGames
+                .Where(g => g.GameState == GameState.InProgress || g.GameState == GameState.Paused)
+                .OrderByDescending(g => g.WhenPlayed)
+                .FirstOrDefault();
         }
     }
 }
