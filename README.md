@@ -1,6 +1,22 @@
 # NinetyNine
 Scorekeeper for the pool game of Ninety-Nine
 
+## Quick Start
+
+```powershell
+# Run (dev)
+dotnet run --project .\App\Application.csproj
+
+# Test (release)
+dotnet test .\NinetyNine.sln -c Release
+
+# Verify (clean build + tests)
+.\scripts\verify.ps1
+
+# Publish (creates dist/NinetyNine_win-x64.zip)
+.\scripts\publish.ps1
+```
+
 ## Background
 The game of Ninety-Nine (or simply '99') was created by [Pool & Billiard Magazine](http://poolmag.com). 
 The original rules can be found [here](http://poolmag.com/game-rules/). The modified rules for
