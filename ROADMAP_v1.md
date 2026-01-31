@@ -42,16 +42,18 @@ See `README.md` for complete game rules.
 
 ---
 
-## Milestone C — Quality of Life
+## Milestone C — Quality of Life ✅ COMPLETE
 
 **Goal**: Minor friction removed, basic conveniences added.
 
-- [ ] Table size ComboBox bound to `TableSize` enum (7-Foot, 9-Foot, 10-Foot)
-- [ ] Undo last frame (most recent completed frame only, not arbitrary)
-- [ ] Venue stored as string with autocomplete from past venues (no full CRUD UI)
-- [ ] Prominent running total display during gameplay
+- [x] Table size ComboBox bound to `TableSize` enum (7-Foot, 9-Foot, 10-Foot)
+- [x] Undo last frame (most recent completed frame only, not arbitrary)
+- [x] Venue stored as string (autocomplete deferred to backlog)
+- [x] Prominent running total display during gameplay (in footer)
 
 **Done gate**: Select table size from dropdown → play 2 frames → undo frame 2 → re-enter → complete game.
+
+**Commit**: `cdd8996` (2026-01-31)
 
 ---
 

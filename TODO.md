@@ -38,11 +38,11 @@ Tracks `ROADMAP_v1.md` milestones. Complete in order.
 - [x] Statistics pulls from persisted games
 - [x] Profile reflects real totals
 
-### Milestone C — Quality of Life
-- [ ] TableSize ComboBox enum-bound
-- [ ] Undo last frame
-- [ ] Venue string with autocomplete
-- [ ] Prominent running total display
+### Milestone C — Quality of Life ✅
+- [x] TableSize ComboBox enum-bound
+- [x] Undo last frame
+- [x] Venue string (autocomplete deferred)
+- [x] Prominent running total display
 
 ### Milestone D — Release Polish
 - [ ] App icon + About dialog
