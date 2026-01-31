@@ -13,18 +13,25 @@ namespace NinetyNine.Presentation.ViewModels
     public class GamePageViewModel : ViewModelBase
     {
         private readonly IGameService _gameService;
+        private readonly ICelebrationService _celebrationService;
         private Game? _currentGame;
         private string _playerName = "Player 1";
         private string _venueName = "Home Table";
         private TableSize _selectedTableSize = TableSize.NineFoot;
+        private bool _showConfetti;
 
-        public GamePageViewModel() : this(new GameService())
+        public GamePageViewModel() : this(new GameService(), CelebrationService.Instance)
         {
         }
 
-        public GamePageViewModel(IGameService gameService)
+        public GamePageViewModel(IGameService gameService) : this(gameService, CelebrationService.Instance)
+        {
+        }
+
+        public GamePageViewModel(IGameService gameService, ICelebrationService celebrationService)
         {
             _gameService = gameService;
+            _celebrationService = celebrationService;
             FrameViewModels = new ObservableCollection<FrameControlViewModel>();
 
             // Initialize commands
@@ -108,6 +115,20 @@ namespace NinetyNine.Presentation.ViewModels
         public bool IsGameCompleted => CurrentGame?.IsCompleted ?? false;
 
         /// <summary>
+        /// Whether the current game is a perfect game (99 points)
+        /// </summary>
+        public bool IsPerfectGame => CurrentGame?.IsPerfectGame ?? false;
+
+        /// <summary>
+        /// Whether to show confetti celebration
+        /// </summary>
+        public bool ShowConfetti
+        {
+            get => _showConfetti;
+            private set => this.RaiseAndSetIfChanged(ref _showConfetti, value);
+        }
+
+        /// <summary>
         /// Current frame number being played
         /// </summary>
         public int CurrentFrameNumber => CurrentGame?.CurrentFrameNumber ?? 0;
@@ -131,6 +152,7 @@ namespace NinetyNine.Presentation.ViewModels
                 {
                     GameState.NotStarted => "Game not started",
                     GameState.InProgress => $"Frame {CurrentFrameNumber} of 9 - Score: {TotalScore}",
+                    GameState.Completed when IsPerfectGame => "LEGENDARY! PERFECT 99!",
                     GameState.Completed => $"Game Complete! Final Score: {TotalScore}/99",
                     GameState.Paused => "Game Paused",
                     _ => "Unknown status"
@@ -252,7 +274,19 @@ namespace NinetyNine.Presentation.ViewModels
         {
             // Update UI properties
             this.RaisePropertyChanged(nameof(IsGameCompleted));
+            this.RaisePropertyChanged(nameof(IsPerfectGame));
             this.RaisePropertyChanged(nameof(GameStatus));
+
+            // Trigger celebrations
+            if (IsPerfectGame)
+            {
+                ShowConfetti = true;
+                _celebrationService.TriggerPerfectGame(TotalScore);
+            }
+            else
+            {
+                _celebrationService.TriggerGameCompleted(TotalScore);
+            }
         }
 
         private void UpdateFrameViewModels()
@@ -263,7 +297,7 @@ namespace NinetyNine.Presentation.ViewModels
             {
                 foreach (var frame in CurrentGame.Frames.OrderBy(f => f.FrameNumber))
                 {
-                    var viewModel = new FrameControlViewModel(frame);
+                    var viewModel = new FrameControlViewModel(frame, _celebrationService);
                     FrameViewModels.Add(viewModel);
                 }
             }

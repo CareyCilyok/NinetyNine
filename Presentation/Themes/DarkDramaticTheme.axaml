@@ -1,0 +1,124 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         NINETYNINE DARK DRAMATIC THEME
+         Deep dark palette with neon accents for a premium gaming feel
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         CORE DARK PALETTE
+         ─────────────────────────────────────────────────────────────────────── -->
+    <Color x:Key="BackgroundDeep">#0D0D12</Color>
+    <Color x:Key="BackgroundDark">#141420</Color>
+    <Color x:Key="BackgroundMedium">#1A1A2E</Color>
+    <Color x:Key="BackgroundLight">#242438</Color>
+    <Color x:Key="BackgroundSurface">#2D2D44</Color>
+
+    <!-- Text Colors -->
+    <Color x:Key="TextPrimary">#FFFFFF</Color>
+    <Color x:Key="TextSecondary">#B0B0C0</Color>
+    <Color x:Key="TextMuted">#6B6B80</Color>
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         NEON ACCENT COLORS
+         ─────────────────────────────────────────────────────────────────────── -->
+    <Color x:Key="NeonBlue">#00D4FF</Color>
+    <Color x:Key="NeonBlueGlow">#3300D4FF</Color>
+    <Color x:Key="NeonGold">#FFD700</Color>
+    <Color x:Key="NeonGoldGlow">#33FFD700</Color>
+    <Color x:Key="NeonCrimson">#FF1744</Color>
+    <Color x:Key="NeonCrimsonGlow">#33FF1744</Color>
+    <Color x:Key="NeonGreen">#00FF88</Color>
+    <Color x:Key="NeonGreenGlow">#3300FF88</Color>
+    <Color x:Key="NeonPurple">#B388FF</Color>
+    <Color x:Key="NeonPurpleGlow">#33B388FF</Color>
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         SOLID COLOR BRUSHES
+         ─────────────────────────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="BackgroundDeepBrush" Color="{StaticResource BackgroundDeep}"/>
+    <SolidColorBrush x:Key="BackgroundDarkBrush" Color="{StaticResource BackgroundDark}"/>
+    <SolidColorBrush x:Key="BackgroundMediumBrush" Color="{StaticResource BackgroundMedium}"/>
+    <SolidColorBrush x:Key="BackgroundLightBrush" Color="{StaticResource BackgroundLight}"/>
+    <SolidColorBrush x:Key="BackgroundSurfaceBrush" Color="{StaticResource BackgroundSurface}"/>
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMuted}"/>
+
+    <SolidColorBrush x:Key="NeonBlueBrush" Color="{StaticResource NeonBlue}"/>
+    <SolidColorBrush x:Key="NeonGoldBrush" Color="{StaticResource NeonGold}"/>
+    <SolidColorBrush x:Key="NeonCrimsonBrush" Color="{StaticResource NeonCrimson}"/>
+    <SolidColorBrush x:Key="NeonGreenBrush" Color="{StaticResource NeonGreen}"/>
+    <SolidColorBrush x:Key="NeonPurpleBrush" Color="{StaticResource NeonPurple}"/>
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         GLASSMORPHISM BRUSHES (Semi-transparent surfaces)
+         ─────────────────────────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="GlassSurfaceBrush" Color="#B31A1A2E"/>
+    <SolidColorBrush x:Key="GlassOverlayBrush" Color="#80141420"/>
+    <SolidColorBrush x:Key="GlassBorderBrush" Color="#40FFFFFF"/>
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         GRADIENT BRUSHES
+         ─────────────────────────────────────────────────────────────────────── -->
+    <LinearGradientBrush x:Key="NeonBlueGradient" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#00D4FF" Offset="0"/>
+        <GradientStop Color="#0088CC" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="NeonGoldGradient" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#FFD700" Offset="0"/>
+        <GradientStop Color="#FFA500" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PerfectFrameGradient" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#FFD700" Offset="0"/>
+        <GradientStop Color="#FFE566" Offset="0.5"/>
+        <GradientStop Color="#FFD700" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="DarkSurfaceGradient" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Color="#1A1A2E" Offset="0"/>
+        <GradientStop Color="#141420" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         SPACING TOKENS
+         ─────────────────────────────────────────────────────────────────────── -->
+    <x:Double x:Key="SpacingXS">4</x:Double>
+    <x:Double x:Key="SpacingSM">8</x:Double>
+    <x:Double x:Key="SpacingMD">16</x:Double>
+    <x:Double x:Key="SpacingLG">24</x:Double>
+    <x:Double x:Key="SpacingXL">32</x:Double>
+    <x:Double x:Key="SpacingXXL">48</x:Double>
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         CORNER RADIUS
+         ─────────────────────────────────────────────────────────────────────── -->
+    <CornerRadius x:Key="RadiusSM">4</CornerRadius>
+    <CornerRadius x:Key="RadiusMD">8</CornerRadius>
+    <CornerRadius x:Key="RadiusLG">12</CornerRadius>
+    <CornerRadius x:Key="RadiusXL">16</CornerRadius>
+    <CornerRadius x:Key="RadiusRound">9999</CornerRadius>
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         TYPOGRAPHY
+         ─────────────────────────────────────────────────────────────────────── -->
+    <x:Double x:Key="FontSizeXS">10</x:Double>
+    <x:Double x:Key="FontSizeSM">12</x:Double>
+    <x:Double x:Key="FontSizeMD">14</x:Double>
+    <x:Double x:Key="FontSizeLG">18</x:Double>
+    <x:Double x:Key="FontSizeXL">24</x:Double>
+    <x:Double x:Key="FontSizeXXL">32</x:Double>
+    <x:Double x:Key="FontSizeHero">48</x:Double>
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         BORDER THICKNESSES
+         ─────────────────────────────────────────────────────────────────────── -->
+    <Thickness x:Key="BorderThin">1</Thickness>
+    <Thickness x:Key="BorderMedium">2</Thickness>
+    <Thickness x:Key="BorderThick">3</Thickness>
+
+</ResourceDictionary>

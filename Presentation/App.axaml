@@ -1,30 +1,152 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NinetyNine.Presentation"
+             xmlns:sty="using:FluentAvalonia.Styling"
              x:Class="NinetyNine.Presentation.App"
-             RequestedThemeVariant="Default">
-   <Application.Styles>
-      <FluentTheme />
-      <Style Selector="TextBlock">
-         <Setter Property="TextWrapping" Value="Wrap"/>
-      </Style>
-      <Style Selector="TextBox">
-         <Setter Property="TextWrapping" Value="Wrap"/>
-      </Style>
-      <Style Selector="TextBlock.ts">
-         <Setter Property="FontSize" Value="16"/>
-         <Setter Property="FontWeight" Value="Bold"/>
-      </Style>
-      <Style Selector=":is(UserControl).us_c">
-         <Setter Property="Padding" Value="20"/>
-         <Setter Property="HorizontalAlignment" Value="Left"/>
-      </Style>
-   </Application.Styles>
+             RequestedThemeVariant="Dark">
    <Application.Resources>
       <ResourceDictionary>
          <ResourceDictionary.MergedDictionaries>
             <ResourceInclude Source="/Icons.axaml"/>
+            <ResourceInclude Source="/Themes/DarkDramaticTheme.axaml"/>
+            <ResourceInclude Source="/Themes/Animations.axaml"/>
          </ResourceDictionary.MergedDictionaries>
       </ResourceDictionary>
    </Application.Resources>
+   <Application.Styles>
+      <sty:FluentAvaloniaTheme />
+
+      <!-- Global Dark Theme Styles -->
+      <Style Selector="Window">
+         <Setter Property="Background" Value="{DynamicResource BackgroundDeepBrush}"/>
+      </Style>
+
+      <Style Selector="UserControl">
+         <Setter Property="Background" Value="Transparent"/>
+      </Style>
+
+      <Style Selector="TextBlock">
+         <Setter Property="TextWrapping" Value="Wrap"/>
+         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+      </Style>
+
+      <Style Selector="TextBox">
+         <Setter Property="TextWrapping" Value="Wrap"/>
+         <Setter Property="Background" Value="{DynamicResource BackgroundMediumBrush}"/>
+         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource BackgroundSurfaceBrush}"/>
+         <Setter Property="CornerRadius" Value="{DynamicResource RadiusSM}"/>
+      </Style>
+
+      <Style Selector="TextBox:focus">
+         <Setter Property="BorderBrush" Value="{DynamicResource NeonBlueBrush}"/>
+      </Style>
+
+      <Style Selector="TextBlock.ts">
+         <Setter Property="FontSize" Value="16"/>
+         <Setter Property="FontWeight" Value="Bold"/>
+      </Style>
+
+      <Style Selector=":is(UserControl).us_c">
+         <Setter Property="Padding" Value="20"/>
+         <Setter Property="HorizontalAlignment" Value="Left"/>
+      </Style>
+
+      <!-- Button Styles -->
+      <Style Selector="Button">
+         <Setter Property="Background" Value="{DynamicResource BackgroundMediumBrush}"/>
+         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource BackgroundSurfaceBrush}"/>
+         <Setter Property="CornerRadius" Value="{DynamicResource RadiusSM}"/>
+         <Setter Property="Padding" Value="16,8"/>
+      </Style>
+
+      <Style Selector="Button:pointerover">
+         <Setter Property="Background" Value="{DynamicResource BackgroundLightBrush}"/>
+      </Style>
+
+      <Style Selector="Button.neon-blue">
+         <Setter Property="Background" Value="#1A00D4FF"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource NeonBlueBrush}"/>
+         <Setter Property="BorderThickness" Value="1"/>
+      </Style>
+
+      <Style Selector="Button.neon-blue:pointerover">
+         <Setter Property="Background" Value="#3300D4FF"/>
+      </Style>
+
+      <Style Selector="Button.neon-gold">
+         <Setter Property="Background" Value="#1AFFD700"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource NeonGoldBrush}"/>
+         <Setter Property="BorderThickness" Value="1"/>
+      </Style>
+
+      <Style Selector="Button.neon-gold:pointerover">
+         <Setter Property="Background" Value="#33FFD700"/>
+      </Style>
+
+      <Style Selector="Button.neon-green">
+         <Setter Property="Background" Value="#1A00FF88"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource NeonGreenBrush}"/>
+         <Setter Property="BorderThickness" Value="1"/>
+      </Style>
+
+      <Style Selector="Button.neon-green:pointerover">
+         <Setter Property="Background" Value="#3300FF88"/>
+      </Style>
+
+      <Style Selector="Button.neon-red">
+         <Setter Property="Background" Value="#1AFF1744"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource NeonCrimsonBrush}"/>
+         <Setter Property="BorderThickness" Value="1"/>
+      </Style>
+
+      <Style Selector="Button.neon-red:pointerover">
+         <Setter Property="Background" Value="#33FF1744"/>
+      </Style>
+
+      <!-- ComboBox Styles -->
+      <Style Selector="ComboBox">
+         <Setter Property="Background" Value="{DynamicResource BackgroundMediumBrush}"/>
+         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource BackgroundSurfaceBrush}"/>
+         <Setter Property="CornerRadius" Value="{DynamicResource RadiusSM}"/>
+      </Style>
+
+      <!-- NumericUpDown Styles -->
+      <Style Selector="NumericUpDown">
+         <Setter Property="Background" Value="{DynamicResource BackgroundMediumBrush}"/>
+         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource BackgroundSurfaceBrush}"/>
+         <Setter Property="CornerRadius" Value="{DynamicResource RadiusSM}"/>
+      </Style>
+
+      <!-- Border card style -->
+      <Style Selector="Border.card">
+         <Setter Property="Background" Value="{DynamicResource BackgroundMediumBrush}"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource BackgroundSurfaceBrush}"/>
+         <Setter Property="BorderThickness" Value="1"/>
+         <Setter Property="CornerRadius" Value="{DynamicResource RadiusMD}"/>
+         <Setter Property="Padding" Value="16"/>
+      </Style>
+
+      <Style Selector="Border.card-glow">
+         <Setter Property="Background" Value="{DynamicResource BackgroundMediumBrush}"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource NeonBlueBrush}"/>
+         <Setter Property="BorderThickness" Value="1"/>
+         <Setter Property="CornerRadius" Value="{DynamicResource RadiusMD}"/>
+         <Setter Property="Padding" Value="16"/>
+         <Setter Property="BoxShadow" Value="0 0 20 3 #3300D4FF"/>
+      </Style>
+
+      <Style Selector="Border.card-gold">
+         <Setter Property="Background" Value="{DynamicResource BackgroundMediumBrush}"/>
+         <Setter Property="BorderBrush" Value="{DynamicResource NeonGoldBrush}"/>
+         <Setter Property="BorderThickness" Value="2"/>
+         <Setter Property="CornerRadius" Value="{DynamicResource RadiusMD}"/>
+         <Setter Property="Padding" Value="16"/>
+         <Setter Property="BoxShadow" Value="0 0 20 5 #33FFD700"/>
+      </Style>
+
+   </Application.Styles>
 </Application>

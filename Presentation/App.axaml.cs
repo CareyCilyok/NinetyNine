@@ -3,7 +3,6 @@ using NinetyNine.Presentation.Views;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using ReactiveUI;
@@ -33,25 +32,16 @@ namespace NinetyNine.Presentation
          var settings_prov = new JsonSettingsProvider();
          Settings = settings_prov.Load<AppSettings>();
 
-         Log.Information("Applying {Theme} theme", Settings.Theme);
-         switch (Settings.Theme)
-         {
-            case Theme.Light:
-               Styles.Insert(0, App.FluentLight);
-               break;
-
-            case Theme.Dark:
-               Styles.Insert(0, App.FluentDark);
-               break;
-         }
-
          AvaloniaXamlLoader.Load(this);
+
+         // Apply theme after XAML is loaded using Avalonia 11 pattern
+         Log.Information("Applying {Theme} theme", Settings.Theme);
+         ApplyTheme(Settings.Theme);
       }
 
       public override void OnFrameworkInitializationCompleted()
       {
          Log.Information("Framework initialization completed");
-         // NavigationViewStatic();
          if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
          {
             Log.Information("Starting desktop application");
@@ -85,6 +75,7 @@ namespace NinetyNine.Presentation
 
          base.OnFrameworkInitializationCompleted();
       }
+
       private AppSettings Settings { get; set; } = new();
       public Theme GetTheme() => Settings.Theme;
 
@@ -95,18 +86,7 @@ namespace NinetyNine.Presentation
          {
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-               if (Application.Current != null)
-               {
-                  switch (theme)
-                  {
-                     case Theme.Light:
-                        Application.Current.Styles[0] = App.FluentLight;
-                        break;
-                     case Theme.Dark:
-                        Application.Current.Styles[0] = App.FluentDark;
-                        break;
-                  }
-               }
+               ApplyTheme(theme);
             }, (DispatcherPriority)1);
 
             Settings.Theme = theme;
@@ -118,26 +98,21 @@ namespace NinetyNine.Presentation
          }
       }
 
-      public readonly static Styles FluentDark = new Styles
-        {
-            new StyleInclude(new Uri("avares://NinetyNine.Presentation/Styles"))
-            {
-                Source = new Uri("avares://Avalonia.Themes.Fluent/FluentDark.xaml")
-            }
-        };
-
-      public readonly static Styles FluentLight = new Styles
-        {
-            new StyleInclude(new Uri("avares://NinetyNine.Presentation/Styles"))
-            {
-                Source = new Uri("avares://Avalonia.Themes.Fluent/FluentLight.xaml")
-            }
-        };
+      private void ApplyTheme(Theme theme)
+      {
+         // In Avalonia 11, use RequestedThemeVariant to switch between light/dark
+         RequestedThemeVariant = theme switch
+         {
+            Theme.Light => ThemeVariant.Light,
+            Theme.Dark => ThemeVariant.Dark,
+            _ => ThemeVariant.Dark
+         };
+      }
    }
 
    public class AppSettings
    {
-      public Theme Theme { get; set; } = Theme.Light;
+      public Theme Theme { get; set; } = Theme.Dark; // Default to dark for our neon theme
    }
 
    public enum Theme
