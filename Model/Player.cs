@@ -29,7 +29,7 @@ namespace NinetyNine.Model
     /// </summary>
     public class Player
     {
-        public Guid PlayerId { get; set; }
+        public Guid PlayerId { get; set; } = Guid.NewGuid();
 
         public string Username { get; set; } = String.Empty;
 
@@ -38,7 +38,34 @@ namespace NinetyNine.Model
         public string LastName { get; set; } = String.Empty;
         public string FirstName { get; set; } = String.Empty;
         public string MiddleName { get; set; } = String.Empty;
-        
+
+        /// <summary>
+        /// Hashed password for authentication (never store plain text)
+        /// </summary>
+        [JsonIgnore]
+        public string PasswordHash { get; set; } = String.Empty;
+
+        /// <summary>
+        /// Salt used for password hashing
+        /// </summary>
+        [JsonIgnore]
+        public string PasswordSalt { get; set; } = String.Empty;
+
+        /// <summary>
+        /// When the player account was created
+        /// </summary>
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// When the player last logged in
+        /// </summary>
+        public DateTime? LastLoginAt { get; set; }
+
+        /// <summary>
+        /// Whether the account is active
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+
         public string Name
         {
             get
@@ -59,6 +86,7 @@ namespace NinetyNine.Model
                 }
             }
         }
+
         [JsonIgnore]
         public List<Game> Games { get; set; } = new List<Game>();
     }
