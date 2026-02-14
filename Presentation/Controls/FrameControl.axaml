@@ -7,17 +7,16 @@
              x:Class="NinetyNine.Presentation.Controls.FrameControl"
              Background="{Binding BackgroundBrush}"
              ToolTip.Tip="{Binding ToolTipText}">
-   
-   <UserControl.DataContext>
-      <vm:FrameControlViewModel/>
-   </UserControl.DataContext>
-   
-   <Border BorderBrush="{Binding BorderBrush}" 
-           BorderThickness="2" 
-           CornerRadius="5"
-           Margin="2">
-      
-      <Grid MinHeight="75" MinWidth="50" MaxHeight="120" MaxWidth="80">
+
+   <!-- DataContext is inherited from parent ItemsControl DataTemplate binding -->
+
+   <Border BorderBrush="{Binding BorderBrush}"
+           BorderThickness="2"
+           CornerRadius="8"
+           Margin="2"
+           Padding="4">
+
+      <Grid MinHeight="100" MinWidth="70" MaxHeight="140" MaxWidth="90">
 
          <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"/>
@@ -25,123 +24,116 @@
          </Grid.ColumnDefinitions>
 
          <Grid.RowDefinitions>
-            <RowDefinition Height="20"/>
-            <RowDefinition Height="25"/>
-            <RowDefinition Height="25"/>
+            <RowDefinition Height="22"/>
+            <RowDefinition Height="28"/>
+            <RowDefinition Height="18"/>
             <RowDefinition Height="*"/>
          </Grid.RowDefinitions>
 
          <!-- Frame Number Header -->
-         <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" 
-                    Text="{Binding FrameNumber, StringFormat='Frame {0}'}"
-                    HorizontalAlignment="Center" 
-                    VerticalAlignment="Center"
-                    FontSize="10" 
-                    FontWeight="Bold"/>
+         <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                 Background="#20FFFFFF"
+                 CornerRadius="4"
+                 Margin="2,0,2,4">
+            <TextBlock Text="{Binding FrameNumber}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="12"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+         </Border>
 
          <!-- Break Bonus Section -->
          <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Command="{Binding DecrementBreakBonusCommand}" 
-                    Content="-" 
-                    Width="15" Height="20" 
-                    FontSize="10"
-                    IsEnabled="{Binding CanEdit}"/>
-            <TextBlock Text="{Binding BreakBonus}" 
-                       VerticalAlignment="Center" 
-                       HorizontalAlignment="Center" 
-                       Width="20" 
+            <Button Command="{Binding DecrementBreakBonusCommand}"
+                    Content="-"
+                    Width="18" Height="22"
+                    FontSize="12"
+                    Padding="0"/>
+            <TextBlock Text="{Binding BreakBonus}"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       Width="18"
                        TextAlignment="Center"
-                       FontSize="10"/>
-            <Button Command="{Binding IncrementBreakBonusCommand}" 
-                    Content="+" 
-                    Width="15" Height="20" 
-                    FontSize="10"
-                    IsEnabled="{Binding CanEdit}"/>
+                       FontSize="14"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+            <Button Command="{Binding IncrementBreakBonusCommand}"
+                    Content="+"
+                    Width="18" Height="22"
+                    FontSize="12"
+                    Padding="0"/>
          </StackPanel>
 
          <!-- Ball Count Section -->
          <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Command="{Binding DecrementBallCountCommand}" 
-                    Content="-" 
-                    Width="15" Height="20" 
-                    FontSize="10"
-                    IsEnabled="{Binding CanEdit}"/>
-            <TextBlock Text="{Binding BallCount}" 
-                       VerticalAlignment="Center" 
-                       HorizontalAlignment="Center" 
-                       Width="20" 
+            <Button Command="{Binding DecrementBallCountCommand}"
+                    Content="-"
+                    Width="18" Height="22"
+                    FontSize="12"
+                    Padding="0"/>
+            <TextBlock Text="{Binding BallCount}"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       Width="18"
                        TextAlignment="Center"
-                       FontSize="10"/>
-            <Button Command="{Binding IncrementBallCountCommand}" 
-                    Content="+" 
-                    Width="15" Height="20" 
-                    FontSize="10"
-                    IsEnabled="{Binding CanEdit}"/>
+                       FontSize="14"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+            <Button Command="{Binding IncrementBallCountCommand}"
+                    Content="+"
+                    Width="18" Height="22"
+                    FontSize="12"
+                    Padding="0"/>
          </StackPanel>
 
          <!-- Labels -->
-         <TextBlock Grid.Row="2" Grid.Column="0" 
-                    Text="Break" 
-                    HorizontalAlignment="Center" 
+         <TextBlock Grid.Row="2" Grid.Column="0"
+                    Text="Break"
+                    HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    FontSize="8"/>
-         <TextBlock Grid.Row="2" Grid.Column="1" 
-                    Text="Balls" 
-                    HorizontalAlignment="Center" 
+                    FontSize="9"
+                    Foreground="{DynamicResource TextMutedBrush}"/>
+         <TextBlock Grid.Row="2" Grid.Column="1"
+                    Text="Balls"
+                    HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    FontSize="8"/>
+                    FontSize="9"
+                    Foreground="{DynamicResource TextMutedBrush}"/>
 
          <!-- Frame Score / Running Total Display -->
-         <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" 
-                 Background="Transparent" 
+         <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                 Background="Transparent"
                  Margin="2">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2">
                <!-- Frame Score -->
-               <TextBlock Text="{Binding FrameScore, StringFormat='Score: {0}'}" 
-                          HorizontalAlignment="Center" 
-                          FontSize="10" 
-                          FontWeight="Bold"/>
+               <TextBlock Text="{Binding FrameScore}"
+                          HorizontalAlignment="Center"
+                          FontSize="18"
+                          FontWeight="Bold"
+                          Foreground="{DynamicResource TextPrimaryBrush}"/>
                <!-- Running Total (if completed) -->
-               <TextBlock Text="{Binding RunningTotal, StringFormat='Total: {0}'}" 
-                          HorizontalAlignment="Center" 
-                          FontSize="9"
+               <TextBlock Text="{Binding RunningTotal, StringFormat='({0})'}"
+                          HorizontalAlignment="Center"
+                          FontSize="10"
+                          Foreground="{DynamicResource TextSecondaryBrush}"
                           IsVisible="{Binding IsCompleted}"/>
                <!-- Perfect Frame Indicator -->
-               <TextBlock Text="★ PERFECT ★" 
-                          HorizontalAlignment="Center" 
-                          FontSize="8" 
-                          Foreground="Gold"
+               <TextBlock Text="PERFECT"
+                          HorizontalAlignment="Center"
+                          FontSize="9"
+                          Foreground="{DynamicResource NeonGoldBrush}"
                           FontWeight="Bold"
                           IsVisible="{Binding IsPerfectFrame}"/>
                <!-- Invalid Score Warning -->
-               <TextBlock Text="⚠ INVALID" 
-                          HorizontalAlignment="Center" 
-                          FontSize="8" 
-                          Foreground="Red"
+               <TextBlock Text="INVALID"
+                          HorizontalAlignment="Center"
+                          FontSize="9"
+                          Foreground="{DynamicResource NeonCrimsonBrush}"
                           FontWeight="Bold"
                           IsVisible="{Binding !IsValidScore}"/>
             </StackPanel>
          </Border>
-
-         <!-- Action Buttons (when editable) -->
-         <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" 
-                     Orientation="Horizontal" 
-                     HorizontalAlignment="Center" 
-                     VerticalAlignment="Bottom"
-                     Margin="2"
-                     IsVisible="{Binding CanEdit}">
-            <Button Command="{Binding EditFrameCommand}" 
-                    Content="Edit" 
-                    Width="30" Height="18" 
-                    FontSize="8"
-                    Margin="1"/>
-            <Button Command="{Binding ResetFrameCommand}" 
-                    Content="Reset" 
-                    Width="30" Height="18" 
-                    FontSize="8"
-                    Margin="1"
-                    IsEnabled="{Binding CanReset}"/>
-         </StackPanel>
 
       </Grid>
    </Border>

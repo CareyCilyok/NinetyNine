@@ -60,9 +60,9 @@ namespace NinetyNine.Model
         public Player? Player { get; set; }
 
         /// <summary>
-        /// Gets/Sets the Player ID for serialization
+        /// Gets/Sets the Player ID for serialization (nullable for games without a player)
         /// </summary>
-        public Guid PlayerId { get; set; }
+        public Guid? PlayerId { get; set; }
 
         /// <summary>
         /// Gets/Sets the location where this game took place. <seealso cref="Venue"/>
@@ -71,9 +71,9 @@ namespace NinetyNine.Model
         public Venue? LocationPlayed { get; set; }
 
         /// <summary>
-        /// Gets/Sets the Venue ID for serialization
+        /// Gets/Sets the Venue ID for serialization (nullable for games without a venue)
         /// </summary>
-        public Guid VenueId { get; set; }
+        public Guid? VenueId { get; set; }
 
         /// <summary>
         /// Gets/Sets the date and time when this <see cref="Game"/> was started

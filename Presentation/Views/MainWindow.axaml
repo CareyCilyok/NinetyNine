@@ -6,31 +6,20 @@
 		  mc:Ignorable="d"
 		  x:Name="win"
 		  x:Class="NinetyNine.Presentation.Views.MainWindow"
-		  TransparencyLevelHint="{Binding #combobox.SelectedItem.Content}"
-        Background="Transparent"
+		  TransparencyLevelHint="None"
+        Background="#0D0D12"
 		  WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
         Icon="avares://Presentation/Assets/png/globe-americas-solid.png"
         MinHeight="500"
         MinWidth="500"
-		  ExtendClientAreaToDecorationsHint="true"
-        ExtendClientAreaChromeHints="PreferSystemChrome"
-        ExtendClientAreaTitleBarHeightHint="-1"
+		  ExtendClientAreaToDecorationsHint="False"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="0"
         Title="NinetyNine Score Keeper"
-        TransparencyBackgroundFallback="Transparent"
+        TransparencyBackgroundFallback="#0D0D12"
         Classes="us_c">
-   <Grid Margin="{Binding #win.OffScreenMargin}" >
+   <Grid Margin="{Binding #win.OffScreenMargin}">
       <vw:MainView/>
-
-      <Border Name="DragBorder"
-              Background="Transparent"
-              VerticalAlignment="Top"
-              Height="19"/>
-      <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
-         <StackPanel.Styles>
-            <Style Selector="ComboBox">
-            </Style>
-         </StackPanel.Styles>
-      </StackPanel>
    </Grid>
 </Window>

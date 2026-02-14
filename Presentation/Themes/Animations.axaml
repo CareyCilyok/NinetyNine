@@ -1,0 +1,66 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         NINETYNINE ANIMATION CONSTANTS
+         Duration and scale values for smooth UI transitions
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         TRANSITION DURATIONS (in seconds)
+         ─────────────────────────────────────────────────────────────────────── -->
+
+    <!-- Button hover/press transitions (150ms for smooth micro-interactions) -->
+    <x:Double x:Key="ButtonTransitionDuration">0.15</x:Double>
+
+    <!-- Focus glow transition duration -->
+    <x:Double x:Key="FocusTransitionDuration">0.15</x:Double>
+
+    <!-- Content fade transition duration -->
+    <x:Double x:Key="ContentTransitionDuration">0.3</x:Double>
+
+    <!-- Page crossfade duration -->
+    <x:Double x:Key="PageTransitionDuration">0.3</x:Double>
+
+    <!-- Perfect frame pulse duration -->
+    <x:Double x:Key="PerfectFramePulseDuration">1.5</x:Double>
+
+    <!-- Score pop animation duration -->
+    <x:Double x:Key="ScorePopDuration">0.4</x:Double>
+
+    <!-- Golden glow cycle duration -->
+    <x:Double x:Key="GoldenGlowDuration">2.0</x:Double>
+
+    <!-- Celebration duration -->
+    <x:Double x:Key="CelebrationDuration">3.0</x:Double>
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         SCALE FACTORS
+         ─────────────────────────────────────────────────────────────────────── -->
+
+    <!-- Hover scale (subtle grow effect) -->
+    <x:Double x:Key="HoverScale">1.05</x:Double>
+
+    <!-- Pressed scale (compress effect) -->
+    <x:Double x:Key="PressedScale">0.95</x:Double>
+
+    <!-- Score pop scale (emphasis effect) -->
+    <x:Double x:Key="PopScale">1.3</x:Double>
+
+    <!-- Pulse scale (breathing effect) -->
+    <x:Double x:Key="PulseScale">1.1</x:Double>
+
+    <!-- ───────────────────────────────────────────────────────────────────────
+         EASING FUNCTIONS (as string identifiers for code use)
+         ─────────────────────────────────────────────────────────────────────── -->
+
+    <!-- Standard easing for most animations -->
+    <x:String x:Key="EaseOut">CubicEaseOut</x:String>
+
+    <!-- Bounce easing for playful effects -->
+    <x:String x:Key="EaseBounce">BounceEaseOut</x:String>
+
+    <!-- Elastic easing for score pops -->
+    <x:String x:Key="EaseElastic">ElasticEaseOut</x:String>
+
+</ResourceDictionary>

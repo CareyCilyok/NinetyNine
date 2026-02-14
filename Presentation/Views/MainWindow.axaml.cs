@@ -1,6 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+#if DEBUG
+using Avalonia.Diagnostics;
+#endif
 
 namespace NinetyNine.Presentation.Views
 {
@@ -13,10 +16,6 @@ namespace NinetyNine.Presentation.Views
 #if DEBUG
          this.AttachDevTools();
 #endif
-         DragBorder.PointerPressed += (s, e) =>
-         {
-            BeginMoveDrag(e);
-         };
       }
    }
 }

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reactive;
 using System.Threading.Tasks;
 using NinetyNine.Model;
@@ -11,44 +13,43 @@ namespace NinetyNine.Presentation.ViewModels
     public class ProfilePageViewModel : ViewModelBase
     {
         private readonly IStatisticsService _statisticsService;
-        private Player _currentPlayer;
+        private readonly IPlayerService _playerService;
+        private Player _currentPlayer = null!;
+        private Player? _playerBackup;
         private PlayerStatistics? _playerStatistics;
         private bool _isEditing;
         private bool _isLoading;
+        private bool _isInitialized;
 
-        public ProfilePageViewModel() : this(new StatisticsService())
+        public ProfilePageViewModel() : this(new StatisticsService(), new PlayerService())
         {
         }
 
-        public ProfilePageViewModel(IStatisticsService statisticsService)
+        public ProfilePageViewModel(IStatisticsService statisticsService, IPlayerService playerService)
         {
             _statisticsService = statisticsService;
-            
-            // Initialize with demo player
-            _currentPlayer = new Player
-            {
-                PlayerId = Guid.NewGuid(),
-                FirstName = "John",
-                LastName = "Doe",
-                Username = "johndoe",
-                EmailAddress = "john.doe@example.com",
-                PhoneNumber = "+1 (555) 123-4567"
-            };
+            _playerService = playerService;
 
             Achievements = new ObservableCollection<Achievement>();
             RecentActivity = new ObservableCollection<ActivityItem>();
             FavoriteVenues = new ObservableCollection<VenueItem>();
 
             EditProfileCommand = ReactiveCommand.Create(ToggleEditMode);
-            SaveProfileCommand = ReactiveCommand.CreateFromTask(SaveProfileAsync, 
+            SaveProfileCommand = ReactiveCommand.CreateFromTask(SaveProfileAsync,
                 this.WhenAnyValue(x => x.IsEditing));
             CancelEditCommand = ReactiveCommand.Create(CancelEdit,
                 this.WhenAnyValue(x => x.IsEditing));
             RefreshDataCommand = ReactiveCommand.CreateFromTask(RefreshDataAsync);
+            ExportDataCommand = ReactiveCommand.CreateFromTask(ExportDataAsync);
 
             // Load initial data
-            _ = RefreshDataAsync();
+            _ = InitializeAndRefreshAsync();
         }
+
+        /// <summary>
+        /// App version text
+        /// </summary>
+        public string VersionText => "Version 1.0.0";
 
         #region Properties
 
@@ -111,7 +112,17 @@ namespace NinetyNine.Presentation.ViewModels
         /// <summary>
         /// Formatted member since date
         /// </summary>
-        public string MemberSinceText => $"Member since {PlayerStatistics?.FirstGameDate.ToString("MMM yyyy") ?? "Unknown"}";
+        public string MemberSinceText
+        {
+            get
+            {
+                if (PlayerStatistics?.FirstGameDate != null && PlayerStatistics.FirstGameDate != default)
+                {
+                    return $"Member since {PlayerStatistics.FirstGameDate:MMM yyyy}";
+                }
+                return "No games yet";
+            }
+        }
 
         /// <summary>
         /// Formatted total games text
@@ -143,12 +154,12 @@ namespace NinetyNine.Presentation.ViewModels
                 var avgScore = PlayerStatistics?.AverageScore ?? 0;
                 return avgScore switch
                 {
-                    >= 85 => "🏆 Master",
-                    >= 75 => "🥇 Expert", 
-                    >= 65 => "🥈 Advanced",
-                    >= 55 => "🥉 Intermediate",
-                    >= 45 => "📈 Improving",
-                    _ => "🎱 Beginner"
+                    >= 85 => "Master",
+                    >= 75 => "Expert",
+                    >= 65 => "Advanced",
+                    >= 55 => "Intermediate",
+                    >= 45 => "Improving",
+                    _ => "Beginner"
                 };
             }
         }
@@ -175,13 +186,48 @@ namespace NinetyNine.Presentation.ViewModels
         public ReactiveCommand<Unit, Unit> SaveProfileCommand { get; }
         public ReactiveCommand<Unit, Unit> CancelEditCommand { get; }
         public ReactiveCommand<Unit, Unit> RefreshDataCommand { get; }
+        public ReactiveCommand<Unit, Unit> ExportDataCommand { get; }
 
         #endregion
 
         #region Private Methods
 
+        private async Task InitializeAndRefreshAsync()
+        {
+            if (_isInitialized) return;
+
+            try
+            {
+                // Initialize player service to get the real player
+                await _playerService.InitializeAsync();
+                CurrentPlayer = _playerService.CurrentPlayer;
+                _isInitialized = true;
+
+                // Now refresh with real player data
+                await RefreshDataAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error initializing ProfilePageViewModel: {ex.Message}");
+            }
+        }
+
         private void ToggleEditMode()
         {
+            if (!IsEditing)
+            {
+                // Entering edit mode - create backup of current player
+                _playerBackup = new Player
+                {
+                    PlayerId = CurrentPlayer.PlayerId,
+                    FirstName = CurrentPlayer.FirstName,
+                    LastName = CurrentPlayer.LastName,
+                    Username = CurrentPlayer.Username,
+                    EmailAddress = CurrentPlayer.EmailAddress,
+                    PhoneNumber = CurrentPlayer.PhoneNumber,
+                    MiddleName = CurrentPlayer.MiddleName
+                };
+            }
             IsEditing = !IsEditing;
         }
 
@@ -190,12 +236,14 @@ namespace NinetyNine.Presentation.ViewModels
             try
             {
                 IsLoading = true;
-                
-                // TODO: Implement actual save to repository
-                await Task.Delay(500); // Simulate API call
-                
+
+                // Save via PlayerService
+                await _playerService.UpdatePlayerAsync(CurrentPlayer);
+
+                // Clear backup after successful save
+                _playerBackup = null;
                 IsEditing = false;
-                
+
                 // Notify property changes
                 this.RaisePropertyChanged(nameof(PlayerName));
             }
@@ -211,20 +259,85 @@ namespace NinetyNine.Presentation.ViewModels
 
         private void CancelEdit()
         {
-            // TODO: Revert any changes
+            // Revert to backup if available
+            if (_playerBackup != null)
+            {
+                CurrentPlayer.FirstName = _playerBackup.FirstName;
+                CurrentPlayer.LastName = _playerBackup.LastName;
+                CurrentPlayer.Username = _playerBackup.Username;
+                CurrentPlayer.EmailAddress = _playerBackup.EmailAddress;
+                CurrentPlayer.PhoneNumber = _playerBackup.PhoneNumber;
+                CurrentPlayer.MiddleName = _playerBackup.MiddleName;
+
+                _playerBackup = null;
+
+                // Notify property changes
+                this.RaisePropertyChanged(nameof(CurrentPlayer));
+                this.RaisePropertyChanged(nameof(PlayerName));
+            }
+
             IsEditing = false;
         }
 
-        private async Task RefreshDataAsync()
+        private async Task ExportDataAsync()
         {
             try
             {
                 IsLoading = true;
 
-                // Load player statistics
+                // Get all games
+                var recentGames = await _statisticsService.GetRecentGamesAsync(CurrentPlayer.PlayerId, 1000);
+
+                // Create export object
+                var exportData = new
+                {
+                    ExportDate = DateTime.Now,
+                    Version = "1.0.0",
+                    Player = CurrentPlayer,
+                    Statistics = PlayerStatistics,
+                    Games = recentGames
+                };
+
+                // Serialize to JSON
+                var json = System.Text.Json.JsonSerializer.Serialize(exportData, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                // Save to Documents folder
+                var documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                var fileName = $"NinetyNine_Export_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+                var filePath = System.IO.Path.Combine(documentsPath, fileName);
+
+                await System.IO.File.WriteAllTextAsync(filePath, json);
+
+                System.Diagnostics.Debug.WriteLine($"Data exported to: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error exporting data: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        private async Task RefreshDataAsync()
+        {
+            if (!_isInitialized) return;
+
+            try
+            {
+                IsLoading = true;
+
+                // Invalidate stats cache to get fresh data
+                _statisticsService.InvalidateCache();
+
+                // Load player statistics using real player ID
                 PlayerStatistics = await _statisticsService.GetPlayerStatisticsAsync(CurrentPlayer.PlayerId);
 
-                // Load achievements
+                // Load achievements (based on real stats)
                 await LoadAchievementsAsync();
 
                 // Load recent activity
@@ -256,15 +369,14 @@ namespace NinetyNine.Presentation.ViewModels
         private async Task LoadAchievementsAsync()
         {
             Achievements.Clear();
-            
+
             var achievements = new[]
             {
-                new Achievement { Title = "First Game", Description = "Completed your first game", Icon = "🎮", IsUnlocked = true },
-                new Achievement { Title = "Perfect Frame", Description = "Scored 11 points in a single frame", Icon = "⭐", IsUnlocked = (PlayerStatistics?.PerfectFrames ?? 0) > 0 },
-                new Achievement { Title = "High Scorer", Description = "Achieved a score of 80+", Icon = "🎯", IsUnlocked = (PlayerStatistics?.HighestScore ?? 0) >= 80 },
-                new Achievement { Title = "Consistent Player", Description = "Played 10 games", Icon = "🏅", IsUnlocked = (PlayerStatistics?.TotalGames ?? 0) >= 10 },
-                new Achievement { Title = "Break Master", Description = "70% break success rate", Icon = "💥", IsUnlocked = (PlayerStatistics?.BreakSuccessRate ?? 0) >= 70 },
-                new Achievement { Title = "Weekly Warrior", Description = "Play every day for a week", Icon = "📅", IsUnlocked = false }
+                new Achievement { Title = "First Game", Description = "Completed your first game", Icon = "Game", IsUnlocked = (PlayerStatistics?.CompletedGames ?? 0) > 0 },
+                new Achievement { Title = "Perfect Frame", Description = "Scored 11 points in a single frame", Icon = "Star", IsUnlocked = (PlayerStatistics?.PerfectFrames ?? 0) > 0 },
+                new Achievement { Title = "High Scorer", Description = "Achieved a score of 80+", Icon = "Target", IsUnlocked = (PlayerStatistics?.HighestScore ?? 0) >= 80 },
+                new Achievement { Title = "Consistent Player", Description = "Played 10 games", Icon = "Medal", IsUnlocked = (PlayerStatistics?.TotalGames ?? 0) >= 10 },
+                new Achievement { Title = "Break Master", Description = "70% break success rate", Icon = "Zap", IsUnlocked = (PlayerStatistics?.BreakSuccessRate ?? 0) >= 70 }
             };
 
             foreach (var achievement in achievements)
@@ -278,41 +390,58 @@ namespace NinetyNine.Presentation.ViewModels
         private async Task LoadRecentActivityAsync()
         {
             RecentActivity.Clear();
-            
-            var activities = new[]
-            {
-                new ActivityItem { Description = "Scored 82 points at Home Table", Date = DateTime.Now.AddHours(-2), Icon = "🎯" },
-                new ActivityItem { Description = "Achieved a perfect frame", Date = DateTime.Now.AddDays(-1), Icon = "⭐" },
-                new ActivityItem { Description = "Played 3 games today", Date = DateTime.Now.AddDays(-1), Icon = "🎮" },
-                new ActivityItem { Description = "Unlocked 'High Scorer' achievement", Date = DateTime.Now.AddDays(-3), Icon = "🏆" },
-                new ActivityItem { Description = "Updated profile information", Date = DateTime.Now.AddDays(-5), Icon = "👤" }
-            };
 
-            foreach (var activity in activities)
+            // Get recent games from statistics service
+            var recentGames = await _statisticsService.GetRecentGamesAsync(CurrentPlayer.PlayerId, 5);
+
+            foreach (var game in recentGames)
             {
-                RecentActivity.Add(activity);
+                var description = game.IsCompleted
+                    ? $"Scored {game.TotalScore} points at {game.LocationPlayed?.Name ?? "Unknown"}"
+                    : $"Game in progress at {game.LocationPlayed?.Name ?? "Unknown"}";
+
+                RecentActivity.Add(new ActivityItem
+                {
+                    Description = description,
+                    Date = game.WhenPlayed,
+                    Icon = "Game"
+                });
             }
-
-            await Task.CompletedTask;
         }
 
         private async Task LoadFavoriteVenuesAsync()
         {
             FavoriteVenues.Clear();
-            
-            var venues = new[]
-            {
-                new VenueItem { Name = "Home Table", GamesPlayed = 12, AverageScore = 78.5, LastPlayed = DateTime.Now.AddDays(-1) },
-                new VenueItem { Name = "Downtown Pool Hall", GamesPlayed = 8, AverageScore = 72.3, LastPlayed = DateTime.Now.AddDays(-7) },
-                new VenueItem { Name = "Sports Bar & Grill", GamesPlayed = 5, AverageScore = 69.8, LastPlayed = DateTime.Now.AddDays(-14) }
-            };
 
-            foreach (var venue in venues)
+            // For now, just show venues from recent games
+            var recentGames = await _statisticsService.GetRecentGamesAsync(CurrentPlayer.PlayerId, 20);
+
+            var venueStats = new System.Collections.Generic.Dictionary<string, (int count, double totalScore, DateTime lastPlayed)>();
+
+            foreach (var game in recentGames.Where(g => g.IsCompleted))
             {
-                FavoriteVenues.Add(venue);
+                var venueName = game.LocationPlayed?.Name ?? "Unknown";
+                if (venueStats.ContainsKey(venueName))
+                {
+                    var (count, totalScore, lastPlayed) = venueStats[venueName];
+                    venueStats[venueName] = (count + 1, totalScore + game.TotalScore, game.WhenPlayed > lastPlayed ? game.WhenPlayed : lastPlayed);
+                }
+                else
+                {
+                    venueStats[venueName] = (1, game.TotalScore, game.WhenPlayed);
+                }
             }
 
-            await Task.CompletedTask;
+            foreach (var (venueName, stats) in venueStats.OrderByDescending(kvp => kvp.Value.count).Take(3))
+            {
+                FavoriteVenues.Add(new VenueItem
+                {
+                    Name = venueName,
+                    GamesPlayed = stats.count,
+                    AverageScore = stats.totalScore / stats.count,
+                    LastPlayed = stats.lastPlayed
+                });
+            }
         }
 
         #endregion

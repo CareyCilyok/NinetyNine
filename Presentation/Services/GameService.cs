@@ -19,6 +19,10 @@
 /// SOFTWARE.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using NinetyNine.Model;
 
@@ -30,9 +34,22 @@ namespace NinetyNine.Presentation.Services
     public class GameService : IGameService
     {
         private Game? _currentGame;
+        private readonly string _gamesDirectory;
+        private readonly Dictionary<Guid, Game> _gameCache = new();
 
         public GameService()
         {
+            // Use application data folder for persistent storage
+            _gamesDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "NinetyNine",
+                "Games");
+
+            // Ensure directory exists
+            if (!Directory.Exists(_gamesDirectory))
+            {
+                Directory.CreateDirectory(_gamesDirectory);
+            }
         }
 
         /// <summary>
@@ -97,8 +114,98 @@ namespace NinetyNine.Presentation.Services
         /// <returns>The loaded game</returns>
         public async Task<Game?> LoadGameAsync(Guid gameId)
         {
-            // TODO: Implement actual loading from repository
-            return await Task.FromResult<Game?>(null);
+            try
+            {
+                // Check cache first
+                if (_gameCache.TryGetValue(gameId, out var cachedGame))
+                {
+                    CurrentGame = cachedGame;
+                    return cachedGame;
+                }
+
+                // Load from file storage
+                var filePath = GetGameFilePath(gameId);
+                if (!File.Exists(filePath))
+                {
+                    return null;
+                }
+
+                var json = await File.ReadAllTextAsync(filePath);
+                var game = JsonSerializer.Deserialize<Game>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (game != null)
+                {
+                    // Restore IsActive state (not serialized due to [JsonIgnore])
+                    if (game.IsInProgress)
+                    {
+                        var currentFrame = game.Frames.FirstOrDefault(f => f.FrameNumber == game.CurrentFrameNumber);
+                        if (currentFrame != null)
+                        {
+                            currentFrame.IsActive = true;
+                        }
+                    }
+
+                    _gameCache[gameId] = game;
+                    CurrentGame = game;
+                }
+
+                return game;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading game: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets all saved games
+        /// </summary>
+        public async Task<List<Game>> GetAllGamesAsync()
+        {
+            var games = new List<Game>();
+
+            try
+            {
+                var files = Directory.GetFiles(_gamesDirectory, "*.json");
+                foreach (var file in files)
+                {
+                    var json = await File.ReadAllTextAsync(file);
+                    var game = JsonSerializer.Deserialize<Game>(json, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    if (game != null)
+                    {
+                        // Restore IsActive state (not serialized due to [JsonIgnore])
+                        if (game.IsInProgress)
+                        {
+                            var currentFrame = game.Frames.FirstOrDefault(f => f.FrameNumber == game.CurrentFrameNumber);
+                            if (currentFrame != null)
+                            {
+                                currentFrame.IsActive = true;
+                            }
+                        }
+
+                        games.Add(game);
+                        _gameCache[game.GameId] = game;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading games: {ex.Message}");
+            }
+
+            return games;
+        }
+
+        private string GetGameFilePath(Guid gameId)
+        {
+            return Path.Combine(_gamesDirectory, $"{gameId}.json");
         }
 
         /// <summary>
@@ -112,12 +219,29 @@ namespace NinetyNine.Presentation.Services
 
             try
             {
-                // TODO: Implement actual saving to repository
-                var isValid = ValidateCurrentGame();
-                return await Task.FromResult(isValid);
+                // Validate game before saving
+                if (!ValidateCurrentGame())
+                {
+                    return false;
+                }
+
+                // Serialize and save to file
+                var json = JsonSerializer.Serialize(CurrentGame, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                var filePath = GetGameFilePath(CurrentGame.GameId);
+                await File.WriteAllTextAsync(filePath, json);
+
+                // Update cache
+                _gameCache[CurrentGame.GameId] = CurrentGame;
+
+                return true;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Error saving game: {ex.Message}");
                 return false;
             }
         }
@@ -284,6 +408,75 @@ namespace NinetyNine.Presentation.Services
                 return false;
 
             return CurrentGame.ValidateGame();
+        }
+
+        /// <summary>
+        /// Gets the most recent in-progress game, if any exists
+        /// </summary>
+        /// <returns>The most recent in-progress game, or null if none</returns>
+        public async Task<Game?> GetMostRecentInProgressGameAsync()
+        {
+            var allGames = await GetAllGamesAsync();
+
+            return allGames
+                .Where(g => g.GameState == GameState.InProgress || g.GameState == GameState.Paused)
+                .OrderByDescending(g => g.WhenPlayed)
+                .FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Undoes the most recently completed frame (reverts to previous frame)
+        /// </summary>
+        /// <returns>True if successful</returns>
+        public async Task<bool> UndoLastFrameAsync()
+        {
+            if (CurrentGame == null || CurrentGame.CurrentFrameNumber <= 1)
+                return false;
+
+            try
+            {
+                // Get the previous frame (the one we want to undo)
+                var previousFrameNumber = CurrentGame.CurrentFrameNumber - 1;
+                var previousFrame = CurrentGame.Frames.FirstOrDefault(f => f.FrameNumber == previousFrameNumber);
+
+                if (previousFrame == null || !previousFrame.IsCompleted)
+                    return false;
+
+                // Get current frame and deactivate it
+                var currentFrame = CurrentGame.CurrentFrame;
+                if (currentFrame != null)
+                {
+                    currentFrame.IsActive = false;
+                }
+
+                // Reset the previous frame
+                previousFrame.IsCompleted = false;
+                previousFrame.IsActive = true;
+                previousFrame.RunningTotal = 0;
+
+                // Decrement the current frame number
+                CurrentGame.CurrentFrameNumber = previousFrameNumber;
+
+                // Recalculate running totals for remaining frames
+                var runningTotal = 0;
+                foreach (var frame in CurrentGame.Frames.Where(f => f.FrameNumber < previousFrameNumber && f.IsCompleted))
+                {
+                    runningTotal += frame.FrameScore;
+                }
+
+                // Save the updated game
+                await SaveCurrentGameAsync();
+
+                // Notify UI of changes
+                CurrentGameChanged?.Invoke(this, CurrentGame);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error undoing last frame: {ex.Message}");
+                return false;
+            }
         }
     }
 }

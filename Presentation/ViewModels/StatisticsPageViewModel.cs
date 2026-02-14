@@ -2,7 +2,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using NinetyNine.Presentation.Services;
 using ReactiveUI;
 
@@ -11,28 +10,31 @@ namespace NinetyNine.Presentation.ViewModels
     public class StatisticsPageViewModel : ViewModelBase
     {
         private readonly IStatisticsService _statisticsService;
+        private readonly IPlayerService _playerService;
         private PlayerStatistics? _playerStatistics;
         private FrameAnalysis? _frameAnalysis;
         private bool _isLoading;
+        private bool _isInitialized;
         private string _selectedTimeRange = "Last 30 Days";
 
-        public StatisticsPageViewModel() : this(new StatisticsService())
+        public StatisticsPageViewModel() : this(new StatisticsService(), new PlayerService())
         {
         }
 
-        public StatisticsPageViewModel(IStatisticsService statisticsService)
+        public StatisticsPageViewModel(IStatisticsService statisticsService, IPlayerService playerService)
         {
             _statisticsService = statisticsService;
-            
+            _playerService = playerService;
+
             RecentGames = new ObservableCollection<GameSummary>();
             LeaderboardEntries = new ObservableCollection<LeaderboardEntry>();
             ProgressData = new ObservableCollection<ProgressDataPoint>();
             ImprovementSuggestions = new ObservableCollection<string>();
-            
+
             RefreshDataCommand = ReactiveCommand.CreateFromTask(RefreshDataAsync);
-            
+
             // Load initial data
-            _ = RefreshDataAsync();
+            _ = InitializeAndRefreshAsync();
         }
 
         #region Properties
@@ -151,9 +153,8 @@ namespace NinetyNine.Presentation.ViewModels
             get
             {
                 var trend = PlayerStatistics?.ImprovementTrend ?? 0;
-                var direction = trend >= 0 ? "↗" : "↘";
-                var color = trend >= 0 ? "Green" : "Red";
-                return $"{direction} {Math.Abs(trend):F1} points";
+                var direction = trend >= 0 ? "+" : "";
+                return $"{direction}{trend:F1} points";
             }
         }
 
@@ -172,21 +173,45 @@ namespace NinetyNine.Presentation.ViewModels
 
         #region Private Methods
 
+        private async Task InitializeAndRefreshAsync()
+        {
+            if (_isInitialized) return;
+
+            try
+            {
+                // Initialize player service to get the real player ID
+                await _playerService.InitializeAsync();
+                _isInitialized = true;
+
+                // Now refresh with real player ID
+                await RefreshDataAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error initializing StatisticsPageViewModel: {ex.Message}");
+            }
+        }
+
         private async Task RefreshDataAsync()
         {
+            if (!_isInitialized) return;
+
             try
             {
                 IsLoading = true;
 
-                // Use a demo player ID for now
-                var demoPlayerId = Guid.NewGuid();
+                // Invalidate cache to get fresh data
+                _statisticsService.InvalidateCache();
+
+                // Use the real persisted player ID
+                var playerId = _playerService.CurrentPlayer.PlayerId;
 
                 // Load all statistics data
-                var playerStatsTask = _statisticsService.GetPlayerStatisticsAsync(demoPlayerId);
-                var frameAnalysisTask = _statisticsService.GetFrameAnalysisAsync(demoPlayerId);
-                var recentGamesTask = _statisticsService.GetRecentGamesAsync(demoPlayerId, 10);
+                var playerStatsTask = _statisticsService.GetPlayerStatisticsAsync(playerId);
+                var frameAnalysisTask = _statisticsService.GetFrameAnalysisAsync(playerId);
+                var recentGamesTask = _statisticsService.GetRecentGamesAsync(playerId, 10);
                 var leaderboardTask = _statisticsService.GetLeaderboardAsync(10);
-                var progressTask = _statisticsService.GetProgressDataAsync(demoPlayerId, GetDaysFromTimeRange());
+                var progressTask = _statisticsService.GetProgressDataAsync(playerId, GetDaysFromTimeRange());
 
                 await Task.WhenAll(playerStatsTask, frameAnalysisTask, recentGamesTask, leaderboardTask, progressTask);
 
@@ -204,7 +229,7 @@ namespace NinetyNine.Presentation.ViewModels
                         Score = game.TotalScore,
                         Venue = game.LocationPlayed?.Name ?? "Unknown",
                         TableSize = game.TableSize.ToString(),
-                        Duration = "~45 min", // Mock duration
+                        Duration = "~45 min",
                         Status = game.IsCompleted ? "Completed" : "In Progress"
                     });
                 }

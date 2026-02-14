@@ -115,5 +115,22 @@ namespace NinetyNine.Presentation.Services
         /// </summary>
         /// <returns>True if valid</returns>
         bool ValidateCurrentGame();
+
+        /// <summary>
+        /// Gets the most recent in-progress game, if any exists
+        /// </summary>
+        /// <returns>The most recent in-progress game, or null if none</returns>
+        Task<Game?> GetMostRecentInProgressGameAsync();
+
+        /// <summary>
+        /// Gets all saved games
+        /// </summary>
+        Task<System.Collections.Generic.List<Game>> GetAllGamesAsync();
+
+        /// <summary>
+        /// Undoes the most recently completed frame (reverts to previous frame)
+        /// </summary>
+        /// <returns>True if successful</returns>
+        Task<bool> UndoLastFrameAsync();
     }
 }

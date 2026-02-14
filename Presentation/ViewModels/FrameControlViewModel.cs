@@ -23,7 +23,9 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Windows.Input;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using NinetyNine.Model;
+using NinetyNine.Presentation.Services;
 using ReactiveUI;
 
 namespace NinetyNine.Presentation.ViewModels
@@ -32,10 +34,16 @@ namespace NinetyNine.Presentation.ViewModels
     {
         private Frame? _frame;
         private bool _isEditable = false;
+        private readonly ICelebrationService? _celebrationService;
 
-        public FrameControlViewModel()
+        public FrameControlViewModel() : this((ICelebrationService?)null)
         {
-            // Initialize commands
+        }
+
+        public FrameControlViewModel(ICelebrationService? celebrationService)
+        {
+            _celebrationService = celebrationService;
+            // Initialize commands with canExecute based on CanEdit/CanReset
             IncrementBreakBonusCommand = ReactiveCommand.Create(IncrementBreakBonus, this.WhenAnyValue(x => x.CanEdit));
             DecrementBreakBonusCommand = ReactiveCommand.Create(DecrementBreakBonus, this.WhenAnyValue(x => x.CanEdit));
             IncrementBallCountCommand = ReactiveCommand.Create(IncrementBallCount, this.WhenAnyValue(x => x.CanEdit));
@@ -49,7 +57,12 @@ namespace NinetyNine.Presentation.ViewModels
                 .Subscribe(frame => SubscribeToFrameChanges());
         }
 
-        public FrameControlViewModel(Frame frame) : this()
+        public FrameControlViewModel(Frame frame) : this((ICelebrationService?)null)
+        {
+            Frame = frame;
+        }
+
+        public FrameControlViewModel(Frame frame, ICelebrationService? celebrationService) : this(celebrationService)
         {
             Frame = frame;
         }
@@ -104,6 +117,12 @@ namespace NinetyNine.Presentation.ViewModels
                     this.RaisePropertyChanged();
                     this.RaisePropertyChanged(nameof(FrameScore));
                     this.RaisePropertyChanged(nameof(IsValidScore));
+
+                    // Trigger score pop celebration
+                    if (FrameScore > 0)
+                    {
+                        _celebrationService?.TriggerScorePop(FrameScore);
+                    }
                 }
             }
         }
@@ -144,37 +163,38 @@ namespace NinetyNine.Presentation.ViewModels
         public bool IsPerfectFrame => Frame?.IsPerfectFrame ?? false;
 
         /// <summary>
-        /// Background color based on frame state
+        /// Background color based on frame state (dark theme with neon accents)
         /// </summary>
         public IBrush BackgroundBrush
         {
             get
             {
-                if (Frame == null) return Brushes.Transparent;
-                
-                if (IsActive) return Brushes.LightBlue;
-                if (IsPerfectFrame) return Brushes.Gold;
-                if (IsCompleted) return Brushes.LightGreen;
-                if (!IsValidScore) return Brushes.LightCoral;
-                
-                return Brushes.Transparent;
+                if (Frame == null) return new SolidColorBrush(Color.Parse("#1A1A2E"));
+
+                if (IsPerfectFrame && IsCompleted) return new SolidColorBrush(Color.Parse("#1AFFD700")); // Gold glow
+                if (IsActive) return new SolidColorBrush(Color.Parse("#1A00D4FF")); // Neon blue glow
+                if (IsCompleted) return new SolidColorBrush(Color.Parse("#1A00FF88")); // Neon green glow
+                if (!IsValidScore) return new SolidColorBrush(Color.Parse("#1AFF1744")); // Neon red glow
+
+                return new SolidColorBrush(Color.Parse("#1A1A2E")); // Dark surface
             }
         }
 
         /// <summary>
-        /// Border color based on frame state
+        /// Border color based on frame state (neon accents)
         /// </summary>
         public IBrush BorderBrush
         {
             get
             {
-                if (Frame == null) return Brushes.Gray;
-                
-                if (IsActive) return Brushes.Blue;
-                if (!IsValidScore) return Brushes.Red;
-                if (IsCompleted) return Brushes.Green;
-                
-                return Brushes.Gray;
+                if (Frame == null) return new SolidColorBrush(Color.Parse("#2D2D44"));
+
+                if (IsPerfectFrame && IsCompleted) return new SolidColorBrush(Color.Parse("#FFD700")); // Gold
+                if (IsActive) return new SolidColorBrush(Color.Parse("#00D4FF")); // Neon blue
+                if (!IsValidScore) return new SolidColorBrush(Color.Parse("#FF1744")); // Neon red
+                if (IsCompleted) return new SolidColorBrush(Color.Parse("#00FF88")); // Neon green
+
+                return new SolidColorBrush(Color.Parse("#2D2D44")); // Dark border
             }
         }
 
@@ -286,7 +306,19 @@ namespace NinetyNine.Presentation.ViewModels
         {
             if (Frame != null)
             {
-                Frame.PropertyChanged += (sender, e) => RefreshAll();
+                Frame.PropertyChanged += (sender, e) =>
+                {
+                    RefreshAll();
+
+                    // Check if frame was just completed and is perfect
+                    if (e.PropertyName == nameof(Frame.IsCompleted) && Frame.IsCompleted && IsPerfectFrame)
+                    {
+                        _celebrationService?.TriggerPerfectFrame(FrameNumber);
+                    }
+                };
+
+                // Initialize computed properties with current frame state
+                RefreshAll();
             }
         }
 

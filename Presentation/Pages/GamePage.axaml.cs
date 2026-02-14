@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using NinetyNine.Presentation.ViewModels;
 
 namespace NinetyNine.Presentation.Pages
 {
@@ -9,6 +10,7 @@ namespace NinetyNine.Presentation.Pages
       public GamePage()
       {
          InitializeComponent();
+         DataContext = new GamePageViewModel();
       }
 
       private void InitializeComponent()

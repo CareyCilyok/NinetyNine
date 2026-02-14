@@ -6,13 +6,12 @@
              xmlns:controls="using:NinetyNine.Presentation.Controls"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
-             x:Class="NinetyNine.Presentation.Pages.GamePage">
+             x:Class="NinetyNine.Presentation.Pages.GamePage"
+             Background="{DynamicResource BackgroundDeepBrush}">
 
-   <UserControl.DataContext>
-      <vm:GamePageViewModel/>
-   </UserControl.DataContext>
+   <!-- DataContext is provided by MainView navigation -->
 
-   <Grid Margin="10">
+   <Grid Margin="16">
       <Grid.RowDefinitions>
          <RowDefinition Height="Auto"/>
          <RowDefinition Height="Auto"/>
@@ -22,76 +21,104 @@
       </Grid.RowDefinitions>
 
       <!-- Game Header -->
-      <Border Grid.Row="0" 
-              Background="LightBlue" 
-              CornerRadius="5" 
-              Padding="10" 
-              Margin="0,0,0,10">
+      <Border Grid.Row="0"
+              Background="{DynamicResource BackgroundMediumBrush}"
+              BorderBrush="{DynamicResource NeonBlueBrush}"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RadiusMD}"
+              Padding="16"
+              Margin="0,0,0,16"
+              BoxShadow="0 0 20 3 #3300D4FF">
          <StackPanel>
-            <TextBlock Text="Ninety-Nine Pool Game Scorekeeper" 
-                       FontSize="18" 
-                       FontWeight="Bold" 
+            <TextBlock Text="Ninety-Nine Pool"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource NeonBlueBrush}"
                        HorizontalAlignment="Center"/>
-            <TextBlock Text="{Binding GameStatus}" 
-                       FontSize="14" 
-                       HorizontalAlignment="Center" 
-                       Margin="0,5,0,0"/>
+            <TextBlock Text="{Binding GameStatus}"
+                       FontSize="16"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       Margin="0,8,0,0"/>
          </StackPanel>
       </Border>
 
       <!-- New Game Controls -->
-      <Border Grid.Row="1" 
-              Background="LightGray" 
-              CornerRadius="5" 
-              Padding="10" 
-              Margin="0,0,0,10"
-              IsVisible="{Binding !IsGameInProgress}">
-         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <TextBlock Text="Player:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-            <TextBox Text="{Binding PlayerName}" Width="100" Margin="0,0,10,0"/>
-            
-            <TextBlock Text="Venue:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-            <TextBox Text="{Binding VenueName}" Width="100" Margin="0,0,10,0"/>
-            
-            <TextBlock Text="Table:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-            <ComboBox Width="80" Margin="0,0,10,0">
-               <ComboBoxItem Content="7-Foot"/>
-               <ComboBoxItem Content="9-Foot" IsSelected="True"/>
-               <ComboBoxItem Content="10-Foot"/>
-            </ComboBox>
-            
-            <Button Command="{Binding NewGameCommand}" 
-                    Content="New Game" 
-                    Padding="10,5"/>
+      <Border Grid.Row="1"
+              Background="{DynamicResource BackgroundMediumBrush}"
+              BorderBrush="{DynamicResource BackgroundSurfaceBrush}"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RadiusMD}"
+              Padding="16"
+              Margin="0,0,0,16"
+              IsVisible="{Binding ShowStartPanel}">
+         <StackPanel HorizontalAlignment="Center" Spacing="16">
+            <!-- Resume Game Button (if in-progress game exists) -->
+            <Button Command="{Binding ResumeGameCommand}"
+                    Content="{Binding ResumeGameText}"
+                    Classes="neon-blue"
+                    Padding="20,12"
+                    FontWeight="Bold"
+                    FontSize="14"
+                    HorizontalAlignment="Center"
+                    IsVisible="{Binding HasInProgressGame}"/>
+
+            <!-- New Game Form -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+               <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="Player:" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                  <TextBox Text="{Binding PlayerName}" Width="120"/>
+               </StackPanel>
+
+               <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="Venue:" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                  <TextBox Text="{Binding VenueName}" Width="120"/>
+               </StackPanel>
+
+               <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="Table:" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                  <ComboBox Width="100"
+                            ItemsSource="{Binding TableSizes}"
+                            SelectedItem="{Binding SelectedTableSizeItem}"
+                            DisplayMemberBinding="{Binding DisplayName}"/>
+               </StackPanel>
+
+               <Button Command="{Binding NewGameCommand}"
+                       Content="New Game"
+                       Classes="neon-green"
+                       Padding="16,8"
+                       FontWeight="Bold"/>
+            </StackPanel>
          </StackPanel>
       </Border>
 
       <!-- Frame Controls Display -->
-      <Border Grid.Row="2" 
-              Background="White" 
-              BorderBrush="Gray" 
-              BorderThickness="1" 
-              CornerRadius="5" 
-              Padding="10" 
-              Margin="0,0,0,10">
+      <Border Grid.Row="2"
+              Background="{DynamicResource BackgroundMediumBrush}"
+              BorderBrush="{DynamicResource BackgroundSurfaceBrush}"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RadiusMD}"
+              Padding="16"
+              Margin="0,0,0,16">
          <StackPanel>
-            <TextBlock Text="Game Frames (9 Total)" 
-                       FontSize="14" 
-                       FontWeight="Bold" 
-                       HorizontalAlignment="Center" 
-                       Margin="0,0,0,10"/>
-            
+            <TextBlock Text="Game Frames"
+                       FontSize="16"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,16"/>
+
             <!-- Frame Controls Container -->
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                <ItemsControl ItemsSource="{Binding FrameViewModels}">
                   <ItemsControl.ItemsPanel>
                      <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" Spacing="5"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8"/>
                      </ItemsPanelTemplate>
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                      <DataTemplate>
-                        <controls:FrameControl DataContext="{Binding}"/>
+                        <controls:FrameControl/>
                      </DataTemplate>
                   </ItemsControl.ItemTemplate>
                </ItemsControl>
@@ -100,97 +127,121 @@
       </Border>
 
       <!-- Current Frame Scoring Area -->
-      <Border Grid.Row="3" 
-              Background="LightYellow" 
-              BorderBrush="Orange" 
-              BorderThickness="2" 
-              CornerRadius="5" 
-              Padding="15" 
+      <Border Grid.Row="3"
+              Background="{DynamicResource BackgroundMediumBrush}"
+              BorderBrush="{DynamicResource NeonBlueBrush}"
+              BorderThickness="2"
+              CornerRadius="{DynamicResource RadiusMD}"
+              Padding="20"
+              BoxShadow="0 0 20 3 #3300D4FF"
               IsVisible="{Binding IsGameInProgress}">
          <StackPanel>
-            <TextBlock Text="{Binding CurrentFrameNumber, StringFormat='Current Frame: {0}'}" 
-                       FontSize="16" 
-                       FontWeight="Bold" 
-                       HorizontalAlignment="Center" 
-                       Margin="0,0,0,15"/>
+            <TextBlock Text="{Binding CurrentFrameNumber, StringFormat='Frame {0} of 9'}"
+                       FontSize="20"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource NeonBlueBrush}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,20"/>
 
             <!-- Scoring Instructions -->
-            <StackPanel HorizontalAlignment="Center" Margin="0,0,0,15">
-               <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center">
+            <StackPanel HorizontalAlignment="Center" Margin="0,0,0,20">
+               <TextBlock TextWrapping="Wrap"
+                          HorizontalAlignment="Center"
+                          Foreground="{DynamicResource TextSecondaryBrush}">
                   <TextBlock.Text>
                      <MultiBinding StringFormat="Use the + and - buttons in Frame {0} above to set your Break Bonus (0-1) and Ball Count (0-10).">
                         <Binding Path="CurrentFrameNumber"/>
                      </MultiBinding>
                   </TextBlock.Text>
                </TextBlock>
-               <TextBlock Text="Maximum 11 points per frame. The 9-ball counts as 2 points." 
-                          HorizontalAlignment="Center" 
-                          TextWrapping="Wrap"/>
+               <TextBlock Text="Maximum 11 points per frame. The 9-ball counts as 2 points."
+                          HorizontalAlignment="Center"
+                          Foreground="{DynamicResource TextMutedBrush}"
+                          TextWrapping="Wrap"
+                          Margin="0,8,0,0"/>
             </StackPanel>
 
             <!-- Frame Action Buttons -->
-            <StackPanel Orientation="Horizontal" 
-                        HorizontalAlignment="Center" 
-                        Spacing="10">
-               <Button Command="{Binding CompleteFrameCommand}" 
-                       Content="Complete Frame" 
-                       Padding="15,8" 
-                       Background="Green" 
-                       Foreground="White"
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Spacing="16">
+               <Button Command="{Binding CompleteFrameCommand}"
+                       Content="Complete Frame"
+                       Classes="neon-green"
+                       Padding="20,10"
                        FontWeight="Bold"/>
-               <Button Command="{Binding ResetFrameCommand}" 
-                       Content="Reset Frame" 
-                       Padding="15,8" 
-                       Background="Orange" 
-                       Foreground="White"/>
-               <Button Command="{Binding CompleteGameCommand}" 
-                       Content="End Game" 
-                       Padding="15,8" 
-                       Background="Red" 
-                       Foreground="White"/>
+               <Button Command="{Binding UndoLastFrameCommand}"
+                       Content="Undo Last"
+                       Classes="neon-blue"
+                       Padding="20,10"/>
+               <Button Command="{Binding ResetFrameCommand}"
+                       Content="Reset Frame"
+                       Classes="neon-gold"
+                       Padding="20,10"/>
+               <Button Command="{Binding CompleteGameCommand}"
+                       Content="End Game"
+                       Classes="neon-red"
+                       Padding="20,10"/>
             </StackPanel>
          </StackPanel>
       </Border>
 
       <!-- Game Completed Display -->
-      <Border Grid.Row="3" 
-              Background="Gold" 
-              BorderBrush="DarkGoldenrod" 
-              BorderThickness="2" 
-              CornerRadius="5" 
-              Padding="20" 
+      <Border Grid.Row="3"
+              Background="{DynamicResource BackgroundMediumBrush}"
+              BorderBrush="{DynamicResource NeonGoldBrush}"
+              BorderThickness="3"
+              CornerRadius="{DynamicResource RadiusMD}"
+              Padding="32"
+              BoxShadow="0 0 30 8 #33FFD700"
               IsVisible="{Binding IsGameCompleted}">
          <StackPanel HorizontalAlignment="Center">
-            <TextBlock Text="🎉 GAME COMPLETED! 🎉" 
-                       FontSize="20" 
-                       FontWeight="Bold" 
-                       HorizontalAlignment="Center" 
-                       Margin="0,0,0,10"/>
-            <TextBlock Text="{Binding TotalScore, StringFormat='Final Score: {0} / 99'}" 
-                       FontSize="16" 
-                       HorizontalAlignment="Center" 
-                       Margin="0,0,0,10"/>
-            <Button Command="{Binding NewGameCommand}" 
-                    Content="Start New Game" 
-                    Padding="15,8" 
+            <TextBlock Text="{Binding GameStatus}"
+                       FontSize="32"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource NeonGoldBrush}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,16"/>
+            <TextBlock Text="{Binding TotalScore, StringFormat='Final Score: {0} / 99'}"
+                       FontSize="20"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,20"/>
+            <Button Command="{Binding NewGameCommand}"
+                    Content="Play Again"
+                    Classes="neon-green"
+                    Padding="24,12"
+                    FontWeight="Bold"
+                    FontSize="16"
                     HorizontalAlignment="Center"/>
          </StackPanel>
       </Border>
 
       <!-- Footer -->
-      <Border Grid.Row="4" 
-              Background="DarkGray" 
-              CornerRadius="5" 
-              Padding="10" 
-              Margin="0,10,0,0">
-         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <TextBlock Text="Total Score: " FontWeight="Bold" Foreground="White"/>
-            <TextBlock Text="{Binding TotalScore}" FontWeight="Bold" Foreground="White" Margin="0,0,20,0"/>
-            <TextBlock Text="Frame: " FontWeight="Bold" Foreground="White"/>
-            <TextBlock Text="{Binding CurrentFrameNumber}" FontWeight="Bold" Foreground="White" Margin="0,0,5,0"/>
-            <TextBlock Text="/ 9" FontWeight="Bold" Foreground="White"/>
+      <Border Grid.Row="4"
+              Background="{DynamicResource BackgroundMediumBrush}"
+              BorderBrush="{DynamicResource BackgroundSurfaceBrush}"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RadiusMD}"
+              Padding="16"
+              Margin="0,16,0,0">
+         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="24">
+            <StackPanel Orientation="Horizontal">
+               <TextBlock Text="Total Score: " FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+               <TextBlock Text="{Binding TotalScore}" FontWeight="Bold" Foreground="{DynamicResource NeonBlueBrush}" FontSize="18"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+               <TextBlock Text="Frame: " FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+               <TextBlock Text="{Binding CurrentFrameNumber}" FontWeight="Bold" Foreground="{DynamicResource NeonBlueBrush}"/>
+               <TextBlock Text=" / 9" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+            </StackPanel>
          </StackPanel>
       </Border>
 
+      <!-- Confetti Overlay (shows when ShowConfetti is true) -->
+      <controls:ConfettiControl Grid.RowSpan="5"
+                                IsVisible="{Binding ShowConfetti}"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"/>
    </Grid>
 </UserControl>

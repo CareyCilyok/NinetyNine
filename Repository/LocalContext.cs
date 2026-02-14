@@ -25,23 +25,25 @@ namespace NinetyNine.Repository
 {
     public class LocalContext : NinetyNineContext
     {
-        public new DbSet<Game> Games { get; set; }
+        private readonly bool _optionsProvided;
 
-        public new DbSet<Player> Players { get; set; }
-
-        public new DbSet<Venue> Venues { get; set; }
-
-        public LocalContext() : base("LocalDatabase") 
+        public LocalContext() : base("LocalDatabase")
         {
-
+            _optionsProvided = false;
         }
 
         public LocalContext(DbContextOptions<LocalContext> options) : base(options)
         {
-            
+            _optionsProvided = true;
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseInMemoryDatabase("NinetyNineDatabase");
+        {
+            // Only configure InMemory if no options were provided (e.g., for production default)
+            if (!_optionsProvided && !options.IsConfigured)
+            {
+                options.UseInMemoryDatabase("NinetyNineDatabase");
+            }
+        }
     }
 }
