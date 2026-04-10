@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<IVenueService, VenueService>();
         services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<AvatarService>();
+        services.AddScoped<IDataSeeder, DataSeeder>();
 
         return services;
     }

@@ -7,6 +7,10 @@ using NinetyNine.Services;
 using NinetyNine.Web.Auth;
 using NinetyNine.Web.Components;
 
+// Mock auth toggle: enabled in Development by default; never honored in
+// Production regardless of config. See docs/architecture.md for the OAuth
+// flow this bypasses during UX prototyping.
+
 // Register BSON class maps before any DI wiring touches MongoDB types.
 BsonConfiguration.Register();
 
@@ -78,6 +82,25 @@ if (builder.Environment.IsDevelopment())
 
 var app = builder.Build();
 
+// ── Mock-mode startup: seed test data ────────────────────────────────────────
+var mockAuthEnabled = app.Environment.IsDevelopment()
+    && builder.Configuration.GetValue<bool>("Auth:Mock:Enabled");
+if (mockAuthEnabled)
+{
+    using var scope = app.Services.CreateScope();
+    var seeder = scope.ServiceProvider.GetRequiredService<IDataSeeder>();
+    try
+    {
+        await seeder.SeedAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex,
+            "Data seeder failed (continuing). Is MongoDB reachable at the dev connection string?");
+    }
+}
+
 // ── Security headers ──────────────────────────────────────────────────────────
 app.Use(async (context, next) =>
 {
@@ -108,6 +131,12 @@ app.MapHealthChecks("/healthz");
 
 // ── Auth endpoints ────────────────────────────────────────────────────────────
 AuthEndpoints.Map(app);
+if (mockAuthEnabled)
+{
+    MockAuthEndpoints.Map(app);
+    app.Logger.LogWarning(
+        "Mock auth is ENABLED. Do not run with this configuration in production.");
+}
 
 // ── Avatar endpoint ───────────────────────────────────────────────────────────
 AvatarEndpoint.Map(app);

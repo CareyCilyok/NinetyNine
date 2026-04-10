@@ -4,6 +4,7 @@
 @inject NavigationManager Navigation
 @inject IHttpContextAccessor HttpContextAccessor
 @inject ILogger<Register> Logger
+@using NinetyNine.Services
 
 <PageTitle>Create Profile &mdash; NinetyNine</PageTitle>
 
@@ -235,12 +236,18 @@
                 await PlayerService.UpdateProfileAsync(player.PlayerId, update);
             }
 
-            // Clear temp cookie and redirect to login to issue the proper auth cookie
+            // Clear temp cookie and redirect to sign-in.
+            // For OAuth providers we bounce through /login to re-run the external
+            // handshake (provider session still live). For mock mode we sign the
+            // user in directly via the mock endpoint.
             var context = HttpContextAccessor.HttpContext;
             if (context is not null)
                 ExternalLoginHandler.ClearTempRegistrationCookie(context.Response);
 
-            Navigation.NavigateTo("/login", forceLoad: true);
+            if (_provider == IDataSeeder.MockProvider)
+                Navigation.NavigateTo($"/mock/signin-as?playerId={player.PlayerId}", forceLoad: true);
+            else
+                Navigation.NavigateTo("/login", forceLoad: true);
         }
         catch (Exception ex)
         {
