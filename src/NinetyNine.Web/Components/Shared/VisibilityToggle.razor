@@ -1,0 +1,32 @@
+@* A labeled toggle switch bound to a boolean visibility flag. *@
+
+<div class="visibility-toggle form-check form-switch">
+    <input class="form-check-input"
+           type="checkbox"
+           role="switch"
+           id="@_inputId"
+           checked="@Value"
+           @onchange="OnChanged"
+           aria-checked="@Value"
+           aria-label="@Label visibility" />
+    <label class="form-check-label" for="@_inputId">
+        @Label
+        <span class="badge @(Value ? "bg-success" : "bg-secondary") ms-1">
+            @(Value ? "Public" : "Private")
+        </span>
+    </label>
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public bool Value { get; set; }
+    [Parameter] public EventCallback<bool> ValueChanged { get; set; }
+
+    private readonly string _inputId = $"vis-{Guid.NewGuid():N}";
+
+    private async Task OnChanged(ChangeEventArgs e)
+    {
+        var newValue = e.Value is true;
+        await ValueChanged.InvokeAsync(newValue);
+    }
+}

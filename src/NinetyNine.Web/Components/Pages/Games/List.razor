@@ -1,0 +1,129 @@
+@page "/games"
+@attribute [Authorize]
+@inject IGameRepository GameRepository
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<List> Logger
+
+<PageTitle>My Games &mdash; NinetyNine</PageTitle>
+
+<h1 class="mb-4">My Games</h1>
+
+@if (_loading)
+{
+    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading games"></span>Loading&hellip;</p>
+}
+else if (_games.Count == 0)
+{
+    <div class="alert alert-info">
+        No games yet. <a href="/games/new">Start your first game!</a>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <caption class="visually-hidden">List of my games</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Score</th>
+                    <th scope="col">Frames</th>
+                    <th scope="col">Avg / Frame</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var game in _games)
+                {
+                    <tr>
+                        <td>@game.WhenPlayed.ToLocalTime().ToString("MMM d, yyyy")</td>
+                        <td>
+                            <span class="badge @GameStateBadge(game.GameState)">
+                                @game.GameState
+                            </span>
+                        </td>
+                        <td class="font-monospace fw-bold">
+                            @game.TotalScore
+                            @if (game.IsPerfectGame)
+                            {
+                                <span class="badge bg-warning text-dark ms-1" title="Perfect game!">99!</span>
+                            }
+                        </td>
+                        <td>@game.CompletedFrames / 9</td>
+                        <td>@(game.AverageScore > 0 ? game.AverageScore.ToString("F1") : "-")</td>
+                        <td>
+                            @if (game.IsInProgress)
+                            {
+                                <a href="/games/@game.GameId/play" class="btn btn-sm btn-primary me-1">Continue</a>
+                            }
+                            <a href="/games/@game.GameId" class="btn btn-sm btn-outline-secondary">Details</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (_hasMore)
+    {
+        <div class="text-center mt-3">
+            <button type="button" class="btn btn-outline-primary" @onclick="LoadMore" disabled="@_loadingMore">
+                @if (_loadingMore)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                }
+                Load more
+            </button>
+        </div>
+    }
+}
+
+@code {
+    private const int PageSize = 20;
+    private List<Game> _games = [];
+    private bool _loading = true;
+    private bool _loadingMore;
+    private bool _hasMore;
+    private int _skip;
+    private Guid _playerId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var context = HttpContextAccessor.HttpContext;
+        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
+
+        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        await LoadGamesAsync();
+        _loading = false;
+    }
+
+    private async Task LoadGamesAsync()
+    {
+        var page = await GameRepository.GetByPlayerAsync(_playerId, _skip, PageSize + 1);
+        _hasMore = page.Count > PageSize;
+        _games.AddRange(page.Take(PageSize));
+        _skip += PageSize;
+    }
+
+    private async Task LoadMore()
+    {
+        _loadingMore = true;
+        await LoadGamesAsync();
+        _loadingMore = false;
+    }
+
+    private static string GameStateBadge(GameState state) => state switch
+    {
+        GameState.Completed => "bg-success",
+        GameState.InProgress => "bg-primary",
+        GameState.Paused => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}

@@ -1,0 +1,114 @@
+@page "/games/{GameId:guid}"
+@attribute [Authorize]
+@inject IGameService GameService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<Details> Logger
+
+<PageTitle>Game Details &mdash; NinetyNine</PageTitle>
+
+@if (_loading)
+{
+    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading game"></span>Loading&hellip;</p>
+}
+else if (_game is null)
+{
+    <div class="alert alert-danger">Game not found or you do not have access.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="mb-1">
+                Game &mdash; @_game.WhenPlayed.ToLocalTime().ToString("MMMM d, yyyy")
+            </h1>
+            <span class="badge @StateClass">@_game.GameState</span>
+        </div>
+        <div class="text-end">
+            <div class="display-6 fw-bold @(_game.IsPerfectGame ? "text-warning" : "")">
+                @_game.TotalScore <span class="fs-5 text-muted">/ 99</span>
+            </div>
+            @if (_game.IsPerfectGame)
+            {
+                <span class="badge bg-warning text-dark">Perfect Game!</span>
+            }
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="stat-card card text-center py-3">
+                <div class="h4 mb-0">@_game.CompletedFrames</div>
+                <div class="text-muted small">Frames</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="stat-card card text-center py-3">
+                <div class="h4 mb-0">@_game.AverageScore.ToString("F1")</div>
+                <div class="text-muted small">Avg / Frame</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="stat-card card text-center py-3">
+                <div class="h4 mb-0">@_game.PerfectFrames</div>
+                <div class="text-muted small">Perfect Frames</div>
+            </div>
+        </div>
+    </div>
+
+    <ScoreCardGrid Game="_game" Mode="ScoreCardMode.View" />
+
+    @if (_game.IsInProgress)
+    {
+        <div class="mt-4">
+            <a href="/games/@GameId/play" class="btn btn-primary">Continue Game</a>
+        </div>
+    }
+    else
+    {
+        <div class="mt-4">
+            <a href="/games" class="btn btn-outline-secondary">Back to History</a>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Guid GameId { get; set; }
+
+    private Game? _game;
+    private bool _loading = true;
+    private Guid _playerId;
+
+    private string StateClass => _game?.GameState switch
+    {
+        GameState.Completed => "bg-success",
+        GameState.InProgress => "bg-primary",
+        GameState.Paused => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var context = HttpContextAccessor.HttpContext;
+        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
+
+        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        var game = await GameService.GetGameAsync(GameId);
+
+        if (game is null || game.PlayerId != _playerId)
+        {
+            _game = null;
+        }
+        else
+        {
+            _game = game;
+        }
+
+        _loading = false;
+    }
+}

@@ -1,0 +1,108 @@
+@page "/games/{GameId:guid}/play"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject IGameService GameService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<Play> Logger
+
+<PageTitle>Playing &mdash; NinetyNine</PageTitle>
+
+@if (_loading)
+{
+    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading game"></span>Loading game&hellip;</p>
+}
+else if (_game is null)
+{
+    <div class="alert alert-danger">Game not found or you do not have access.</div>
+}
+else if (_game.IsCompleted)
+{
+    <div class="alert alert-info">
+        This game is complete. <a href="/games/@GameId">View results</a>.
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Frame @_game.CurrentFrameNumber <span class="text-muted fs-5">/ 9</span></h1>
+        <span class="badge bg-primary fs-6" aria-live="polite">
+            Score: @_game.TotalScore
+        </span>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@_errorMessage</div>
+    }
+
+    <ScoreCardGrid Game="_game"
+                   Mode="ScoreCardMode.Edit"
+                   OnFrameSubmit="HandleFrameSubmit" />
+
+    <div class="mt-4 d-flex gap-2">
+        <a href="/games" class="btn btn-outline-secondary">Quit Game</a>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid GameId { get; set; }
+
+    private Game? _game;
+    private bool _loading = true;
+    private string _errorMessage = "";
+    private Guid _playerId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var context = HttpContextAccessor.HttpContext;
+        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
+
+        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        await LoadGameAsync();
+        _loading = false;
+    }
+
+    private async Task LoadGameAsync()
+    {
+        var game = await GameService.GetGameAsync(GameId);
+
+        if (game is null || game.PlayerId != _playerId)
+        {
+            _game = null;
+            return;
+        }
+
+        _game = game;
+    }
+
+    private async Task HandleFrameSubmit(ScoreCardGrid.FrameSubmitArgs args)
+    {
+        _errorMessage = "";
+
+        try
+        {
+            _game = await GameService.RecordFrameAsync(
+                args.GameId,
+                args.FrameNumber,
+                args.BreakBonus,
+                args.BallCount,
+                args.Notes);
+
+            if (_game.IsCompleted)
+            {
+                Navigation.NavigateTo($"/games/{GameId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            Logger.LogWarning(ex, "Failed to record frame {Frame} for game {GameId}.", args.FrameNumber, args.GameId);
+        }
+    }
+}

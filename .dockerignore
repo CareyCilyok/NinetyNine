@@ -1,0 +1,48 @@
+# ─── Build artefacts ──────────────────────────────────────────────────────────
+# Excluding bin/obj ensures the build context is small and that local build
+# artefacts do not shadow the in-container dotnet restore / publish output.
+**/bin/
+**/obj/
+
+# ─── IDE + editor noise ───────────────────────────────────────────────────────
+**/.vs/
+**/*.user
+**/.idea/
+**/.vscode/
+
+# ─── Node / frontend tooling ──────────────────────────────────────────────────
+**/node_modules/
+
+# ─── Git ──────────────────────────────────────────────────────────────────────
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# ─── Docker files themselves ──────────────────────────────────────────────────
+# Including compose files or the Dockerfile in the build context adds noise and
+# can cause cache invalidation on unrelated changes.
+docker-compose*.yml
+Dockerfile
+deploy.sh
+
+# ─── Documentation ────────────────────────────────────────────────────────────
+README.md
+CLAUDE.md
+docs/
+**/*.md
+
+# ─── Tests ────────────────────────────────────────────────────────────────────
+# The Dockerfile restores only the web project and its direct dependencies
+# (Model, Repository, Services). Test projects are not needed in the build
+# context at all.
+tests/
+
+# ─── Secrets / environment files ──────────────────────────────────────────────
+# Never include actual .env files in the build context. .env.example is safe to
+# include but the Dockerfile does not use it, so exclude it too.
+.env
+.env.*
+
+# ─── Archive / scratch ────────────────────────────────────────────────────────
+archive/

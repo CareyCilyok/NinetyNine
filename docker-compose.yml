@@ -1,0 +1,55 @@
+# ─── Production compose file (Azure Linux VM) ─────────────────────────────────
+# This file is used on the Azure VM only. It does NOT build the image — it pulls
+# a pre-built image from GHCR that was pushed by the GitHub Actions deploy workflow.
+#
+# Required variables (must be set in /opt/ninetynine/.env on the VM):
+#   GHCR_REPO               e.g. owner/ninetynine
+#   IMAGE_TAG               set by CI to the commit SHA; defaults to "latest"
+#   MONGO_CONNECTION_STRING  Atlas connection string (no trailing newline)
+#   MONGO_DATABASE_NAME      optional, defaults to NinetyNine
+#   GOOGLE_CLIENT_ID
+#   GOOGLE_CLIENT_SECRET
+#
+# Usage on VM:
+#   IMAGE_TAG=<sha> docker compose pull
+#   IMAGE_TAG=<sha> docker compose up -d --remove-orphans
+
+services:
+  web:
+    image: ghcr.io/${GHCR_REPO}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+
+    ports:
+      # Map VM port 80 → container port 8080.
+      # TLS termination (Caddy / Let's Encrypt) is a later milestone;
+      # for v1 the VM accepts plain HTTP on port 80.
+      - "80:8080"
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # MongoDb__ prefix matches the MongoDbSettings options class in the app.
+      MongoDb__ConnectionString: ${MONGO_CONNECTION_STRING}
+      MongoDb__DatabaseName: ${MONGO_DATABASE_NAME:-NinetyNine}
+      # Auth__ prefix matches builder.Configuration["Auth:Google:ClientId"] via
+      # ASP.NET Core's convention of mapping __ → : in env var names.
+      Auth__Google__ClientId: ${GOOGLE_CLIENT_ID}
+      Auth__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET}
+
+    healthcheck:
+      # /healthz is mapped via MapHealthChecks in Program.cs and includes a
+      # MongoDB ping check. Unhealthy containers are restarted by the restart policy.
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+    logging:
+      # json-file with rotation keeps disk usage bounded on the VM.
+      # 5 × 10 MB = max 50 MB for web container logs.
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+# No MongoDB service here — production uses MongoDB Atlas.

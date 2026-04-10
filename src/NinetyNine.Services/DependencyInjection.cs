@@ -1,0 +1,26 @@
+using Microsoft.Extensions.DependencyInjection;
+
+namespace NinetyNine.Services;
+
+/// <summary>
+/// Extension methods for registering NinetyNine domain services with the DI container.
+/// </summary>
+public static class DependencyInjection
+{
+    /// <summary>
+    /// Registers all domain service implementations as scoped services.
+    /// Assumes <c>AddNinetyNineRepository</c> has already been called.
+    /// </summary>
+    public static IServiceCollection AddNinetyNineServices(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddScoped<IGameService, GameService>();
+        services.AddScoped<IPlayerService, PlayerService>();
+        services.AddScoped<IVenueService, VenueService>();
+        services.AddScoped<IStatisticsService, StatisticsService>();
+        services.AddScoped<AvatarService>();
+
+        return services;
+    }
+}

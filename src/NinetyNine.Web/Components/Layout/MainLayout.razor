@@ -1,0 +1,31 @@
+@inherits LayoutComponentBase
+
+<header class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="/">
+            <span class="me-1" aria-hidden="true">&#9899;</span>NinetyNine
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#mainNav" aria-controls="mainNav"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNav">
+            <NavMenu />
+            <div class="ms-auto d-flex align-items-center">
+                <LoginDisplay />
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="container-fluid py-4" role="main">
+    @Body
+</main>
+
+<footer class="footer py-3 bg-dark text-light text-center">
+    <div class="container">
+        <small>NinetyNine Pool Scorekeeper &mdash; P&amp;B RPI Rules</small>
+    </div>
+</footer>

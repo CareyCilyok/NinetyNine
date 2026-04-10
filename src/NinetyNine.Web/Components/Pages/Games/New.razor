@@ -1,0 +1,119 @@
+@page "/games/new"
+@attribute [Authorize]
+@inject IGameService GameService
+@inject IVenueService VenueService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<New> Logger
+
+<PageTitle>New Game &mdash; NinetyNine</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+        <h1 class="mb-4">Start New Game</h1>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="HandleStart">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold" for="venue">Venue</label>
+                <InputSelect id="venue"
+                             class="form-select"
+                             @bind-Value="_model.VenueId"
+                             aria-required="true">
+                    <option value="">-- Select a venue --</option>
+                    @foreach (var venue in _venues)
+                    {
+                        <option value="@venue.VenueId">@venue.Name</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => _model.VenueId" />
+                <div class="form-text">
+                    <a href="/venues/new">Add a new venue</a> if yours is not listed.
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Table Size</label>
+                <div class="d-flex flex-wrap gap-2" role="group" aria-label="Table size options">
+                    <TableSizePicker @bind-Value="_model.TableSize" />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" disabled="@_isSaving">
+                @if (_isSaving)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span>Starting&hellip;</span>
+                }
+                else
+                {
+                    <span>Start Game</span>
+                }
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private NewGameModel _model = new();
+    private List<Venue> _venues = [];
+    private string _errorMessage = "";
+    private bool _isSaving;
+    private Guid _playerId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var context = HttpContextAccessor.HttpContext;
+        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
+
+        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        _venues = (await VenueService.ListAsync(includePrivate: false)).ToList();
+    }
+
+    private async Task HandleStart()
+    {
+        if (string.IsNullOrEmpty(_model.VenueId))
+        {
+            _errorMessage = "Please select a venue.";
+            return;
+        }
+
+        _isSaving = true;
+        _errorMessage = "";
+
+        try
+        {
+            var game = await GameService.StartNewGameAsync(
+                _playerId,
+                Guid.Parse(_model.VenueId),
+                _model.TableSize);
+
+            Navigation.NavigateTo($"/games/{game.GameId}/play");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            Logger.LogWarning(ex, "Failed to start new game for player {PlayerId}.", _playerId);
+            _isSaving = false;
+        }
+    }
+
+    private sealed class NewGameModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Please select a venue.")]
+        public string? VenueId { get; set; }
+
+        public TableSize TableSize { get; set; } = TableSize.SevenFoot;
+    }
+}

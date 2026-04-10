@@ -1,0 +1,200 @@
+@*
+    Full 9-frame P&B score card grid.
+    Desktop: 9 columns, 3 rows per cell (Break Bonus / Ball Count / Running Total).
+    Mobile (<768 px): vertical single-frame view with a frame-picker strip.
+    Matches the official P&B score card visual layout.
+*@
+
+<div class="scorecard-wrapper" aria-label="Score card for @(Game?.Notes ?? "game")">
+
+    @* Desktop grid *@
+    <div class="scorecard-grid d-none d-md-grid" role="grid" aria-label="Score card grid">
+
+        @* Column headers *@
+        <div class="scorecard-label-left scorecard-99-label" aria-hidden="true">99</div>
+        @for (int i = 1; i <= 9; i++)
+        {
+            var frameNum = i;
+            <div class="scorecard-col-header" role="columnheader" aria-label="Frame @frameNum">
+                @frameNum
+            </div>
+        }
+        <div class="scorecard-label-right scorecard-99-label" aria-hidden="true">99</div>
+
+        @* Break Bonus row *@
+        <div class="scorecard-row-label" aria-label="Break Bonus row">BB</div>
+        @foreach (var frame in EnsureFrames())
+        {
+            var f = frame;
+            <FrameCell Frame="f"
+                       IsActive="f.IsActive && Mode == ScoreCardMode.Edit"
+                       Mode="Mode"
+                       OnFrameActivated="ActivateFrame" />
+        }
+        <div class="scorecard-row-label-right"></div>
+
+        @* Running Total row label *@
+        <div class="scorecard-running-total-label" aria-label="Running total">RT</div>
+    </div>
+
+    @* Mobile: frame-picker strip + single focused frame *@
+    <div class="scorecard-mobile d-md-none">
+        <div class="frame-picker-strip" role="tablist" aria-label="Frame picker">
+            @for (int i = 1; i <= 9; i++)
+            {
+                var frameNum = i;
+                var frame = EnsureFrames().FirstOrDefault(f => f.FrameNumber == frameNum);
+                <button role="tab"
+                        class="frame-picker-btn @(frameNum == _mobileActiveFrame ? "active" : "") @(frame?.IsCompleted == true ? "completed" : "")"
+                        aria-selected="@(frameNum == _mobileActiveFrame)"
+                        aria-label="Frame @frameNum"
+                        @onclick="() => _mobileActiveFrame = frameNum">
+                    @frameNum
+                </button>
+            }
+        </div>
+
+        @{
+            var mobileFrame = EnsureFrames().FirstOrDefault(f => f.FrameNumber == _mobileActiveFrame);
+        }
+        @if (mobileFrame is not null)
+        {
+            <div class="scorecard-mobile-frame" role="tabpanel"
+                 aria-label="Frame @mobileFrame.FrameNumber detail">
+                <div class="scorecard-mobile-cell">
+                    <div class="mobile-cell-row mobile-break-bonus">
+                        <span class="mobile-row-label">Break Bonus</span>
+                        <span class="mobile-row-value">
+                            @(mobileFrame.IsCompleted ? mobileFrame.BreakBonus.ToString() : "-")
+                        </span>
+                    </div>
+                    <div class="mobile-cell-row mobile-ball-count">
+                        <span class="mobile-row-label">Ball Count</span>
+                        <span class="mobile-row-value">
+                            @(mobileFrame.IsCompleted ? mobileFrame.BallCount.ToString() : "-")
+                        </span>
+                    </div>
+                    <div class="mobile-cell-row mobile-running-total">
+                        <span class="mobile-row-label">Running Total</span>
+                        <span class="mobile-row-value">
+                            @(mobileFrame.IsCompleted ? mobileFrame.RunningTotal.ToString() : "-")
+                        </span>
+                    </div>
+                    @if (mobileFrame.IsActive && Mode == ScoreCardMode.Edit)
+                    {
+                        <button type="button"
+                                class="btn btn-primary w-100 mt-3"
+                                @onclick="() => ActivateFrame(mobileFrame)"
+                                aria-label="Enter score for frame @mobileFrame.FrameNumber">
+                            Enter Score
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @* Score summary bar *@
+    @if (Game is not null)
+    {
+        <div class="scorecard-summary d-flex justify-content-between align-items-center mt-2"
+             aria-live="polite" aria-atomic="true">
+            <span class="summary-frames">
+                Frames: <strong>@Game.CompletedFrames</strong> / 9
+            </span>
+            <span class="summary-score">
+                Total: <strong class="@(Game.IsPerfectGame ? "text-success" : "")">
+                    @Game.TotalScore
+                </strong> / 99
+            </span>
+            @if (Game.AverageScore > 0)
+            {
+                <span class="summary-avg">
+                    Avg: <strong>@Game.AverageScore.ToString("F1")</strong>
+                </span>
+            }
+        </div>
+    }
+</div>
+
+@* Frame input dialog *@
+<FrameInputDialog IsVisible="_dialogVisible"
+                  FrameNumber="_dialogFrameNumber"
+                  OnSubmit="HandleFrameSubmit"
+                  OnCancel="CloseDialog" />
+
+@code {
+    [Parameter] public Game? Game { get; set; }
+    [Parameter] public ScoreCardMode Mode { get; set; } = ScoreCardMode.View;
+    [Parameter] public EventCallback<FrameSubmitArgs> OnFrameSubmit { get; set; }
+
+    private bool _dialogVisible;
+    private int _dialogFrameNumber;
+    private Frame? _pendingFrame;
+    private int _mobileActiveFrame = 1;
+
+    protected override void OnParametersSet()
+    {
+        // Auto-focus mobile picker on the active frame
+        var activeFrame = Game?.CurrentFrame;
+        if (activeFrame is not null)
+        {
+            _mobileActiveFrame = activeFrame.FrameNumber;
+        }
+    }
+
+    private IReadOnlyList<Frame> EnsureFrames()
+    {
+        if (Game is null) return [];
+
+        // If frames not yet initialized, return 9 empty placeholder frames
+        if (!Game.Frames.Any())
+        {
+            return Enumerable.Range(1, 9)
+                .Select(n => new Frame { FrameNumber = n, GameId = Game.GameId })
+                .ToList();
+        }
+
+        return Game.Frames;
+    }
+
+    private void ActivateFrame(Frame frame)
+    {
+        if (Mode != ScoreCardMode.Edit) return;
+        if (!frame.IsActive) return;
+
+        _pendingFrame = frame;
+        _dialogFrameNumber = frame.FrameNumber;
+        _dialogVisible = true;
+    }
+
+    private async Task HandleFrameSubmit(FrameInputDialog.FrameScoreInput input)
+    {
+        _dialogVisible = false;
+
+        if (_pendingFrame is null || Game is null) return;
+
+        await OnFrameSubmit.InvokeAsync(new FrameSubmitArgs(
+            Game.GameId,
+            _pendingFrame.FrameNumber,
+            input.BreakBonus,
+            input.BallCount,
+            input.Notes));
+
+        _pendingFrame = null;
+    }
+
+    private void CloseDialog()
+    {
+        _dialogVisible = false;
+        _pendingFrame = null;
+    }
+
+    /// <summary>Arguments passed to the parent when a frame is submitted.</summary>
+    public sealed record FrameSubmitArgs(
+        Guid GameId,
+        int FrameNumber,
+        int BreakBonus,
+        int BallCount,
+        string? Notes);
+}

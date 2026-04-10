@@ -1,0 +1,74 @@
+@page "/venues"
+@attribute [Authorize]
+@inject IVenueService VenueService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<List> Logger
+
+<PageTitle>Venues &mdash; NinetyNine</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Venues</h1>
+    <a href="/venues/new" class="btn btn-primary">Add Venue</a>
+</div>
+
+@if (_loading)
+{
+    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading venues"></span>Loading&hellip;</p>
+}
+else if (_venues.Count == 0)
+{
+    <div class="alert alert-info">
+        No venues yet. <a href="/venues/new">Add the first one.</a>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var venue in _venues)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title d-flex align-items-center gap-2">
+                            @venue.Name
+                            @if (venue.Private)
+                            {
+                                <span class="badge bg-secondary" title="Private venue">Private</span>
+                            }
+                        </h5>
+                        @if (!string.IsNullOrEmpty(venue.Address))
+                        {
+                            <p class="card-text text-muted small">@venue.Address</p>
+                        }
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="/venues/@venue.VenueId/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Venue> _venues = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var venues = await VenueService.ListAsync(includePrivate: false);
+            _venues = venues.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load venues.");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

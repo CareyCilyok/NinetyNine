@@ -1,5 +1,28 @@
+# Build output
+**/bin/
+**/obj/
+**/TestResults/
+coverage/
+*.trx
+
+# IDE
 /.vs
-*/bin
-*/obj
 .vscode
 .idea
+*.user
+*.suo
+
+# Claude Code local session state
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets and local environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log

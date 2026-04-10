@@ -1,0 +1,62 @@
+@page "/"
+@inject NavigationManager Navigation
+
+<PageTitle>NinetyNine &mdash; Pool Scorekeeper</PageTitle>
+
+<div class="hero-section text-center py-5">
+    <h1 class="display-4 fw-bold">NinetyNine</h1>
+    <p class="lead">Track your P&amp;B pool game scores, compete on the leaderboard, and improve your game.</p>
+
+    <AuthorizeView>
+        <Authorized>
+            <div class="d-flex gap-3 justify-content-center flex-wrap mt-4">
+                <a href="/games/new" class="btn btn-primary btn-lg">Start New Game</a>
+                <a href="/games" class="btn btn-outline-secondary btn-lg">View History</a>
+                <a href="/stats/me" class="btn btn-outline-secondary btn-lg">My Stats</a>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <div class="mt-4">
+                <a href="/login" class="btn btn-primary btn-lg">Sign in with Google</a>
+            </div>
+            <p class="mt-3 text-muted">Free to use. No password required.</p>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+<div class="row mt-5 g-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Official P&amp;B Scoring</h5>
+                <p class="card-text">
+                    9 frames, up to 11 points each. Break bonus + ball count — the same card
+                    you fill out at the table, now in your pocket.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Game History</h5>
+                <p class="card-text">
+                    Every game stored. Review past scores, track improvement over time,
+                    and see your best frames.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Leaderboard</h5>
+                <p class="card-text">
+                    See how you stack up. Global leaderboard ranked by average score
+                    across completed games.
+                </p>
+                <a href="/stats" class="btn btn-outline-primary btn-sm">View Leaderboard</a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,31 @@
+@* Renders an avatar image or falls back to an initials-based SVG placeholder. *@
+
+<div class="avatar-container" style="width:@(SizePx)px;height:@(SizePx)px;"
+     role="img" aria-label="Avatar for @DisplayName">
+    @if (!string.IsNullOrEmpty(AvatarUrl))
+    {
+        <img src="@AvatarUrl"
+             alt="Avatar for @DisplayName"
+             width="@SizePx"
+             height="@SizePx"
+             class="avatar-img rounded-circle"
+             loading="lazy"
+             @onerror="HandleImageError" />
+    }
+    else
+    {
+        <InitialsAvatar DisplayName="@DisplayName" SizePx="@SizePx" />
+    }
+</div>
+
+@code {
+    [Parameter] public string? AvatarUrl { get; set; }
+    [Parameter] public string DisplayName { get; set; } = "";
+    [Parameter] public int SizePx { get; set; } = 40;
+
+    private void HandleImageError()
+    {
+        AvatarUrl = null;
+        StateHasChanged();
+    }
+}

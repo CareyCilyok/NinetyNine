@@ -1,0 +1,499 @@
+/* =====================================================================
+   NinetyNine — app.css
+   Global styles layered on top of Bootstrap 5.
+   ---------------------------------------------------------------------
+   Load order in App.razor <head>:
+     1. bootstrap.min.css
+     2. theme.css      (design tokens)
+     3. app.css        (this file)
+     4. scorecard.css  (scoring grid)
+   ===================================================================== */
+
+@import url("theme.css");
+
+/* ---------------------------------------------------------------------
+   1. Base / reset
+   ------------------------------------------------------------------- */
+
+html {
+  font-family: var(--nn-font-sans);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--nn-surface-alt);
+  color: var(--nn-text);
+  font-family: var(--nn-font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+/* ---------------------------------------------------------------------
+   2. Typography
+   ------------------------------------------------------------------- */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--nn-font-display);
+  color: var(--nn-text);
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 0;
+  margin-bottom: var(--nn-space-3);
+  text-wrap: balance; /* avoid orphan words on headings */
+}
+
+/* Fluid h1 for hero sections without ballooning mid-page headings. */
+h1 {
+  font-size: clamp(1.75rem, 1.25rem + 1.5vw, 2.5rem);
+}
+
+p { margin-top: 0; margin-bottom: var(--nn-space-4); }
+
+code, kbd, samp, pre {
+  font-family: var(--nn-font-mono);
+  font-size: 0.9375em;
+}
+
+.nn-text-muted { color: var(--nn-text-muted); }
+.nn-text-subtle { color: var(--nn-text-subtle); }
+.nn-text-mono { font-family: var(--nn-font-mono); }
+
+/* ---------------------------------------------------------------------
+   3. Focus styles — keep the native ring, just make it branded.
+      We DO NOT remove outline; we enhance it.
+   ------------------------------------------------------------------- */
+
+:focus-visible {
+  outline: 2px solid var(--nn-primary);
+  outline-offset: 2px;
+  border-radius: var(--nn-radius-xs);
+}
+
+/* Bootstrap form/button focus ring — swap in our brand color. */
+.btn:focus-visible,
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  border-color: var(--nn-primary);
+  box-shadow: var(--nn-focus-ring);
+}
+
+/* ---------------------------------------------------------------------
+   4. Navbar (brand top bar)
+   ------------------------------------------------------------------- */
+
+.nn-navbar {
+  background-color: var(--nn-primary);
+  color: var(--nn-primary-text);
+  min-height: var(--nn-navbar-height);
+  box-shadow: var(--nn-shadow-sm);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.nn-navbar .navbar-brand,
+.nn-navbar .nav-link,
+.nn-navbar .navbar-text {
+  color: var(--nn-primary-text);
+}
+
+.nn-navbar .nav-link {
+  opacity: 0.85;
+  transition: opacity var(--nn-transition-fast),
+              background-color var(--nn-transition-fast);
+  border-radius: var(--nn-radius-sm);
+  padding: 0.5rem 0.875rem;
+}
+
+.nn-navbar .nav-link:hover,
+.nn-navbar .nav-link:focus-visible {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nn-navbar .nav-link.active {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.15);
+  font-weight: 500;
+}
+
+.nn-navbar .navbar-brand {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nn-space-2);
+}
+
+/* ---------------------------------------------------------------------
+   5. Buttons — extend Bootstrap with brand primary
+   ------------------------------------------------------------------- */
+
+.btn {
+  /* Touch-friendly minimum */
+  min-height: var(--nn-touch-target);
+  padding-inline: 1rem;
+  font-weight: 500;
+  border-radius: var(--nn-radius-md);
+  transition: background-color var(--nn-transition-fast),
+              border-color   var(--nn-transition-fast),
+              color          var(--nn-transition-fast),
+              box-shadow     var(--nn-transition-fast),
+              transform      var(--nn-transition-fast);
+}
+
+.btn-sm { min-height: 2rem; padding-inline: 0.75rem; }
+
+.btn-primary,
+.btn-primary:disabled {
+  background-color: var(--nn-primary);
+  border-color: var(--nn-primary);
+  color: var(--nn-primary-text);
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-primary:focus-visible:not(:disabled) {
+  background-color: var(--nn-primary-hover);
+  border-color: var(--nn-primary-hover);
+  color: var(--nn-primary-text);
+}
+
+.btn-primary:active:not(:disabled) {
+  background-color: var(--nn-primary-active);
+  border-color: var(--nn-primary-active);
+  transform: translateY(1px);
+}
+
+.btn-outline-primary {
+  color: var(--nn-primary);
+  border-color: var(--nn-primary);
+  background-color: transparent;
+}
+
+.btn-outline-primary:hover:not(:disabled),
+.btn-outline-primary:focus-visible:not(:disabled) {
+  background-color: var(--nn-primary);
+  border-color: var(--nn-primary);
+  color: var(--nn-primary-text);
+}
+
+.btn-accent {
+  background-color: var(--nn-accent);
+  border-color: var(--nn-accent);
+  color: var(--nn-accent-text);
+}
+
+.btn-accent:hover:not(:disabled),
+.btn-accent:focus-visible:not(:disabled) {
+  background-color: var(--nn-accent-hover);
+  border-color: var(--nn-accent-hover);
+  color: var(--nn-accent-text);
+}
+
+/* ---------------------------------------------------------------------
+   6. Forms — larger targets, clearer focus
+   ------------------------------------------------------------------- */
+
+.form-label {
+  font-weight: 500;
+  color: var(--nn-text);
+  margin-bottom: var(--nn-space-1);
+}
+
+.form-control,
+.form-select {
+  min-height: var(--nn-touch-target);
+  border-radius: var(--nn-radius-md);
+  border-color: var(--nn-border);
+  background-color: var(--nn-surface);
+  color: var(--nn-text);
+  transition: border-color var(--nn-transition-fast),
+              box-shadow   var(--nn-transition-fast);
+}
+
+.form-control::placeholder { color: var(--nn-text-subtle); }
+
+.form-control:disabled,
+.form-select:disabled {
+  background-color: var(--nn-surface-sunken);
+  color: var(--nn-text-muted);
+  cursor: not-allowed;
+}
+
+/* Invalid state — color + icon (color is not sole signal). */
+.form-control.is-invalid {
+  border-color: var(--nn-danger);
+  padding-right: calc(1.5em + 0.75rem);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5' fill='none' stroke='%23b02a37' stroke-width='1.5'/%3E%3Cpath d='M6 3v3.5M6 8.5v.01' stroke='%23b02a37' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+
+.invalid-feedback { color: var(--nn-danger); font-size: 0.875em; }
+
+/* ---------------------------------------------------------------------
+   7. Cards / panels
+   ------------------------------------------------------------------- */
+
+.nn-card,
+.card {
+  background-color: var(--nn-surface);
+  border: 1px solid var(--nn-border);
+  border-radius: var(--nn-radius-lg);
+  box-shadow: var(--nn-shadow-xs);
+}
+
+.nn-card-hover {
+  transition: transform var(--nn-transition-base),
+              box-shadow var(--nn-transition-base);
+}
+
+.nn-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--nn-shadow-md);
+}
+
+/* ---------------------------------------------------------------------
+   8. Avatar
+   ------------------------------------------------------------------- */
+
+.nn-avatar {
+  display: inline-block;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--nn-radius-pill);
+  object-fit: cover;
+  background-color: var(--nn-surface-sunken);
+  border: 2px solid var(--nn-border);
+  vertical-align: middle;
+  /* Fallback text rendering when used as <div> with initials */
+  font-family: var(--nn-font-sans);
+  font-weight: 600;
+  color: var(--nn-text-muted);
+  text-align: center;
+  line-height: calc(2.5rem - 4px); /* center text minus border */
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.nn-avatar-xs { width: 1.5rem; height: 1.5rem; line-height: calc(1.5rem - 4px); font-size: 0.625rem; border-width: 1px; }
+.nn-avatar-sm { width: 2rem;   height: 2rem;   line-height: calc(2rem - 4px);   font-size: 0.75rem;  }
+.nn-avatar-md { width: 2.5rem; height: 2.5rem; line-height: calc(2.5rem - 4px); font-size: 0.875rem; }
+.nn-avatar-lg { width: 3.5rem; height: 3.5rem; line-height: calc(3.5rem - 4px); font-size: 1.125rem; }
+.nn-avatar-xl { width: 5rem;   height: 5rem;   line-height: calc(5rem - 4px);   font-size: 1.5rem;   }
+
+.nn-avatar-ring {
+  box-shadow: 0 0 0 3px var(--nn-surface),
+              0 0 0 5px var(--nn-primary);
+}
+
+/* ---------------------------------------------------------------------
+   9. Player badge
+   ------------------------------------------------------------------- */
+
+.nn-player-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nn-space-2);
+  padding: var(--nn-space-1) var(--nn-space-3) var(--nn-space-1) var(--nn-space-1);
+  background-color: var(--nn-surface);
+  border: 1px solid var(--nn-border);
+  border-radius: var(--nn-radius-pill);
+  color: var(--nn-text);
+  font-weight: 500;
+  text-decoration: none;
+  max-width: 100%;
+  transition: border-color var(--nn-transition-fast),
+              background-color var(--nn-transition-fast);
+}
+
+.nn-player-badge:hover,
+.nn-player-badge:focus-visible {
+  border-color: var(--nn-primary);
+  background-color: var(--nn-primary-subtle);
+  color: var(--nn-primary-subtle-text);
+}
+
+.nn-player-badge__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 12ch;
+}
+
+/* ---------------------------------------------------------------------
+   10. Page wrapper + layout helpers
+   ------------------------------------------------------------------- */
+
+.nn-page {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: var(--nn-space-5) var(--nn-space-4);
+}
+
+@media (min-width: 768px) {
+  .nn-page { padding: var(--nn-space-6) var(--nn-space-5); }
+}
+
+.nn-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nn-space-3);
+  margin-bottom: var(--nn-space-5);
+  padding-bottom: var(--nn-space-3);
+  border-bottom: 1px solid var(--nn-border);
+}
+
+.nn-page-header h1 {
+  margin-bottom: 0;
+}
+
+.nn-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nn-space-4);
+}
+
+.nn-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nn-space-2);
+}
+
+/* Gap utilities (Bootstrap has these, but aliases keep intent clear) */
+.nn-gap-1 { gap: var(--nn-space-1); }
+.nn-gap-2 { gap: var(--nn-space-2); }
+.nn-gap-3 { gap: var(--nn-space-3); }
+.nn-gap-4 { gap: var(--nn-space-4); }
+
+/* ---------------------------------------------------------------------
+   11. Empty state
+   ------------------------------------------------------------------- */
+
+.nn-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--nn-space-7) var(--nn-space-4);
+  color: var(--nn-text-muted);
+  background-color: var(--nn-surface);
+  border: 1px dashed var(--nn-border-strong);
+  border-radius: var(--nn-radius-lg);
+  gap: var(--nn-space-3);
+}
+
+.nn-empty-state__icon {
+  width: 3rem;
+  height: 3rem;
+  color: var(--nn-text-subtle);
+  opacity: 0.7;
+}
+
+.nn-empty-state__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--nn-text);
+  margin: 0;
+}
+
+.nn-empty-state__description {
+  max-width: 40ch;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------
+   12. Footer
+   ------------------------------------------------------------------- */
+
+.nn-footer {
+  background-color: var(--nn-surface);
+  border-top: 1px solid var(--nn-border);
+  color: var(--nn-text-muted);
+  font-size: 0.875rem;
+  padding: var(--nn-space-4);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.nn-footer a {
+  color: var(--nn-text-muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.nn-footer a:hover { color: var(--nn-primary); }
+
+/* ---------------------------------------------------------------------
+   13. Blazor error UI (from the default template) — rebranded
+   ------------------------------------------------------------------- */
+
+#blazor-error-ui {
+  color-scheme: light dark;
+  background: var(--nn-warning);
+  color: var(--nn-warning-text);
+  bottom: 0;
+  box-shadow: var(--nn-shadow-lg);
+  display: none;
+  left: 0;
+  padding: 0.75rem 1.25rem;
+  position: fixed;
+  width: 100%;
+  z-index: 1080;
+  font-weight: 500;
+}
+
+#blazor-error-ui .dismiss {
+  cursor: pointer;
+  position: absolute;
+  right: 1rem;
+  top: 0.75rem;
+  color: inherit;
+  font-size: 1.25rem;
+}
+
+/* ---------------------------------------------------------------------
+   14. Valid/invalid input states (color + non-color cue)
+   ------------------------------------------------------------------- */
+
+.valid.modified:not([type="checkbox"]) {
+  outline: 1px solid var(--nn-success);
+}
+
+.invalid {
+  outline: 1px solid var(--nn-danger);
+}
+
+.validation-message {
+  color: var(--nn-danger);
+  font-size: 0.875em;
+  margin-top: var(--nn-space-1);
+}

@@ -1,0 +1,45 @@
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized Context="authContext">
+        @{
+            var displayName = authContext.User.Identity?.Name ?? "Player";
+            var avatarUrl = authContext.User.FindFirst(ClaimNames.AvatarUrl)?.Value;
+            var playerIdStr = authContext.User.FindFirst(ClaimNames.PlayerId)?.Value;
+        }
+        <div class="dropdown">
+            <button class="btn btn-link nav-link dropdown-toggle d-flex align-items-center gap-2 text-light"
+                    type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                    aria-label="User menu for @displayName">
+                <AvatarImage AvatarUrl="@avatarUrl" DisplayName="@displayName" SizePx="32" />
+                <span class="d-none d-lg-inline">@displayName</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                @if (!string.IsNullOrEmpty(playerIdStr))
+                {
+                    <li>
+                        <a class="dropdown-item" href="/players/me">
+                            Profile
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="/stats/me">
+                            My Stats
+                        </a>
+                    </li>
+                }
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                    <form method="post" action="/logout">
+                        <AntiforgeryToken />
+                        <button type="submit" class="dropdown-item">Sign out</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    // Intentionally thin — all logic is handled via AuthorizeView + ClaimNames.
+}

@@ -1,0 +1,80 @@
+@page "/stats"
+@inject IStatisticsService StatisticsService
+@inject ILogger<Leaderboard> Logger
+
+<PageTitle>Leaderboard &mdash; NinetyNine</PageTitle>
+
+<h1 class="mb-4">Leaderboard</h1>
+
+@if (_loading)
+{
+    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading leaderboard"></span>Loading&hellip;</p>
+}
+else if (_entries.Count == 0)
+{
+    <div class="alert alert-info">No games have been completed yet. Be the first!</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <caption>Top players by average score per completed game</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Rank</th>
+                    <th scope="col">Player</th>
+                    <th scope="col">Games</th>
+                    <th scope="col">Avg Score</th>
+                    <th scope="col">Best Game</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int rank = 1;
+                }
+                @foreach (var entry in _entries)
+                {
+                    var currentRank = rank++;
+                    <tr class="@(currentRank <= 3 ? "table-warning" : "")">
+                        <td>
+                            <span class="@(currentRank == 1 ? "text-warning fw-bold" : currentRank == 2 ? "text-secondary fw-bold" : currentRank == 3 ? "text-danger fw-bold" : "")">
+                                #@currentRank
+                            </span>
+                        </td>
+                        <td>
+                            <PlayerBadge PlayerId="entry.PlayerId"
+                                         DisplayName="entry.DisplayName"
+                                         AvatarUrl="entry.AvatarUrl"
+                                         AvatarSizePx="28" />
+                        </td>
+                        <td>@entry.GamesPlayed</td>
+                        <td class="font-monospace">@entry.AverageScore.ToString("F1")</td>
+                        <td class="font-monospace">@entry.BestScore</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<LeaderboardEntry> _entries = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await StatisticsService.GetLeaderboardAsync(50);
+            _entries = result.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load leaderboard.");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

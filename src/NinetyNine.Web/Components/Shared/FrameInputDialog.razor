@@ -1,0 +1,142 @@
+@*
+    Modal dialog for entering frame scores.
+    Validates: BreakBonus ∈ {0,1}, BallCount ∈ [0,10], FrameScore ≤ 11.
+*@
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop fade show" @onclick="Cancel" aria-hidden="true"></div>
+
+    <div class="modal fade show d-block"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="frame-dialog-title"
+         tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="frame-dialog-title">
+                        Enter Score &mdash; Frame @FrameNumber
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="Cancel"
+                            aria-label="Close frame entry dialog"></button>
+                </div>
+
+                <EditForm Model="_model" OnValidSubmit="Submit">
+                    <DataAnnotationsValidator />
+
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(_errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="break-bonus">
+                                Break Bonus
+                                <small class="text-muted">(0 = no bonus, 1 = bonus awarded)</small>
+                            </label>
+                            <div class="btn-group w-100" role="group" aria-label="Break bonus selection">
+                                <input type="radio" class="btn-check" name="breakBonus"
+                                       id="bb-0" autocomplete="off"
+                                       checked="@(_model.BreakBonus == 0)"
+                                       @onchange="@(() => _model.BreakBonus = 0)" />
+                                <label class="btn btn-outline-secondary" for="bb-0">0 &mdash; No bonus</label>
+
+                                <input type="radio" class="btn-check" name="breakBonus"
+                                       id="bb-1" autocomplete="off"
+                                       checked="@(_model.BreakBonus == 1)"
+                                       @onchange="@(() => _model.BreakBonus = 1)" />
+                                <label class="btn btn-outline-success" for="bb-1">1 &mdash; Bonus!</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="ball-count">
+                                Ball Count
+                                <small class="text-muted">(0&ndash;10; 9-ball counts as 2)</small>
+                            </label>
+                            <InputNumber id="ball-count"
+                                         class="form-control"
+                                         @bind-Value="_model.BallCount"
+                                         min="0" max="10"
+                                         aria-describedby="ball-count-hint" />
+                            <div id="ball-count-hint" class="form-text">
+                                Frame score will be @(_model.BreakBonus + _model.BallCount) / 11
+                            </div>
+                            <ValidationMessage For="() => _model.BallCount" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="frame-notes">Notes <small class="text-muted">(optional)</small></label>
+                            <InputText id="frame-notes"
+                                       class="form-control"
+                                       @bind-Value="_model.Notes"
+                                       placeholder="e.g. scratched on break" />
+                        </div>
+
+                        <div class="alert alert-info py-2" role="status">
+                            Frame score: <strong>@(_model.BreakBonus + _model.BallCount)</strong> / 11
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            Record Frame
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public int FrameNumber { get; set; }
+    [Parameter] public EventCallback<FrameScoreInput> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private FrameScoreInput _model = new();
+    private string _errorMessage = "";
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible)
+        {
+            // Reset form when dialog opens for a new frame
+            _model = new FrameScoreInput();
+            _errorMessage = "";
+        }
+    }
+
+    private async Task Submit()
+    {
+        var frameScore = _model.BreakBonus + _model.BallCount;
+        if (frameScore > 11)
+        {
+            _errorMessage = "Frame score cannot exceed 11 (Break Bonus + Ball Count ≤ 11).";
+            return;
+        }
+
+        _errorMessage = "";
+        await OnSubmit.InvokeAsync(_model);
+    }
+
+    private async Task Cancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+
+    public sealed class FrameScoreInput
+    {
+        [System.ComponentModel.DataAnnotations.Range(0, 1, ErrorMessage = "Break bonus must be 0 or 1.")]
+        public int BreakBonus { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(0, 10, ErrorMessage = "Ball count must be between 0 and 10.")]
+        public int BallCount { get; set; }
+
+        public string? Notes { get; set; }
+    }
+}

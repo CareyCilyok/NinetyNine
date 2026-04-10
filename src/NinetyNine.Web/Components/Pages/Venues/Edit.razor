@@ -1,0 +1,169 @@
+@page "/venues/new"
+@page "/venues/{VenueId:guid}/edit"
+@attribute [Authorize]
+@inject IVenueService VenueService
+@inject NavigationManager Navigation
+@inject ILogger<Edit> Logger
+
+<PageTitle>@(_isNew ? "Add Venue" : "Edit Venue") &mdash; NinetyNine</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+        <h1 class="mb-4">@(_isNew ? "Add Venue" : "Edit Venue")</h1>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+
+        @if (_loading)
+        {
+            <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading"></span>Loading&hellip;</p>
+        }
+        else
+        {
+            <EditForm Model="_model" OnValidSubmit="HandleSave">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="venue-name">Name <span class="text-danger" aria-hidden="true">*</span></label>
+                    <InputText id="venue-name" class="form-control"
+                               @bind-Value="_model.Name"
+                               placeholder="e.g. Corner Pocket" />
+                    <ValidationMessage For="() => _model.Name" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="venue-address">Address</label>
+                    <InputText id="venue-address" class="form-control"
+                               @bind-Value="_model.Address"
+                               placeholder="123 Main St, City, State"
+                               autocomplete="street-address" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="venue-phone">Phone Number</label>
+                    <InputText id="venue-phone" class="form-control"
+                               @bind-Value="_model.PhoneNumber"
+                               autocomplete="tel"
+                               inputmode="tel" />
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check">
+                        <InputCheckbox id="venue-private" class="form-check-input"
+                                       @bind-Value="_model.Private" />
+                        <label class="form-check-label" for="venue-private">
+                            Private venue (only visible to you)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        }
+                        @(_isNew ? "Add Venue" : "Save Changes")
+                    </button>
+                    <a href="/venues" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid? VenueId { get; set; }
+
+    private VenueModel _model = new();
+    private bool _isNew;
+    private string _errorMessage = "";
+    private bool _loading = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isNew = VenueId is null;
+
+        if (!_isNew)
+        {
+            try
+            {
+                var venue = await VenueService.GetAsync(VenueId!.Value);
+                if (venue is not null)
+                {
+                    _model = VenueModel.From(venue);
+                }
+                else
+                {
+                    _errorMessage = "Venue not found.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorMessage = ex.Message;
+                Logger.LogWarning(ex, "Failed to load venue {VenueId}.", VenueId);
+            }
+        }
+
+        _loading = false;
+    }
+
+    private async Task HandleSave()
+    {
+        _isSaving = true;
+        _errorMessage = "";
+
+        try
+        {
+            var venue = _model.ToVenue(VenueId ?? Guid.NewGuid());
+
+            if (_isNew)
+            {
+                await VenueService.CreateAsync(venue);
+            }
+            else
+            {
+                await VenueService.UpdateAsync(venue);
+            }
+
+            Navigation.NavigateTo("/venues");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            Logger.LogWarning(ex, "Failed to save venue.");
+            _isSaving = false;
+        }
+    }
+
+    private sealed class VenueModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Venue name is required.")]
+        [System.ComponentModel.DataAnnotations.StringLength(200, MinimumLength = 1)]
+        public string Name { get; set; } = "";
+
+        public string Address { get; set; } = "";
+        public string PhoneNumber { get; set; } = "";
+        public bool Private { get; set; }
+
+        public Venue ToVenue(Guid id) => new()
+        {
+            VenueId = id,
+            Name = Name,
+            Address = Address,
+            PhoneNumber = PhoneNumber,
+            Private = Private
+        };
+
+        public static VenueModel From(Venue v) => new()
+        {
+            Name = v.Name,
+            Address = v.Address,
+            PhoneNumber = v.PhoneNumber,
+            Private = v.Private
+        };
+    }
+}

@@ -1,0 +1,283 @@
+@page "/players/me"
+@attribute [Authorize]
+@inject IPlayerService PlayerService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IPlayerRepository PlayerRepository
+@inject NavigationManager Navigation
+@inject ILogger<EditProfile> Logger
+
+<PageTitle>Edit Profile &mdash; NinetyNine</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <h1 class="mb-4">Edit Profile</h1>
+
+        @if (_loading)
+        {
+            <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading"></span>Loading&hellip;</p>
+        }
+        else if (_player is null)
+        {
+            <div class="alert alert-danger">Profile not found.</div>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(_successMessage))
+            {
+                <div class="alert alert-success" role="status">@_successMessage</div>
+            }
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">@_errorMessage</div>
+            }
+
+            <EditForm Model="_model" OnValidSubmit="HandleSave">
+                <DataAnnotationsValidator />
+
+                <h2 class="h5 mb-3">Display Name</h2>
+                <div class="mb-4">
+                    <label class="form-label" for="display-name">Display Name</label>
+                    <InputText id="display-name"
+                               class="form-control"
+                               @bind-Value="_model.DisplayName"
+                               autocomplete="username" />
+                    <ValidationMessage For="() => _model.DisplayName" />
+                </div>
+
+                <h2 class="h5 mb-3">Avatar</h2>
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <AvatarImage AvatarUrl="@_avatarUrl" DisplayName="@_player.DisplayName" SizePx="64" />
+                        <div>
+                            <label class="form-label" for="avatar-upload">
+                                Upload new avatar
+                                <small class="text-muted d-block">PNG, JPEG, or WebP. Max 2 MB.</small>
+                            </label>
+                            <InputFile id="avatar-upload"
+                                       class="form-control"
+                                       OnChange="HandleAvatarUpload"
+                                       accept="image/png,image/jpeg,image/webp"
+                                       aria-describedby="avatar-upload-help" />
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_avatarError))
+                    {
+                        <div class="text-danger small" role="alert">@_avatarError</div>
+                    }
+                    @if (_player.Avatar is not null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-danger mt-2"
+                                @onclick="RemoveAvatar">
+                            Remove avatar
+                        </button>
+                    }
+                </div>
+
+                <h2 class="h5 mb-3">Personal Information</h2>
+                <p class="text-muted small mb-3">All fields are optional. Use the toggles to control visibility.</p>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <label class="form-label" for="first-name">First Name</label>
+                        <InputText id="first-name" class="form-control"
+                                   @bind-Value="_model.FirstName"
+                                   autocomplete="given-name" />
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="last-name">Last Name</label>
+                        <InputText id="last-name" class="form-control"
+                                   @bind-Value="_model.LastName"
+                                   autocomplete="family-name" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="email">Email</label>
+                    <InputText id="email" class="form-control"
+                               @bind-Value="_model.Email"
+                               autocomplete="email"
+                               inputmode="email" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="phone">Phone Number</label>
+                    <InputText id="phone" class="form-control"
+                               @bind-Value="_model.PhoneNumber"
+                               autocomplete="tel"
+                               inputmode="tel" />
+                </div>
+
+                <h2 class="h5 mb-3">Visibility</h2>
+                <div class="mb-4 d-flex flex-column gap-2">
+                    <VisibilityToggle Label="Show real name publicly"
+                                      @bind-Value="_model.ShowRealName" />
+                    <VisibilityToggle Label="Show email publicly"
+                                      @bind-Value="_model.ShowEmail" />
+                    <VisibilityToggle Label="Show phone number publicly"
+                                      @bind-Value="_model.ShowPhone" />
+                    <VisibilityToggle Label="Show avatar publicly"
+                                      @bind-Value="_model.ShowAvatar" />
+                </div>
+
+                <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                    @if (_isSaving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Saving&hellip;</span>
+                    }
+                    else
+                    {
+                        <span>Save Changes</span>
+                    }
+                </button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    private NinetyNine.Model.Player? _player;
+    private EditProfileModel _model = new();
+    private string? _avatarUrl;
+    private string _errorMessage = "";
+    private string _successMessage = "";
+    private string _avatarError = "";
+    private bool _loading = true;
+    private bool _isSaving;
+    private Guid _playerId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var context = HttpContextAccessor.HttpContext;
+        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
+
+        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        _player = await PlayerRepository.GetByIdAsync(_playerId);
+        if (_player is not null)
+        {
+            _model = EditProfileModel.From(_player);
+            if (_player.Avatar is not null)
+                _avatarUrl = $"/api/avatars/{_player.PlayerId}";
+        }
+
+        _loading = false;
+    }
+
+    private async Task HandleSave()
+    {
+        _isSaving = true;
+        _errorMessage = "";
+        _successMessage = "";
+
+        try
+        {
+            var update = new PlayerProfileUpdate(
+                DisplayName: _model.DisplayName,
+                EmailAddress: _model.Email,
+                PhoneNumber: _model.PhoneNumber,
+                FirstName: _model.FirstName,
+                MiddleName: null,
+                LastName: _model.LastName,
+                Visibility: new ProfileVisibility
+                {
+                    RealName = _model.ShowRealName,
+                    EmailAddress = _model.ShowEmail,
+                    PhoneNumber = _model.ShowPhone,
+                    Avatar = _model.ShowAvatar
+                });
+
+            _player = await PlayerService.UpdateProfileAsync(_playerId, update);
+            _successMessage = "Profile saved.";
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            Logger.LogWarning(ex, "Failed to update profile for player {PlayerId}.", _playerId);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task HandleAvatarUpload(InputFileChangeEventArgs e)
+    {
+        _avatarError = "";
+        var file = e.File;
+
+        var allowed = new[] { "image/png", "image/jpeg", "image/webp" };
+        if (!allowed.Contains(file.ContentType))
+        {
+            _avatarError = "Please upload a PNG, JPEG, or WebP image.";
+            return;
+        }
+
+        const long maxBytes = 2 * 1024 * 1024;
+        if (file.Size > maxBytes)
+        {
+            _avatarError = "Avatar must be under 2 MB.";
+            return;
+        }
+
+        try
+        {
+            await using var stream = file.OpenReadStream(maxBytes);
+            await PlayerService.SetAvatarAsync(_playerId, stream, file.ContentType);
+            _avatarUrl = $"/api/avatars/{_playerId}?t={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+            _player = await PlayerRepository.GetByIdAsync(_playerId);
+        }
+        catch (Exception ex)
+        {
+            _avatarError = ex.Message;
+            Logger.LogWarning(ex, "Avatar upload failed for player {PlayerId}.", _playerId);
+        }
+    }
+
+    private async Task RemoveAvatar()
+    {
+        try
+        {
+            await PlayerService.RemoveAvatarAsync(_playerId);
+            _avatarUrl = null;
+            _player = await PlayerRepository.GetByIdAsync(_playerId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            Logger.LogWarning(ex, "Failed to remove avatar for player {PlayerId}.", _playerId);
+        }
+    }
+
+    private sealed class EditProfileModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(32, MinimumLength = 2)]
+        public string DisplayName { get; set; } = "";
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? Email { get; set; }
+        public string? PhoneNumber { get; set; }
+        public bool ShowRealName { get; set; }
+        public bool ShowEmail { get; set; }
+        public bool ShowPhone { get; set; }
+        public bool ShowAvatar { get; set; } = true;
+
+        public static EditProfileModel From(NinetyNine.Model.Player p) => new()
+        {
+            DisplayName = p.DisplayName,
+            FirstName = p.FirstName,
+            LastName = p.LastName,
+            Email = p.EmailAddress,
+            PhoneNumber = p.PhoneNumber,
+            ShowRealName = p.Visibility.RealName,
+            ShowEmail = p.Visibility.EmailAddress,
+            ShowPhone = p.Visibility.PhoneNumber,
+            ShowAvatar = p.Visibility.Avatar
+        };
+    }
+}

@@ -1,0 +1,103 @@
+# ─── Local development compose file ──────────────────────────────────────────
+# Brings up three services:
+#   web          — Blazor app built from source (hot-reload via rebuild)
+#   mongo        — MongoDB 7 with persistent named volume
+#   mongo-express — Web UI for browsing the local MongoDB instance
+#
+# Usage:
+#   ./deploy.sh up        — first-time or normal start
+#   ./deploy.sh rebuild   — force rebuild of the web image
+#   ./deploy.sh down      — graceful stop (volumes preserved)
+#   ./deploy.sh clean     — stop + remove volumes (fresh slate)
+
+services:
+
+  # ── Web application ──────────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+
+    ports:
+      # Container listens on 8080 (ASPNETCORE_URLS); expose on same host port
+      # for straightforward local access at http://localhost:8080
+      - "8080:8080"
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # Uses the local mongo container; the hostname "mongo" resolves via the
+      # compose default bridge network.
+      MongoDb__ConnectionString: "mongodb://root:devpassword@mongo:27017/?authSource=admin"
+      MongoDb__DatabaseName: NinetyNine
+      # Google OAuth is optional for local dev. The app falls back gracefully when
+      # these are set to "dev-noop" — Google will reject the OAuth exchange but
+      # the app still starts. Override by setting real values in .env.
+      Auth__Google__ClientId: ${GOOGLE_CLIENT_ID:-dev-noop}
+      Auth__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-dev-noop}
+
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+  # ── MongoDB ───────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: devpassword
+
+    volumes:
+      # Named volume so data survives `docker compose down` (but not `down -v`).
+      - mongo_data:/data/db
+
+    ports:
+      # Exposed so developers can connect with Compass or mongosh directly.
+      - "27017:27017"
+
+    healthcheck:
+      # mongosh ping: returns 1 on success, any non-zero value signals unhealthy.
+      # The --quiet flag suppresses the banner; "|| exit 1" converts a falsy
+      # return value to a non-zero exit code that Docker interprets as unhealthy.
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" || exit 1"]
+      interval: 5s
+      timeout: 5s
+      start_period: 10s
+      retries: 10
+
+  # ── Mongo Express (DB admin UI) ───────────────────────────────────────────────
+  mongo-express:
+    image: mongo-express:latest
+    restart: unless-stopped
+
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: devpassword
+      # "mongo" is the service name; Docker's embedded DNS resolves it on the
+      # default compose bridge network.
+      ME_CONFIG_MONGODB_SERVER: mongo
+      # Disable basic auth on the express UI — acceptable for local dev only.
+      ME_CONFIG_BASICAUTH: "false"
+
+    ports:
+      - "8081:8081"
+
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+# ── Named volumes ─────────────────────────────────────────────────────────────
+volumes:
+  mongo_data:
+    # No driver options — uses the default local driver.
+    # Remove with `docker compose -f docker-compose.dev.yml down -v` or
+    # use `./deploy.sh clean` which prompts for confirmation first.

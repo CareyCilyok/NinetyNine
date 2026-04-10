@@ -1,0 +1,71 @@
+# Dependabot configuration for NinetyNine
+#
+# Weekly update cadence for NuGet, GitHub Actions, and Docker base images.
+# Patch-level updates are grouped to reduce PR churn; minor and major updates
+# still come through as individual PRs so they get proper review.
+
+version: 2
+
+updates:
+  # .NET NuGet packages across the whole solution.
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - nuget
+    commit-message:
+      prefix: "chore(nuget)"
+      include: scope
+    groups:
+      nuget-patch:
+        applies-to: version-updates
+        update-types:
+          - patch
+
+  # GitHub Actions used in .github/workflows/**.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "chore(actions)"
+      include: scope
+    groups:
+      actions-patch:
+        applies-to: version-updates
+        update-types:
+          - patch
+
+  # Dockerfile base image updates (root Dockerfile per architecture blueprint).
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "chore(docker)"
+      include: scope
+    groups:
+      docker-patch:
+        applies-to: version-updates
+        update-types:
+          - patch

@@ -1,0 +1,104 @@
+@page "/players/{PlayerId:guid}"
+@inject IPlayerRepository PlayerRepository
+@inject IStatisticsService StatisticsService
+@inject ILogger<Profile> Logger
+
+<PageTitle>Player Profile &mdash; NinetyNine</PageTitle>
+
+@if (_loading)
+{
+    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading profile"></span>Loading&hellip;</p>
+}
+else if (_player is null)
+{
+    <div class="alert alert-warning">Player not found.</div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4 text-center mb-4">
+            @if (_player.Visibility.Avatar)
+            {
+                <AvatarImage AvatarUrl="@_avatarUrl" DisplayName="@_player.DisplayName" SizePx="128" />
+            }
+            else
+            {
+                <InitialsAvatar DisplayName="@_player.DisplayName" SizePx="128" />
+            }
+            <h1 class="h3 mt-3">@_player.DisplayName</h1>
+
+            @if (_player.Visibility.RealName && (_player.FirstName is not null || _player.LastName is not null))
+            {
+                <p class="text-muted">@_player.FirstName @_player.LastName</p>
+            }
+
+            <p class="text-muted small">
+                Member since @_player.CreatedAt.ToString("MMMM yyyy")
+            </p>
+        </div>
+
+        <div class="col-md-8">
+            @if (_stats is not null)
+            {
+                <h2 class="h5">Statistics</h2>
+                <dl class="row">
+                    <dt class="col-6">Games Played</dt>
+                    <dd class="col-6">@_stats.GamesPlayed</dd>
+
+                    <dt class="col-6">Games Completed</dt>
+                    <dd class="col-6">@_stats.GamesCompleted</dd>
+
+                    <dt class="col-6">Average Score</dt>
+                    <dd class="col-6">@_stats.AverageScore.ToString("F1")</dd>
+
+                    <dt class="col-6">Best Score</dt>
+                    <dd class="col-6">@_stats.BestScore</dd>
+
+                    <dt class="col-6">Perfect Games</dt>
+                    <dd class="col-6">@_stats.PerfectGames</dd>
+
+                    <dt class="col-6">Perfect Frames</dt>
+                    <dd class="col-6">@_stats.PerfectFrames</dd>
+
+                    @if (_stats.LastPlayed.HasValue)
+                    {
+                        <dt class="col-6">Last Played</dt>
+                        <dd class="col-6">@_stats.LastPlayed.Value.ToString("MMM d, yyyy")</dd>
+                    }
+                </dl>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid PlayerId { get; set; }
+
+    private NinetyNine.Model.Player? _player;
+    private PlayerStats? _stats;
+    private string? _avatarUrl;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _player = await PlayerRepository.GetByIdAsync(PlayerId);
+            if (_player is not null)
+            {
+                if (_player.Avatar is not null && _player.Visibility.Avatar)
+                    _avatarUrl = $"/api/avatars/{_player.PlayerId}";
+
+                _stats = await StatisticsService.GetPlayerStatsAsync(PlayerId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load public profile for player {PlayerId}.", PlayerId);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

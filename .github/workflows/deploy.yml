@@ -1,0 +1,236 @@
+# Deploy workflow for NinetyNine
+#
+# Builds and pushes the production image to GHCR on every push to master, then
+# SSH-deploys to the Azure Linux VM using docker compose. A smoke test against
+# /healthz gates success.
+#
+# -----------------------------------------------------------------------------
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   AZURE_VM_HOST           Hostname or IP of the Azure VM
+#   AZURE_VM_USER           SSH login user (e.g. azureuser)
+#   AZURE_VM_SSH_KEY        Private SSH key (PEM) matching an authorized_key on the VM
+#   MONGO_CONNECTION_STRING MongoDB Atlas connection string
+#   GOOGLE_CLIENT_ID        Google OAuth client ID
+#   GOOGLE_CLIENT_SECRET    Google OAuth client secret
+#
+# GITHUB_TOKEN is provided automatically. With `permissions: packages: write`
+# below it can push to ghcr.io/${{ github.repository }} without a PAT, provided
+# the repo allows GHCR writes from Actions (Settings -> Actions -> Workflow
+# permissions -> "Read and write permissions").
+#
+# VM prerequisites (see docs/architecture.md section 10.2):
+#   - Ubuntu 22.04, Docker Engine + Compose v2 installed
+#   - Deploy user in the `docker` group
+#   - Inbound 22 (SSH) and 80 (HTTP) open
+#   - /opt/ninetynine directory exists and is writable by the deploy user
+#
+# Rollback policy (v1): the smoke test fails the workflow loudly so the operator
+# can investigate, but we do NOT auto-rollback. Re-running an older SHA via
+# `workflow_dispatch` is the manual rollback path (builds are idempotent because
+# every image is tagged with its commit SHA and compose pulls by IMAGE_TAG).
+# -----------------------------------------------------------------------------
+
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to deploy (defaults to master HEAD)'
+        required: false
+        default: 'master'
+
+# Never cancel an in-flight deploy. Queue additional deploys behind it.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write # required for GHCR push via GITHUB_TOKEN
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+jobs:
+  build-and-push:
+    name: Build and push image to GHCR
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Publish :latest (master only), the full commit SHA, and the ref name.
+          tags: |
+            type=raw,value=latest
+            type=sha,format=long
+            type=ref,event=branch
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+  deploy:
+    name: Deploy to Azure VM
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # "production" environment lets the repo optionally gate deploys with
+    # required reviewers and records deployment history. Harmless if unconfigured.
+    environment:
+      name: production
+      url: http://${{ secrets.AZURE_VM_HOST }}/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.AZURE_VM_SSH_KEY }}
+
+      - name: Trust VM host key
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 600 ~/.ssh/known_hosts
+
+      # Writes the runtime .env locally. Values come from secrets; the file is
+      # never committed. We regenerate it on every deploy so rotated secrets
+      # propagate automatically. `umask 077` ensures the file is only readable
+      # by the runner user, and we never echo the contents.
+      - name: Render .env file
+        env:
+          GHCR_REPO: ${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
+          MONGO_CONNECTION_STRING: ${{ secrets.MONGO_CONNECTION_STRING }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        run: |
+          umask 077
+          {
+            printf 'GHCR_REPO=%s\n'               "$GHCR_REPO"
+            printf 'IMAGE_TAG=%s\n'               "$IMAGE_TAG"
+            printf 'MONGO_CONNECTION_STRING=%s\n' "$MONGO_CONNECTION_STRING"
+            printf 'MONGO_DATABASE_NAME=%s\n'     'NinetyNine'
+            printf 'GOOGLE_CLIENT_ID=%s\n'        "$GOOGLE_CLIENT_ID"
+            printf 'GOOGLE_CLIENT_SECRET=%s\n'    "$GOOGLE_CLIENT_SECRET"
+          } > .env.deploy
+          test -s .env.deploy
+
+      - name: Copy compose file and .env to VM
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST }}
+          VM_USER: ${{ secrets.AZURE_VM_USER }}
+        run: |
+          set -euo pipefail
+          # Ensure /opt/ninetynine exists (VM prereq, but idempotent).
+          ssh -o StrictHostKeyChecking=yes "$VM_USER@$VM_HOST" \
+            'mkdir -p /opt/ninetynine && chmod 750 /opt/ninetynine'
+          scp -o StrictHostKeyChecking=yes \
+            docker-compose.yml \
+            "$VM_USER@$VM_HOST:/opt/ninetynine/docker-compose.yml"
+          scp -o StrictHostKeyChecking=yes \
+            .env.deploy \
+            "$VM_USER@$VM_HOST:/opt/ninetynine/.env"
+          # Lock down the .env on the VM so only the deploy user can read it.
+          ssh -o StrictHostKeyChecking=yes "$VM_USER@$VM_HOST" \
+            'chmod 600 /opt/ninetynine/.env && chmod 644 /opt/ninetynine/docker-compose.yml'
+
+      # Pulls the new image and restarts the stack. The GHCR token is piped
+      # through SSH stdin directly into `docker login --password-stdin` on the
+      # VM, so it never appears on the remote process list or on disk. We do
+      # NOT use `set -x` anywhere in the remote script so nothing is echoed.
+      # Actions also masks `secrets.GITHUB_TOKEN` in the workflow log by default.
+      - name: Pull image and restart stack on VM
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST }}
+          VM_USER: ${{ secrets.AZURE_VM_USER }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Step 1: docker login on the VM by streaming the token over SSH stdin
+          # into `docker login --password-stdin`. The token never touches disk
+          # or argv on the VM. GHCR_USER is safe to pass as an argument.
+          printf '%s' "$GHCR_TOKEN" | ssh -o StrictHostKeyChecking=yes \
+            "$VM_USER@$VM_HOST" \
+            "docker login ghcr.io -u '$GHCR_USER' --password-stdin >/dev/null"
+          # Step 2: pull and restart. No secrets in this command.
+          ssh -o StrictHostKeyChecking=yes "$VM_USER@$VM_HOST" bash -s <<'REMOTE'
+          set -euo pipefail
+          cd /opt/ninetynine
+          docker compose pull
+          docker compose up -d --remove-orphans
+          docker image prune -f
+          docker logout ghcr.io >/dev/null || true
+          REMOTE
+
+      - name: Remove local .env artifact
+        if: always()
+        run: rm -f .env.deploy
+
+  smoke-test:
+    name: Smoke test /healthz
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Curl /healthz with retry
+        env:
+          VM_HOST: ${{ secrets.AZURE_VM_HOST }}
+        run: |
+          set -euo pipefail
+          URL="http://$VM_HOST/healthz"
+          attempts=5
+          delay=10
+          for i in $(seq 1 "$attempts"); do
+            echo "Attempt $i/$attempts: GET $URL"
+            if curl -fsS -m 10 -o /dev/null -w 'HTTP %{http_code}\n' "$URL"; then
+              echo "Smoke test passed."
+              exit 0
+            fi
+            if [ "$i" -lt "$attempts" ]; then
+              echo "Not ready yet; sleeping ${delay}s..."
+              sleep "$delay"
+            fi
+          done
+          echo "Smoke test failed after $attempts attempts." >&2
+          exit 1

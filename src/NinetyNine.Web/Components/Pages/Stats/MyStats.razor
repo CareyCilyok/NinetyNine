@@ -1,0 +1,141 @@
+@page "/stats/me"
+@attribute [Authorize]
+@inject IStatisticsService StatisticsService
+@inject IGameRepository GameRepository
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<MyStats> Logger
+
+<PageTitle>My Stats &mdash; NinetyNine</PageTitle>
+
+<h1 class="mb-4">My Statistics</h1>
+
+@if (_loading)
+{
+    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading stats"></span>Loading&hellip;</p>
+}
+else if (_stats is null)
+{
+    <div class="alert alert-info">No game data yet. <a href="/games/new">Start a game!</a></div>
+}
+else
+{
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-md-3">
+            <div class="card text-center py-3">
+                <div class="display-6 fw-bold">@_stats.GamesPlayed</div>
+                <div class="text-muted small">Games Played</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center py-3">
+                <div class="display-6 fw-bold">@_stats.GamesCompleted</div>
+                <div class="text-muted small">Completed</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center py-3">
+                <div class="display-6 fw-bold font-monospace">@_stats.AverageScore.ToString("F1")</div>
+                <div class="text-muted small">Avg Score</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center py-3">
+                <div class="display-6 fw-bold font-monospace @(_stats.BestScore == 99 ? "text-warning" : "")">
+                    @_stats.BestScore
+                </div>
+                <div class="text-muted small">Best Score</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center py-3">
+                <div class="display-6 fw-bold">@_stats.PerfectGames</div>
+                <div class="text-muted small">Perfect Games</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center py-3">
+                <div class="display-6 fw-bold">@_stats.PerfectFrames</div>
+                <div class="text-muted small">Perfect Frames</div>
+            </div>
+        </div>
+        @if (_stats.LastPlayed.HasValue)
+        {
+            <div class="col-12 col-md-6">
+                <div class="card text-center py-3">
+                    <div class="h5 fw-bold">@_stats.LastPlayed.Value.ToString("MMMM d, yyyy")</div>
+                    <div class="text-muted small">Last Played</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (_bestGames.Count > 0)
+    {
+        <h2 class="h4 mb-3">Best Games</h2>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <caption class="visually-hidden">Top scoring games</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Score</th>
+                        <th scope="col">Avg / Frame</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var game in _bestGames)
+                    {
+                        <tr>
+                            <td>@game.WhenPlayed.ToLocalTime().ToString("MMM d, yyyy")</td>
+                            <td class="font-monospace fw-bold">
+                                @game.TotalScore
+                                @if (game.IsPerfectGame)
+                                {
+                                    <span class="badge bg-warning text-dark ms-1">99!</span>
+                                }
+                            </td>
+                            <td>@game.AverageScore.ToString("F1")</td>
+                            <td><a href="/games/@game.GameId" class="btn btn-sm btn-outline-secondary">View</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private PlayerStats? _stats;
+    private List<Game> _bestGames = [];
+    private bool _loading = true;
+    private Guid _playerId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var context = HttpContextAccessor.HttpContext;
+        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
+
+        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        try
+        {
+            _stats = await StatisticsService.GetPlayerStatsAsync(_playerId);
+            var best = await StatisticsService.GetBestGamesAsync(_playerId, 10);
+            _bestGames = best.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load stats for player {PlayerId}.", _playerId);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

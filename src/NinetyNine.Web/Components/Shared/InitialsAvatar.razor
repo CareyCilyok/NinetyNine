@@ -1,0 +1,29 @@
+@* SVG initials avatar used when no photo is available. *@
+
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="@SizePx" height="@SizePx"
+     viewBox="0 0 @SizePx @SizePx"
+     class="avatar-initials rounded-circle"
+     aria-hidden="true">
+    <circle cx="@(SizePx / 2)" cy="@(SizePx / 2)" r="@(SizePx / 2)" fill="#0f5132" />
+    <text x="50%" y="50%"
+          dominant-baseline="central"
+          text-anchor="middle"
+          fill="white"
+          font-family="system-ui, sans-serif"
+          font-size="@(SizePx / 2.5)">
+        @Initials
+    </text>
+</svg>
+
+@code {
+    [Parameter] public string DisplayName { get; set; } = "";
+    [Parameter] public int SizePx { get; set; } = 40;
+
+    private string Initials => string.IsNullOrWhiteSpace(DisplayName)
+        ? "?"
+        : string.Concat(
+            DisplayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                       .Take(2)
+                       .Select(w => char.ToUpperInvariant(w[0])));
+}

@@ -1,0 +1,161 @@
+# CI workflow for NinetyNine
+#
+# Runs build, tests, lint, and a Dockerfile sanity build on every pull request
+# and on every push to a non-master branch. Pushes to master are handled by
+# deploy.yml, which runs the same validations implicitly before deploying.
+#
+# Branch protection (configure in repo settings):
+#   Require status checks to pass before merging on "master":
+#     - build-test
+#     - lint
+#     - docker-build
+#   Require branches to be up to date before merging.
+#
+# Performance target: < 10 min wall clock for a small PR. We run the three jobs
+# in parallel, cache NuGet packages, and use GHA layer cache for Docker.
+
+name: CI
+
+on:
+  pull_request:
+    branches: ['**']
+  push:
+    branches-ignore:
+      - master
+
+# Cancel redundant runs on the same ref (e.g., force-push or new commits to a PR).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Principle of least privilege: CI only needs to read the repo.
+permissions:
+  contents: read
+
+env:
+  # Production (src/) targets net8.0 per the Dockerfile. Test projects target
+  # net9.0 / net10.0 to match the local development environments in use. We
+  # install all three SDKs so CI can build the src projects and run the tests.
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+  SOLUTION: NinetyNine.sln
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    # Docker is preinstalled on ubuntu-latest, which Testcontainers uses
+    # automatically for NinetyNine.Repository.Tests (MongoDB via Testcontainers).
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDKs (8 for src, 9/10 for tests)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          # Key cache on every csproj hash so dependency bumps invalidate cleanly.
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore "$SOLUTION"
+
+      - name: Build (Release, warnings as errors)
+        run: dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
+
+      - name: Test with coverage
+        run: |
+          dotnet test "$SOLUTION" \
+            --no-build \
+            --configuration Release \
+            --verbosity normal \
+            --logger "trx;LogFileName=test-results.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./coverage
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/TestResults/**/*.trx
+            coverage/**/*.trx
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/**/coverage.cobertura.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+  lint:
+    name: Lint (dotnet format)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDKs (8 for src, 9/10 for tests)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore (needed for analyzers)
+        run: dotnet restore "$SOLUTION"
+
+      # dotnet format is bundled with the .NET 8 SDK; no separate tool install needed.
+      - name: Verify formatting
+        run: dotnet format "$SOLUTION" --verify-no-changes --severity error --no-restore
+
+  docker-build:
+    name: Docker build (verify Dockerfile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Builds the image without pushing, using the GHA cache backend so that
+      # subsequent CI runs reuse layers and stay well under the 10 min budget.
+      - name: Build image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: ninetynine:ci-${{ github.sha }}

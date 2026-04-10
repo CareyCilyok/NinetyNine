@@ -1,0 +1,38 @@
+@* Radio button group for picking a pool table size. *@
+
+@foreach (var size in _sizes)
+{
+    var s = size;
+    var inputId = $"table-size-{s}";
+    <div class="form-check form-check-inline">
+        <input type="radio"
+               class="form-check-input"
+               id="@inputId"
+               name="tableSize"
+               value="@s"
+               checked="@(Value == s)"
+               @onchange="() => OnChange(s)" />
+        <label class="form-check-label" for="@inputId">
+            @Label(s)
+        </label>
+    </div>
+}
+
+@code {
+    [Parameter] public TableSize Value { get; set; } = TableSize.SevenFoot;
+    [Parameter] public EventCallback<TableSize> ValueChanged { get; set; }
+
+    private static readonly TableSize[] _sizes =
+        Enum.GetValues<TableSize>().Where(s => s != TableSize.Unknown).ToArray();
+
+    private async Task OnChange(TableSize s) => await ValueChanged.InvokeAsync(s);
+
+    private static string Label(TableSize s) => s switch
+    {
+        TableSize.SixFoot => "6 ft",
+        TableSize.SevenFoot => "7 ft",
+        TableSize.NineFoot => "9 ft",
+        TableSize.TenFoot => "10 ft",
+        _ => s.ToString()
+    };
+}

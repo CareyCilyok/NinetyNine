@@ -1,0 +1,27 @@
+<Router AppAssembly="typeof(App).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)">
+            <NotAuthorized>
+                @if (context.User.Identity?.IsAuthenticated != true)
+                {
+                    <RedirectToLogin />
+                }
+                else
+                {
+                    <p class="text-danger">You are not authorized to access this resource.</p>
+                }
+            </NotAuthorized>
+            <Authorizing>
+                <p>Checking authorization&hellip;</p>
+            </Authorizing>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Not Found</PageTitle>
+        <LayoutView Layout="typeof(MainLayout)">
+            <h1>404 &mdash; Page not found</h1>
+            <p>The page you requested does not exist. <a href="/">Return home</a>.</p>
+        </LayoutView>
+    </NotFound>
+</Router>

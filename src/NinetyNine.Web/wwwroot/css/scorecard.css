@@ -1,0 +1,618 @@
+/* =====================================================================
+   NinetyNine — scorecard.css
+   The P&B-inspired scoring grid. This is the visual centerpiece of
+   the app and is modeled directly on the official paper score card
+   photographed in /docs/signal-*.jpeg.
+   ---------------------------------------------------------------------
+   Layout model (desktop, >= 768px):
+
+     ┌──────────────────────────────────────────────────────────┐
+     │  [99]   Ninety-Nine Pool-Billiard — Score Card      [99] │  <- header
+     ├──────────────────────────────────────────────────────────┤
+     │   (1)   (2)   (3)   (4)   (5)   (6)   (7)   (8)   (9)    │  <- frame nums
+     │  ┌──┐  ┌──┐  ┌──┐  ┌──┐  ┌──┐  ┌──┐  ┌──┐  ┌──┐  ┌──┐    │
+     │  │ B│  │ B│  │ B│  │ B│  │ B│  │ B│  │ B│  │ B│  │ B│    │  <- break
+     │  ├──┤  ├──┤  ├──┤  ├──┤  ├──┤  ├──┤  ├──┤  ├──┤  ├──┤    │
+     │  │ b│  │ b│  │ b│  │ b│  │ b│  │ b│  │ b│  │ b│  │ b│    │  <- ball
+     │  ├──┤  ├──┤  ├──┤  ├──┤  ├──┤  ├──┤  ├──┤  ├──┤  ├──┤    │
+     │  │ T│  │ T│  │ T│  │ T│  │ T│  │ T│  │ T│  │ T│  │ T│    │  <- running
+     │  └──┘  └──┘  └──┘  └──┘  └──┘  └──┘  └──┘  └──┘  └──┘    │
+     └──────────────────────────────────────────────────────────┘
+
+   Mobile (< 768px): the 9-column grid collapses into a single detailed
+   frame view, with a horizontally-scrollable thumbnail picker above.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. Outer container — the "paper" card
+   ------------------------------------------------------------------- */
+
+.scorecard {
+  /* Local tokens scoped to the scorecard so we can tune the grid without
+     disturbing the rest of the app. */
+  --sc-border: var(--nn-paper-border);
+  --sc-paper: var(--nn-paper);
+  --sc-paper-alt: var(--nn-paper-alt);
+  --sc-ink: var(--nn-ink);
+  --sc-ink-muted: var(--nn-ink-muted);
+  --sc-ink-faint: var(--nn-ink-faint);
+  --sc-accent: var(--nn-accent);
+  --sc-accent-subtle: var(--nn-accent-subtle);
+  --sc-break-tint: #eef3ec;   /* very subtle sage for break bonus row */
+  --sc-ball-tint:  #fbf9f1;   /* same as paper but slightly warmer */
+  --sc-cell-min-h: 2.75rem;   /* 44px touch-target */
+  --sc-radius: var(--nn-radius-md);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--nn-space-4);
+  background-color: var(--sc-paper);
+  color: var(--sc-ink);
+  border: 2px solid var(--sc-border);
+  border-radius: var(--nn-radius-lg);
+  padding: var(--nn-space-4);
+  box-shadow: var(--nn-shadow-md);
+  font-family: var(--nn-font-mono);
+  /* Paper-feel subtle hatching (warm "fiber" gradient). */
+  background-image:
+    radial-gradient(
+      circle at 20% 10%,
+      rgba(201, 194, 166, 0.08) 0,
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 80% 90%,
+      rgba(201, 194, 166, 0.07) 0,
+      transparent 45%
+    );
+  position: relative;
+}
+
+[data-bs-theme="dark"] .scorecard {
+  --sc-break-tint: #20241d;
+  --sc-ball-tint:  #1f1d17;
+}
+
+@media (min-width: 768px) {
+  .scorecard { padding: var(--nn-space-5); }
+}
+
+/* ---------------------------------------------------------------------
+   2. Header row — "99" flanks + title
+   ------------------------------------------------------------------- */
+
+.scorecard-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--nn-space-3);
+  padding-bottom: var(--nn-space-3);
+  border-bottom: 1px solid var(--sc-border);
+  font-family: var(--nn-font-sans);
+}
+
+.scorecard-header__title {
+  text-align: center;
+  margin: 0;
+  font-size: clamp(1rem, 0.85rem + 0.6vw, 1.25rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--sc-ink);
+}
+
+.scorecard-header__subtitle {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--sc-ink-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* The big "99" brand marks on each side. Mimics the quote-wrapped
+   "99" style on the printed card. */
+.scorecard-99 {
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: clamp(1.5rem, 1rem + 2vw, 2.25rem);
+  font-weight: 700;
+  color: var(--sc-ink);
+  line-height: 1;
+  padding-inline: var(--nn-space-2);
+  /* Italicize for that "billboard" feel, and add the quote marks as
+     decorative pseudo-elements so screen readers skip them. */
+  font-style: italic;
+  user-select: none;
+  position: relative;
+}
+
+.scorecard-99::before,
+.scorecard-99::after {
+  content: "\"";
+  font-style: normal;
+  color: var(--sc-ink-muted);
+}
+
+/* ---------------------------------------------------------------------
+   3. Grid — 9 frames
+   ------------------------------------------------------------------- */
+
+.scorecard-grid {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: var(--nn-space-2);
+  /* Lean on container-level padding; keep the grid flush to the edges. */
+  align-items: stretch;
+}
+
+@media (min-width: 992px) {
+  .scorecard-grid { gap: var(--nn-space-3); }
+}
+
+/* ---------------------------------------------------------------------
+   4. Frame column
+   ------------------------------------------------------------------- */
+
+.scorecard-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--nn-space-2);
+  min-width: 0; /* allow shrink inside grid */
+  /* Make the column behave like a button when interactive. */
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  text-align: center;
+  cursor: default;
+}
+
+/* When the frame is rendered as a <button> (editable) it gets a pointer
+   cursor and keyboard focus ring. */
+button.scorecard-frame,
+.scorecard-frame[role="button"] {
+  cursor: pointer;
+}
+
+button.scorecard-frame:focus-visible,
+.scorecard-frame[role="button"]:focus-visible {
+  outline: 3px solid var(--sc-accent);
+  outline-offset: 3px;
+  border-radius: var(--sc-radius);
+}
+
+/* Frame number — the circled digit at the top of the column. */
+.scorecard-frame-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--nn-radius-pill);
+  background-color: var(--sc-paper);
+  color: var(--sc-ink);
+  border: 2px solid var(--sc-ink);
+  font-family: var(--nn-font-sans);
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1;
+  margin-inline: auto;
+  margin-bottom: var(--nn-space-1);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .scorecard-frame-number {
+    width: 2rem;
+    height: 2rem;
+    font-size: 1rem;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   5. Cells — Break / Ball / Running
+   ------------------------------------------------------------------- */
+
+.scorecard-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--sc-cell-min-h);
+  padding: var(--nn-space-1) var(--nn-space-2);
+  border: 1px solid var(--sc-border);
+  background-color: var(--sc-paper);
+  color: var(--sc-ink);
+  font-family: var(--nn-font-mono);
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  position: relative;
+  /* Each cell stacks on top of the next; round only the outermost. */
+}
+
+.scorecard-cell:first-of-type {
+  border-top-left-radius: var(--sc-radius);
+  border-top-right-radius: var(--sc-radius);
+}
+
+.scorecard-cell:last-of-type {
+  border-bottom-left-radius: var(--sc-radius);
+  border-bottom-right-radius: var(--sc-radius);
+}
+
+/* Visually merge adjacent cells by collapsing the shared border. */
+.scorecard-cell + .scorecard-cell {
+  border-top-width: 0;
+}
+
+/* Break bonus row — tinted, smaller number. */
+.scorecard-cell--break {
+  background-color: var(--sc-break-tint);
+  font-size: 0.875rem;
+  color: var(--sc-ink-muted);
+}
+
+/* Ball count row — middle, plain paper tint. */
+.scorecard-cell--ball {
+  background-color: var(--sc-ball-tint);
+  font-size: 1rem;
+}
+
+/* Running total — the dominant number in the cell. Bold, bigger. */
+.scorecard-cell--running {
+  background-color: var(--sc-paper);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--sc-ink);
+  /* Subtle underline bar to mirror the double-rule at bottom of a card. */
+  box-shadow: inset 0 -2px 0 0 var(--sc-border);
+}
+
+/* Small label, visible on mobile detail / for screen readers. */
+.scorecard-cell-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------------------------------------------------
+   6. Frame state modifiers
+   ------------------------------------------------------------------- */
+
+/* EMPTY: neutral gray, faint placeholder strokes. */
+.scorecard-frame--empty .scorecard-cell {
+  color: var(--sc-ink-faint);
+  background-color: var(--sc-paper);
+}
+
+.scorecard-frame--empty .scorecard-cell--break {
+  background-color: color-mix(in srgb, var(--sc-break-tint) 55%, var(--sc-paper));
+}
+
+.scorecard-frame--empty .scorecard-frame-number {
+  border-color: var(--sc-ink-faint);
+  color: var(--sc-ink-faint);
+}
+
+/* COMPLETED: muted ink + "locked" visual cue via a thicker top rule. */
+.scorecard-frame--completed .scorecard-cell {
+  color: var(--sc-ink-muted);
+}
+
+.scorecard-frame--completed .scorecard-cell--running {
+  color: var(--sc-ink);           /* keep final total readable */
+  font-weight: 700;
+}
+
+.scorecard-frame--completed .scorecard-frame-number {
+  background-color: var(--sc-ink);
+  color: var(--sc-paper);
+  border-color: var(--sc-ink);
+}
+
+/* ACTIVE: accent border + elevation. Color is NOT the sole cue —
+   border-width increase and subtle glow provide a second signal. */
+.scorecard-frame--active .scorecard-cell {
+  border-color: var(--sc-accent);
+}
+
+.scorecard-frame--active .scorecard-cell--running {
+  box-shadow: inset 0 -3px 0 0 var(--sc-accent);
+}
+
+.scorecard-frame--active .scorecard-cell:first-of-type {
+  border-top-width: 3px;
+}
+
+.scorecard-frame--active .scorecard-cell:last-of-type {
+  border-bottom-width: 3px;
+}
+
+.scorecard-frame--active .scorecard-frame-number {
+  background-color: var(--sc-accent);
+  color: var(--nn-accent-text);
+  border-color: var(--sc-accent);
+  box-shadow: 0 0 0 3px var(--sc-accent-subtle);
+}
+
+/* A gentle lift — skipped for reduced-motion users. */
+.scorecard-frame--active {
+  transform: translateY(-2px);
+  transition: transform var(--nn-transition-base);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scorecard-frame--active { transform: none; transition: none; }
+}
+
+/* ---------------------------------------------------------------------
+   7. Mobile layout (< 768px)
+   ------------------------------------------------------------------- */
+
+/* Picker strip — horizontally scrollable list of frame thumbnails
+   shown across the top in mobile mode. */
+.scorecard-mobile-picker {
+  display: none; /* enabled only on small screens */
+  gap: var(--nn-space-2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--nn-space-2) var(--nn-space-1);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sc-border) transparent;
+  -webkit-overflow-scrolling: touch;
+  border-top: 1px solid var(--sc-border);
+  border-bottom: 1px solid var(--sc-border);
+  margin-inline: calc(-1 * var(--nn-space-4));
+  padding-inline: var(--nn-space-4);
+  background-color: var(--sc-paper-alt);
+}
+
+.scorecard-mobile-picker::-webkit-scrollbar { height: 6px; }
+.scorecard-mobile-picker::-webkit-scrollbar-thumb {
+  background: var(--sc-border);
+  border-radius: var(--nn-radius-pill);
+}
+
+.scorecard-mobile-picker-item {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  min-height: var(--nn-touch-target);
+  padding: var(--nn-space-1) var(--nn-space-2);
+  background-color: var(--sc-paper);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  color: var(--sc-ink-muted);
+  font-family: var(--nn-font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  scroll-snap-align: center;
+  cursor: pointer;
+  transition: border-color var(--nn-transition-fast),
+              background-color var(--nn-transition-fast),
+              color var(--nn-transition-fast);
+}
+
+.scorecard-mobile-picker-item:focus-visible {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: 2px;
+}
+
+.scorecard-mobile-picker-item__num {
+  font-family: var(--nn-font-sans);
+  font-size: 0.9rem;
+  color: var(--sc-ink);
+}
+
+.scorecard-mobile-picker-item__total {
+  font-family: var(--nn-font-mono);
+  font-size: 0.75rem;
+  color: var(--sc-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.scorecard-mobile-picker-item--active {
+  background-color: var(--sc-accent);
+  border-color: var(--sc-accent);
+  color: var(--nn-accent-text);
+  /* Second signal beyond color: inset ring. */
+  box-shadow: inset 0 0 0 2px var(--nn-accent-text);
+}
+
+.scorecard-mobile-picker-item--active .scorecard-mobile-picker-item__num,
+.scorecard-mobile-picker-item--active .scorecard-mobile-picker-item__total {
+  color: var(--nn-accent-text);
+}
+
+/* Detail view — single large frame shown on mobile. */
+.scorecard-frame-detail {
+  display: none;
+  flex-direction: column;
+  gap: var(--nn-space-3);
+  padding: var(--nn-space-4);
+  background-color: var(--sc-paper);
+  border: 2px solid var(--sc-accent);
+  border-radius: var(--nn-radius-lg);
+}
+
+.scorecard-frame-detail .scorecard-cell {
+  min-height: 3.5rem;
+  font-size: 1.5rem;
+}
+
+.scorecard-frame-detail .scorecard-cell-label {
+  /* In detail view, reveal the label instead of hiding it. */
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0 var(--nn-space-2);
+  clip: auto;
+  overflow: visible;
+  white-space: nowrap;
+  font-family: var(--nn-font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--sc-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: auto;
+}
+
+.scorecard-frame-detail .scorecard-cell {
+  justify-content: space-between;
+}
+
+.scorecard-frame-detail .scorecard-cell--running {
+  font-size: 2rem;
+}
+
+/* ------------- Responsive switch: mobile layout at < 768px ---------- */
+@media (max-width: 767.98px) {
+  .scorecard-grid {
+    /* Collapse to one big column: current frame only. The frontend will
+       render only the active frame inside .scorecard-grid in mobile,
+       or render .scorecard-frame-detail separately. Both are supported. */
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .scorecard-mobile-picker {
+    display: flex;
+  }
+
+  .scorecard-frame-detail {
+    display: flex;
+  }
+
+  /* When a .scorecard-frame-detail is present, hide the old grid. */
+  .scorecard--mobile .scorecard-grid { display: none; }
+
+  .scorecard-cell {
+    min-height: 3rem;
+    font-size: 1.25rem;
+  }
+
+  .scorecard-cell--running { font-size: 1.5rem; }
+
+  .scorecard-99 { font-size: 1.5rem; }
+
+  .scorecard-header__title { font-size: 1rem; }
+}
+
+/* ---------------------------------------------------------------------
+   8. Player row wrapper (optional: used when multiple players share
+      one card — each .scorecard wraps one player's run of 9 frames).
+   ------------------------------------------------------------------- */
+
+.scorecard-player {
+  display: flex;
+  align-items: center;
+  gap: var(--nn-space-3);
+  padding-bottom: var(--nn-space-2);
+  border-bottom: 1px dashed var(--sc-border);
+  margin-bottom: var(--nn-space-3);
+  font-family: var(--nn-font-sans);
+}
+
+.scorecard-player__name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--sc-ink);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scorecard-player__total {
+  margin-left: auto;
+  font-family: var(--nn-font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--sc-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------
+   9. Print styles — clean white paper, strong borders, no shadows.
+   ------------------------------------------------------------------- */
+
+@media print {
+  @page { margin: 1cm; }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .nn-navbar,
+  .nn-footer,
+  .scorecard-mobile-picker,
+  .scorecard-frame-detail { display: none !important; }
+
+  .scorecard {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1.5pt solid #000000 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    background-image: none !important;
+  }
+
+  .scorecard-grid {
+    display: grid !important;
+    grid-template-columns: repeat(9, 1fr) !important;
+    gap: 0 !important;
+  }
+
+  .scorecard-cell {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 0.75pt solid #000000 !important;
+    box-shadow: none !important;
+    font-size: 11pt !important;
+  }
+
+  .scorecard-cell--break {
+    background: #f0f0f0 !important;
+  }
+
+  .scorecard-cell--running {
+    font-weight: 700 !important;
+    border-top: 1pt solid #000000 !important;
+  }
+
+  .scorecard-frame-number {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1pt solid #000000 !important;
+  }
+
+  .scorecard-frame--active .scorecard-cell,
+  .scorecard-frame--completed .scorecard-cell,
+  .scorecard-frame--empty .scorecard-cell {
+    /* State highlights aren't meaningful on paper; flatten them. */
+    border-color: #000000 !important;
+    box-shadow: none !important;
+  }
+
+  .scorecard-99 {
+    color: #000000 !important;
+  }
+
+  /* Ensure the grid fits a landscape page nicely. */
+  .scorecard { padding: 0.5cm !important; }
+}
