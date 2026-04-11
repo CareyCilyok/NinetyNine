@@ -448,35 +448,34 @@ Standard claims after login:
 
 Blazor Web App template, **Server interactive** render mode globally. Interactive auto / WASM deferred — server keeps database access simple (direct repo injection, no separate API hop for the UI).
 
-### 8.2 Visual reference: P&B score card
+### 8.2 Visual direction
 
-The official score card (photos in `docs/signal-*.jpeg`) is the mental model users expect. The scoring page MUST visually mirror it:
+**The P&B score card photos in `docs/signal-*.jpeg` are historical artifacts from the 1990s, NOT the visual design target.** They're useful only as a reminder of the functional layout (9 frames × break-bonus/ball-count/running-total). Do not replicate their cream-paper background, italic serif "99" marks, diamond logo, or any other 90s print-on-paper aesthetic.
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│   Ninety-Nine Pool-Billiard                  Break Ball       │
-│   [Logo]  Running Total →                    Bonus Count      │
-│                                                                │
-│ Player │  1  │  2  │  3  │  4  │  5  │  6  │  7  │  8  │  9  │
-│        │ ┌─┐ │ ┌─┐ │ ┌─┐ │ ┌─┐ │ ┌─┐ │ ┌─┐ │ ┌─┐ │ ┌─┐ │ ┌─┐ │
-│ Carey  │ │1│ │ │0│ │ │1│ │ │1│ │ │0│ │ │1│ │ │1│ │ │0│ │ │1│ │  ← BreakBonus
-│        │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │
-│        │ │5│ │ │3│ │ │7│ │10│ │ │2│ │ │8│ │ │6│ │ │4│ │ │9│ │  ← BallCount
-│        │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │ ├─┤ │
-│        │ │6│ │10│ │18│ │29│ │31│ │40│ │47│ │51│ │61│ │  ← RunningTotal
-│        │ └─┘ │ └─┘ │ └─┘ │ └─┘ │ └─┘ │ └─┘ │ └─┘ │ └─┘ │ └─┘ │
-│  "99"                                                    "99" │
-└──────────────────────────────────────────────────────────────┘
-```
+**Dark theme is the primary/default color scheme.** Light mode is a secondary toggle, not the default. All design decisions — palette, contrast, elevation — should be made dark-first.
 
-**Design requirements**:
+**Layout pattern**: loosely inspired by the archived Avalonia implementation's `FluentAvalonia NavigationView` — a persistent left side navigation (Home / New Game / History / Stats / Venues / Profile) plus a main content pane. This is a rough starting guide, not a replication target. The original Avalonia was functional scaffolding with stock FluentTheme colors and inline HTML4 named colors — do NOT copy its styling.
+
+**Scoring grid requirements** (functional, not visual):
+
 - 9-column grid, one column per frame
 - Each frame cell is a 3-row vertical stack: Break Bonus / Ball Count / Running Total
-- "99" labels flank the grid left and right
-- Break Bonus header tinted distinctly from Ball Count
-- Active frame highlighted (accent border or background)
-- Completed frames visibly "locked in" (muted but readable)
-- Mobile responsive: collapses to a vertical single-frame-focused view below 768px, with a frame-picker strip across the top
+- Active frame highlighted
+- Completed frames visibly "locked in"
+- Empty frames neutral
+- Mobile responsive: collapses to a single-frame-focused view below 768px with a frame-picker strip
+
+**Future asset work** (post-v1, requires explicit web search permission from the user):
+
+- Numbered pool ball graphics (1–15) for future scoring and UI features
+- Free icon packs (candidates TBD — Lucide, Tabler, Heroicons, Phosphor all worth considering)
+- Free pool/billiard imagery (backgrounds, decorative elements)
+- **Do not canvas web asset sources until the user grants search access explicitly.**
+
+**Salvaged from archive** (`archive/pre-blazor-rewrite`):
+
+- 18 FontAwesome-style SVGs live in `src/NinetyNine.Web/wwwroot/icons/` (building, chart-bar, circle, cloud-upload-alt, cog, globe-americas, id-card, key, map-marked-alt, map-marker-alt, map-marker, pied-piper, smoking-ban, smoking, user-friends, user, users, warehouse — all solid-style, `viewBox="0 0 32 32"`, single-color path fills).
+- `Icons.axaml` geometry paths preserved in `docs/_salvaged/Icons.axaml` for future reuse if specific Material/Fluent/FontAwesome/BoxIcons/VSImageLib paths are needed. Each entry is an Avalonia `GeometryDrawing` with a `Geometry="M..."` attribute whose value is SVG-compatible and can be pasted directly into a `<path d="..."/>`.
 
 ### 8.3 Pages / Routes
 
@@ -508,12 +507,12 @@ The official score card (photos in `docs/signal-*.jpeg`) is the mental model use
 
 ### 8.5 Design system
 
-- **Styling**: Bootstrap 5 (bundled with Blazor Web App template) + project-specific CSS in `wwwroot/css/app.css`
-- **Theme**: pool table green accents (`#0f5132` primary), cream/paper background on scoring grid for P&B card feel
-- **Typography**: default system stack; monospace for score cells (`'JetBrains Mono', 'Fira Code', ui-monospace, monospace`)
-- **Icons**: Bootstrap Icons (CDN or local)
-- **No heavy component library** (MudBlazor/Radzen) in v1 — upgrade path preserved
-- **Dark mode**: CSS variables + `data-bs-theme` toggle, stored in cookie
+- **Styling**: Bootstrap 5 baseline (bundled with Blazor Web App template) extended with a custom dark-first theme in `wwwroot/css/theme.css`, `app.css`, `scorecard.css`. The current implementation is placeholder quality and due for a dedicated redesign pass.
+- **Primary theme: dark.** Palette to be refined in the design pass — anchor around a deep neutral background (not pure black), pool-accent greens/teals as brand color, warm accent for active/highlight states. Light mode is a secondary toggle.
+- **Typography**: system font stack for body text; monospace for score cells and numerals (`'JetBrains Mono', 'Fira Code', ui-monospace, monospace`).
+- **Icons**: 18 SVGs salvaged from the Avalonia archive in `wwwroot/icons/`. Augment with a modern icon pack (Lucide/Tabler/Heroicons/Phosphor — TBD) once web search is authorized.
+- **No heavy component library** (MudBlazor/Radzen) in v1. If the custom styling proves too expensive to maintain, MudBlazor is the upgrade path (its dark theme is strong).
+- **Dark mode**: CSS custom properties + `data-bs-theme="dark"` by default, with a user toggle stored in cookie. Light mode variables kept but not the default.
 
 ### 8.6 Key components (reusable)
 
