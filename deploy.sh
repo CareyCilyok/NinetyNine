@@ -69,14 +69,139 @@ _ensure_env() {
     fi
 }
 
+# ── Live service health poller ───────────────────────────────────────────────
+# Docker Compose's own progress UI uses in-place cursor rewrites which some
+# terminals swallow, making the 15-45s wait for healthchecks look like a hang.
+# This function polls `docker inspect` directly and prints a live status line
+# per service so the developer sees continuous progress.
+#
+# Usage: _wait_for_services <service1> [service2 ...]
+#   - Polls each named compose service in turn
+#   - Prints a single overwriting line per service while it transitions
+#   - Succeeds when every service reports 'healthy' (or 'running' if the
+#     service has no healthcheck)
+#   - Times out after 120 s total and dumps the failing service's tail logs
+_wait_for_services() {
+    local services=("$@")
+    local deadline=$(( $(date +%s) + 120 ))
+    local spin_idx=0
+    local spinner='|/-\'
+
+    for service in "${services[@]}"; do
+        local start=$(date +%s)
+        local status='(unknown)'
+        local has_healthcheck='unknown'
+
+        while true; do
+            local container
+            container=$($COMPOSE ps -q "$service" 2>/dev/null | head -1)
+
+            if [ -z "$container" ]; then
+                status='(no container yet)'
+            else
+                # Figure out if this container has a healthcheck defined.
+                if [ "$has_healthcheck" = 'unknown' ]; then
+                    if docker inspect --format '{{.State.Health.Status}}' "$container" \
+                            &>/dev/null; then
+                        has_healthcheck='yes'
+                    else
+                        has_healthcheck='no'
+                    fi
+                fi
+
+                if [ "$has_healthcheck" = 'yes' ]; then
+                    status=$(docker inspect --format '{{.State.Health.Status}}' \
+                        "$container" 2>/dev/null || echo 'starting')
+                else
+                    status=$(docker inspect --format '{{.State.Status}}' \
+                        "$container" 2>/dev/null || echo 'starting')
+                fi
+            fi
+
+            local elapsed=$(( $(date +%s) - start ))
+            local spin_char=${spinner:$spin_idx:1}
+            spin_idx=$(( (spin_idx + 1) % 4 ))
+
+            # Overwriting line: carriage return + clear to end of line + write
+            printf '\r\033[K  %s %-16s %-10s %ds' \
+                "$spin_char" "$service" "$status" "$elapsed"
+
+            case "$status" in
+                healthy|running)
+                    # Print a permanent OK line and move to the next service.
+                    printf '\r\033[K  \033[0;32m✓\033[0m %-16s %-10s %ds\n' \
+                        "$service" "$status" "$elapsed"
+                    break
+                    ;;
+                unhealthy|exited|dead)
+                    printf '\r\033[K  \033[0;31m✗\033[0m %-16s %-10s\n' \
+                        "$service" "$status"
+                    _error "Service '$service' failed to become healthy."
+                    _error "Last 30 lines of '$service' logs:"
+                    $COMPOSE logs --tail 30 "$service" >&2 || true
+                    return 1
+                    ;;
+            esac
+
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+                printf '\r\033[K  \033[0;31m✗\033[0m %-16s timed out after 120s\n' "$service"
+                _error "Timed out waiting for '$service' to become healthy."
+                _error "Current status: $status"
+                _error "Last 30 lines of '$service' logs:"
+                $COMPOSE logs --tail 30 "$service" >&2 || true
+                return 1
+            fi
+
+            sleep 1
+        done
+    done
+
+    return 0
+}
+
+# ── Sanity check: hit the web healthz endpoint ───────────────────────────────
+_check_web_reachable() {
+    local url='http://localhost:8080/healthz'
+    if command -v curl &>/dev/null; then
+        if curl --max-time 5 -fsS "$url" >/dev/null 2>&1; then
+            _ok "Web app is responding at http://localhost:8080"
+            return 0
+        fi
+        _warn "Web app is not yet responding at $url."
+        _warn "Container is healthy but the HTTP endpoint did not return 200."
+        _warn "Try './deploy.sh logs' to see what's happening."
+        return 1
+    fi
+    # No curl — skip the check silently; _wait_for_services already verified
+    # container health via docker inspect.
+    return 0
+}
+
 # ── Subcommands ───────────────────────────────────────────────────────────────
 
 cmd_up() {
     _ensure_env
     _info "Starting all services (building web image if needed)..."
-    $COMPOSE up -d --build
-    _ok "Services started."
+    _info "First start takes ~20-60 s while MongoDB's healthcheck passes."
     echo ""
+
+    # --wait blocks until healthchecks pass (or timeout). --wait-timeout 120
+    # matches our in-script poller timeout so both fail at the same moment.
+    # 2>&1 merges buildkit's progress into our stream so terminals that
+    # swallow in-place rewrites still see the build log.
+    if ! $COMPOSE up -d --build --wait --wait-timeout 120; then
+        _error "docker compose up failed. See output above."
+        exit 1
+    fi
+
+    echo ""
+    _info "Verifying service health..."
+    if ! _wait_for_services mongo web mongo-express; then
+        exit 1
+    fi
+
+    echo ""
+    _check_web_reachable || true
     _ok "Web app:       http://localhost:8080"
     _ok "Mongo Express: http://localhost:8081"
     echo ""
@@ -94,7 +219,22 @@ cmd_rebuild() {
     _info "Rebuilding web image (no cache)..."
     $COMPOSE build --no-cache web
     _info "Starting services with freshly built image..."
-    $COMPOSE up -d
+    _info "Waiting for healthchecks (~20-60 s)..."
+    echo ""
+
+    if ! $COMPOSE up -d --wait --wait-timeout 120; then
+        _error "docker compose up failed. See output above."
+        exit 1
+    fi
+
+    echo ""
+    _info "Verifying service health..."
+    if ! _wait_for_services mongo web mongo-express; then
+        exit 1
+    fi
+
+    echo ""
+    _check_web_reachable || true
     _ok "Rebuild complete. Web app: http://localhost:8080"
 }
 

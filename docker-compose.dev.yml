@@ -76,11 +76,16 @@ services:
       # mongosh ping: returns 1 on success, any non-zero value signals unhealthy.
       # The --quiet flag suppresses the banner; "|| exit 1" converts a falsy
       # return value to a non-zero exit code that Docker interprets as unhealthy.
+      #
+      # Timing: Mongo 7 on modern hardware is usually responsive within 3-5 s
+      # of cold-start. A tight interval + start_period gets `web` and
+      # `mongo-express` unblocked faster while retries=15 preserves tolerance
+      # for slower cold starts. First healthy report typically at ~4-6 s.
       test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" || exit 1"]
-      interval: 5s
-      timeout: 5s
-      start_period: 10s
-      retries: 10
+      interval: 2s
+      timeout: 3s
+      start_period: 3s
+      retries: 15
 
   # ── Mongo Express (DB admin UI) ───────────────────────────────────────────────
   mongo-express:
