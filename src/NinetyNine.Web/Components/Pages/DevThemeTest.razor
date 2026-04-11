@@ -1,0 +1,520 @@
+@page "/dev/theme-test"
+@inject IWebHostEnvironment Environment
+
+<PageTitle>Dev &mdash; Theme Test &mdash; NinetyNine</PageTitle>
+
+@if (!Environment.IsDevelopment())
+{
+    <div class="nn-page">
+        <h1>Not found</h1>
+        <p class="nn-muted">This page is only available in the Development environment.</p>
+    </div>
+}
+else
+{
+    <div class="nn-page">
+        <header class="nn-page-header">
+            <div>
+                <h1>Theme Test Harness</h1>
+                <p class="nn-muted mb-0">
+                    Visual verification surface for WP-03 (Base CSS Theme).
+                    Dark is the default; light is a secondary override.
+                </p>
+            </div>
+            <span class="nn-pill">
+                <span aria-hidden="true">&#9679;</span>
+                Development only
+            </span>
+        </header>
+
+        <hr class="nn-rule" />
+
+        <!-- ===========================================================
+             1. Typography
+             =========================================================== -->
+        <section class="nn-stack nn-stack--lg" aria-labelledby="sec-typography">
+            <h2 id="sec-typography">1. Typography</h2>
+
+            <div>
+                <h1>The quick brown fox (h1)</h1>
+                <h2>The quick brown fox (h2)</h2>
+                <h3>The quick brown fox (h3)</h3>
+                <h4>The quick brown fox (h4)</h4>
+                <h5>The quick brown fox (h5)</h5>
+                <h6>The quick brown fox (h6)</h6>
+                <p>
+                    Body copy. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                    The quick brown fox jumps over the lazy dog.
+                    <a href="#">This is a link</a>, followed by
+                    <strong>strong text</strong>, <em>emphasis</em>, and
+                    <code>inline code</code>.
+                </p>
+                <p><small>Small print is muted secondary text, useful for captions and metadata.</small></p>
+                <p class="nn-mono">Monospace numerals: 99 &middot; 42 &middot; 127 &middot; 3.14 &middot; 0.00</p>
+            </div>
+        </section>
+
+        <hr class="nn-rule" />
+
+        <!-- ===========================================================
+             2. Buttons
+             =========================================================== -->
+        <section class="nn-stack" aria-labelledby="sec-buttons">
+            <h2 id="sec-buttons">2. Buttons</h2>
+            <p class="nn-muted">Five variants at the default size; all meet the 44&times;44px touch-target minimum.</p>
+
+            <div class="nn-cluster">
+                <button type="button" class="btn btn-primary">
+                    <img class="nn-icon" src="icons/phosphor/regular/plus.svg" alt="" />
+                    Primary
+                </button>
+                <button type="button" class="btn btn-secondary">
+                    <img class="nn-icon" src="icons/phosphor/regular/pencil.svg" alt="" />
+                    Secondary
+                </button>
+                <button type="button" class="btn btn-accent">
+                    <img class="nn-icon" src="icons/phosphor/regular/star.svg" alt="" />
+                    Accent (gold)
+                </button>
+                <button type="button" class="btn btn-danger">
+                    <img class="nn-icon" src="icons/phosphor/regular/trash.svg" alt="" />
+                    Danger
+                </button>
+                <button type="button" class="btn btn-ghost">
+                    <img class="nn-icon" src="icons/phosphor/regular/gear.svg" alt="" />
+                    Ghost
+                </button>
+                <button type="button" class="btn btn-primary" disabled>Disabled</button>
+            </div>
+
+            <div class="nn-cluster">
+                <button type="button" class="btn btn-primary btn-sm">Small</button>
+                <button type="button" class="btn btn-primary">Medium</button>
+                <button type="button" class="btn btn-primary btn-lg">Large</button>
+            </div>
+        </section>
+
+        <hr class="nn-rule" />
+
+        <!-- ===========================================================
+             3. Form controls
+             =========================================================== -->
+        <section class="nn-stack" aria-labelledby="sec-forms">
+            <h2 id="sec-forms">3. Form controls</h2>
+
+            <form @onsubmit:preventDefault class="row g-4">
+                <div class="col-md-6">
+                    <label for="demo-email" class="form-label">Email address</label>
+                    <input id="demo-email" type="email" class="form-control" placeholder="you@example.com" />
+                    <div class="form-text">We'll never share your email.</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="demo-name" class="form-label">Display name</label>
+                    <input id="demo-name" type="text" class="form-control" value="carey" />
+                </div>
+                <div class="col-md-6">
+                    <label for="demo-table" class="form-label">Table size</label>
+                    <select id="demo-table" class="form-select">
+                        <option>6 foot</option>
+                        <option selected>7 foot</option>
+                        <option>9 foot</option>
+                        <option>10 foot</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="demo-password" class="form-label">Password</label>
+                    <input id="demo-password" type="password" class="form-control is-invalid" value="weak" />
+                    <div class="invalid-feedback">Password must be at least 12 characters.</div>
+                </div>
+                <div class="col-12">
+                    <label for="demo-notes" class="form-label">Notes</label>
+                    <textarea id="demo-notes" class="form-control" rows="3" placeholder="Frame notes..."></textarea>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input id="demo-check1" class="form-check-input" type="checkbox" checked />
+                        <label class="form-check-label" for="demo-check1">Public profile</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="demo-check2" class="form-check-input" type="checkbox" />
+                        <label class="form-check-label" for="demo-check2">Show email to others</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input id="demo-radio1" class="form-check-input" type="radio" name="demo-radios" checked />
+                        <label class="form-check-label" for="demo-radio1">Competitive</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="demo-radio2" class="form-check-input" type="radio" name="demo-radios" />
+                        <label class="form-check-label" for="demo-radio2">Casual</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch">
+                        <input id="demo-switch" class="form-check-input" type="checkbox" role="switch" checked />
+                        <label class="form-check-label" for="demo-switch">Dark theme</label>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <hr class="nn-rule" />
+
+        <!-- ===========================================================
+             4. Alerts
+             =========================================================== -->
+        <section class="nn-stack" aria-labelledby="sec-alerts">
+            <h2 id="sec-alerts">4. Alerts</h2>
+            <div class="alert alert-info" role="alert">
+                <strong>Info.</strong> Your game has been saved as a draft.
+            </div>
+            <div class="alert alert-success" role="alert">
+                <strong>Success!</strong> Frame 4 completed with a running total of 32.
+            </div>
+            <div class="alert alert-warning" role="alert">
+                <strong>Heads up.</strong> You have unsaved changes to the score card.
+            </div>
+            <div class="alert alert-danger" role="alert">
+                <strong>Error.</strong> Could not reach the scoring service. <a href="#">Retry</a>
+            </div>
+        </section>
+
+        <hr class="nn-rule" />
+
+        <!-- ===========================================================
+             5. Cards
+             =========================================================== -->
+        <section class="nn-stack" aria-labelledby="sec-cards">
+            <h2 id="sec-cards">5. Cards</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">Plain card</div>
+                        <div class="card-body">
+                            <h3 class="card-title h5">Recent game</h3>
+                            <p class="card-text">Last night at Third Rail. Final score <span class="nn-mono">84</span>.</p>
+                            <a href="#" class="btn btn-primary btn-sm">View detail</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card nn-card--accent nn-card-hover">
+                        <div class="card-body">
+                            <h3 class="card-title h5">Accent card</h3>
+                            <p class="card-text">Hover-elevated card with a teal top-stripe. Used for the currently-active entity.</p>
+                            <span class="badge text-bg-primary">In progress</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="nn-empty-state">
+                        <img class="nn-empty-state__icon nn-icon-xl" src="icons/phosphor/regular/target.svg" alt="" />
+                        <p class="nn-empty-state__title">No games yet</p>
+                        <p class="nn-empty-state__description">Start a new game to begin tracking your 99 runs.</p>
+                        <button type="button" class="btn btn-primary">
+                            <img class="nn-icon" src="icons/phosphor/regular/plus.svg" alt="" />
+                            New game
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <hr class="nn-rule" />
+
+        <!-- ===========================================================
+             6. Tables
+             =========================================================== -->
+        <section class="nn-stack" aria-labelledby="sec-tables">
+            <h2 id="sec-tables">6. Tables</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">Player</th>
+                            <th scope="col">Games</th>
+                            <th scope="col">Avg</th>
+                            <th scope="col">Best</th>
+                            <th scope="col">Perfect frames</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">carey</th>
+                            <td class="nn-mono">42</td>
+                            <td class="nn-mono">7.3</td>
+                            <td class="nn-mono">88</td>
+                            <td class="nn-mono">12</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">george</th>
+                            <td class="nn-mono">28</td>
+                            <td class="nn-mono">6.9</td>
+                            <td class="nn-mono">81</td>
+                            <td class="nn-mono">7</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">carey_b</th>
+                            <td class="nn-mono">15</td>
+                            <td class="nn-mono">6.1</td>
+                            <td class="nn-mono">72</td>
+                            <td class="nn-mono">3</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <hr class="nn-rule" />
+
+        <!-- ===========================================================
+             7. Badges + pills
+             =========================================================== -->
+        <section class="nn-stack" aria-labelledby="sec-badges">
+            <h2 id="sec-badges">7. Badges &amp; pills</h2>
+            <div class="nn-cluster">
+                <span class="badge text-bg-primary">Primary</span>
+                <span class="badge text-bg-success">Success</span>
+                <span class="badge text-bg-danger">Danger</span>
+                <span class="badge text-bg-warning">Warning</span>
+                <span class="badge text-bg-info">Info</span>
+            </div>
+            <div class="nn-cluster">
+                <span class="nn-pill">
+                    <img class="nn-icon nn-icon-sm" src="icons/phosphor/regular/crown-simple.svg" alt="" />
+                    Leader
+                </span>
+                <span class="nn-pill">
+                    <img class="nn-icon nn-icon-sm" src="icons/phosphor/regular/map-pin.svg" alt="" />
+                    Third Rail
+                </span>
+                <span class="nn-pill">
+                    <img class="nn-icon nn-icon-sm" src="icons/phosphor/regular/users-three.svg" alt="" />
+                    3 players
+                </span>
+            </div>
+        </section>
+
+        <hr class="nn-rule" />
+
+        <!-- ===========================================================
+             8. Phosphor icon gallery (all 42 regular icons)
+             =========================================================== -->
+        <section class="nn-stack" aria-labelledby="sec-icons">
+            <h2 id="sec-icons">8. Phosphor icon gallery</h2>
+            <p class="nn-muted">42 regular-weight icons from <code>wwwroot/icons/phosphor/regular/</code> rendered at 32px.</p>
+
+            <div class="dev-icon-grid">
+                @foreach (var icon in RegularIcons)
+                {
+                    <figure class="dev-icon-cell">
+                        <img class="nn-icon dev-icon-img" src="@($"icons/phosphor/regular/{icon}.svg")" alt="@icon" />
+                        <figcaption>@icon</figcaption>
+                    </figure>
+                }
+            </div>
+        </section>
+
+        <hr class="nn-rule" />
+
+        <!-- ===========================================================
+             9. Hero photograph
+             =========================================================== -->
+        <section class="nn-stack" aria-labelledby="sec-hero">
+            <h2 id="sec-hero">9. Hero image</h2>
+            <p class="nn-muted">Atmospheric billiards photograph with overlay text. One of the 6 Pexels photos in <code>wwwroot/img/billiards/</code>.</p>
+
+            <div class="dev-hero">
+                <img src="img/billiards/empty-dark-table.jpg" alt="" class="dev-hero__img" />
+                <div class="dev-hero__overlay">
+                    <h1 class="dev-hero__title">NinetyNine</h1>
+                    <p class="dev-hero__sub">A scorekeeper for the pool game of 99.</p>
+                    <button type="button" class="btn btn-primary btn-lg">
+                        <img class="nn-icon" src="icons/phosphor/regular/sign-in.svg" alt="" />
+                        Sign in
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <hr class="nn-rule" />
+
+        <!-- ===========================================================
+             10. Color token swatches (verification aid)
+             =========================================================== -->
+        <section class="nn-stack" aria-labelledby="sec-swatches">
+            <h2 id="sec-swatches">10. Color tokens</h2>
+            <div class="dev-swatch-grid">
+                <div class="dev-swatch" style="background: var(--nn-bg-primary); color: var(--nn-text-primary);">bg-primary</div>
+                <div class="dev-swatch" style="background: var(--nn-bg-secondary); color: var(--nn-text-primary);">bg-secondary</div>
+                <div class="dev-swatch" style="background: var(--nn-bg-tertiary); color: var(--nn-text-primary);">bg-tertiary</div>
+                <div class="dev-swatch" style="background: var(--nn-surface-raised); color: var(--nn-text-primary);">surface-raised</div>
+                <div class="dev-swatch" style="background: var(--nn-surface-overlay); color: var(--nn-text-primary);">surface-overlay</div>
+                <div class="dev-swatch" style="background: var(--nn-accent-teal); color: var(--nn-text-on-accent);">accent-teal</div>
+                <div class="dev-swatch" style="background: var(--nn-accent-teal-hover); color: var(--nn-text-on-accent);">accent-teal-hover</div>
+                <div class="dev-swatch" style="background: var(--nn-accent-teal-muted); color: var(--nn-accent-teal);">accent-teal-muted</div>
+                <div class="dev-swatch" style="background: var(--nn-accent-gold); color: #1a130a;">accent-gold</div>
+                <div class="dev-swatch" style="background: var(--nn-accent-gold-hover); color: #1a130a;">accent-gold-hover</div>
+                <div class="dev-swatch" style="background: var(--nn-success-bg); color: var(--nn-success);">success-bg</div>
+                <div class="dev-swatch" style="background: var(--nn-danger-bg); color: var(--nn-danger);">danger-bg</div>
+                <div class="dev-swatch" style="background: var(--nn-warning-bg); color: var(--nn-warning);">warning-bg</div>
+                <div class="dev-swatch" style="background: var(--nn-info-bg); color: var(--nn-info);">info-bg</div>
+            </div>
+        </section>
+    </div>
+
+    <style>
+        .dev-icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: var(--nn-space-3);
+            padding: var(--nn-space-4);
+            background-color: var(--nn-bg-secondary);
+            border: 1px solid var(--nn-border-default);
+            border-radius: var(--nn-radius-lg);
+        }
+
+        .dev-icon-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--nn-space-2);
+            padding: var(--nn-space-3) var(--nn-space-2);
+            background-color: var(--nn-bg-tertiary);
+            border: 1px solid var(--nn-border-subtle);
+            border-radius: var(--nn-radius-md);
+            margin: 0;
+        }
+
+        .dev-icon-cell figcaption {
+            font-family: var(--nn-font-mono);
+            font-size: 0.6875rem;
+            color: var(--nn-text-tertiary);
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .dev-icon-img {
+            width: 2rem;
+            height: 2rem;
+        }
+
+        .dev-swatch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: var(--nn-space-2);
+        }
+
+        .dev-swatch {
+            padding: var(--nn-space-4) var(--nn-space-3);
+            border-radius: var(--nn-radius-md);
+            border: 1px solid var(--nn-border-default);
+            font-family: var(--nn-font-mono);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .dev-hero {
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--nn-radius-lg);
+            border: 1px solid var(--nn-border-default);
+            aspect-ratio: 21 / 9;
+            box-shadow: var(--nn-shadow-lg);
+        }
+
+        .dev-hero__img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .dev-hero__overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-end;
+            padding: var(--nn-space-6);
+            background: linear-gradient(
+                180deg,
+                rgba(20, 23, 25, 0.1) 0%,
+                rgba(20, 23, 25, 0.6) 60%,
+                rgba(20, 23, 25, 0.92) 100%
+            );
+            gap: var(--nn-space-3);
+        }
+
+        .dev-hero__title {
+            font-size: clamp(2.5rem, 2rem + 3vw, 4rem);
+            margin: 0;
+            color: var(--nn-text-primary);
+            letter-spacing: -0.02em;
+            text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+        }
+
+        .dev-hero__sub {
+            color: var(--nn-text-secondary);
+            max-width: 36ch;
+            margin: 0;
+        }
+    </style>
+}
+
+@code {
+    /// <summary>
+    /// All 42 Phosphor regular-weight icons currently committed at
+    /// wwwroot/icons/phosphor/regular/. Keep this list in sync if new
+    /// icons are added during later work packages.
+    /// </summary>
+    private static readonly string[] RegularIcons = new[]
+    {
+        "arrow-clockwise",
+        "buildings",
+        "caret-down",
+        "caret-left",
+        "caret-right",
+        "caret-up",
+        "chart-bar",
+        "chart-line-up",
+        "chart-pie",
+        "check",
+        "cloud-arrow-up",
+        "crosshair",
+        "crown-simple",
+        "discord-logo",
+        "eye",
+        "eye-slash",
+        "game-controller",
+        "gear",
+        "globe",
+        "google-logo",
+        "house",
+        "identification-card",
+        "key",
+        "list",
+        "magnifying-glass",
+        "map-pin",
+        "medal",
+        "minus",
+        "pencil",
+        "plus",
+        "ranking",
+        "sign-in",
+        "sign-out",
+        "star",
+        "target",
+        "telegram-logo",
+        "trash",
+        "trophy",
+        "user",
+        "users-three",
+        "warehouse",
+        "x",
+    };
+}

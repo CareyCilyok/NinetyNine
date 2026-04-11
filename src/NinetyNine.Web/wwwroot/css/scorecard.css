@@ -28,49 +28,40 @@
    ------------------------------------------------------------------- */
 
 .scorecard {
-  /* Local tokens scoped to the scorecard so we can tune the grid without
-     disturbing the rest of the app. */
-  --sc-border: var(--nn-paper-border);
-  --sc-paper: var(--nn-paper);
-  --sc-paper-alt: var(--nn-paper-alt);
-  --sc-ink: var(--nn-ink);
-  --sc-ink-muted: var(--nn-ink-muted);
-  --sc-ink-faint: var(--nn-ink-faint);
-  --sc-accent: var(--nn-accent);
-  --sc-accent-subtle: var(--nn-accent-subtle);
-  --sc-break-tint: #eef3ec;   /* very subtle sage for break bonus row */
-  --sc-ball-tint:  #fbf9f1;   /* same as paper but slightly warmer */
-  --sc-cell-min-h: 2.75rem;   /* 44px touch-target */
-  --sc-radius: var(--nn-radius-md);
+  /* Local tokens scoped to the scorecard. Point them at the global
+     --nn-* theme tokens so the scorecard automatically follows the
+     current theme. The full visual redesign of the grid lands in WP-12;
+     this is a minimal rewire off the cream-paper palette only. */
+  --sc-border:        var(--nn-border-default);
+  --sc-paper:         var(--nn-bg-secondary);
+  --sc-paper-alt:     var(--nn-bg-tertiary);
+  --sc-ink:           var(--nn-text-primary);
+  --sc-ink-muted:     var(--nn-text-secondary);
+  --sc-ink-faint:     var(--nn-text-tertiary);
+  --sc-accent:        var(--nn-accent-gold);
+  --sc-accent-subtle: var(--nn-accent-gold-muted);
+  --sc-accent-ink:    #1a130a;  /* contrast vs gold = 9.56:1 (AAA) */
+  --sc-break-tint:    var(--nn-bg-tertiary);
+  --sc-ball-tint:     var(--nn-bg-secondary);
+  --sc-cell-min-h:    var(--nn-touch-target);
+  --sc-radius:        var(--nn-radius-md);
 
   display: flex;
   flex-direction: column;
   gap: var(--nn-space-4);
   background-color: var(--sc-paper);
   color: var(--sc-ink);
-  border: 2px solid var(--sc-border);
+  border: 1px solid var(--sc-border);
   border-radius: var(--nn-radius-lg);
   padding: var(--nn-space-4);
   box-shadow: var(--nn-shadow-md);
   font-family: var(--nn-font-mono);
-  /* Paper-feel subtle hatching (warm "fiber" gradient). */
-  background-image:
-    radial-gradient(
-      circle at 20% 10%,
-      rgba(201, 194, 166, 0.08) 0,
-      transparent 40%
-    ),
-    radial-gradient(
-      circle at 80% 90%,
-      rgba(201, 194, 166, 0.07) 0,
-      transparent 45%
-    );
   position: relative;
 }
 
-[data-bs-theme="dark"] .scorecard {
-  --sc-break-tint: #20241d;
-  --sc-ball-tint:  #1f1d17;
+[data-bs-theme="light"] .scorecard {
+  --sc-break-tint: #f3f4f6;
+  --sc-ball-tint:  #ffffff;
 }
 
 @media (min-width: 768px) {
@@ -189,7 +180,7 @@ button.scorecard-frame:focus-visible,
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: var(--nn-radius-pill);
+  border-radius: var(--nn-radius-full);
   background-color: var(--sc-paper);
   color: var(--sc-ink);
   border: 2px solid var(--sc-ink);
@@ -338,7 +329,7 @@ button.scorecard-frame:focus-visible,
 
 .scorecard-frame--active .scorecard-frame-number {
   background-color: var(--sc-accent);
-  color: var(--nn-accent-text);
+  color: var(--sc-accent-ink);
   border-color: var(--sc-accent);
   box-shadow: 0 0 0 3px var(--sc-accent-subtle);
 }
@@ -379,7 +370,7 @@ button.scorecard-frame:focus-visible,
 .scorecard-mobile-picker::-webkit-scrollbar { height: 6px; }
 .scorecard-mobile-picker::-webkit-scrollbar-thumb {
   background: var(--sc-border);
-  border-radius: var(--nn-radius-pill);
+  border-radius: var(--nn-radius-full);
 }
 
 .scorecard-mobile-picker-item {
@@ -426,14 +417,14 @@ button.scorecard-frame:focus-visible,
 .scorecard-mobile-picker-item--active {
   background-color: var(--sc-accent);
   border-color: var(--sc-accent);
-  color: var(--nn-accent-text);
+  color: var(--sc-accent-ink);
   /* Second signal beyond color: inset ring. */
-  box-shadow: inset 0 0 0 2px var(--nn-accent-text);
+  box-shadow: inset 0 0 0 2px var(--sc-accent-ink);
 }
 
 .scorecard-mobile-picker-item--active .scorecard-mobile-picker-item__num,
 .scorecard-mobile-picker-item--active .scorecard-mobile-picker-item__total {
-  color: var(--nn-accent-text);
+  color: var(--sc-accent-ink);
 }
 
 /* Detail view — single large frame shown on mobile. */

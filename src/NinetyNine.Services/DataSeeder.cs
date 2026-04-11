@@ -93,6 +93,10 @@ public sealed class DataSeeder(
         {
             PlayerId = Guid.NewGuid(),
             DisplayName = displayName,
+            EmailAddress = $"{displayName}@example.local",
+            EmailVerified = true,
+            // TODO(WP-05): hash a known dev password
+            PasswordHash = "",
             FirstName = firstName,
             LastName = lastName,
             Visibility = new ProfileVisibility
@@ -100,15 +104,6 @@ public sealed class DataSeeder(
                 RealName = true,
                 Avatar = true
             },
-            LinkedIdentities =
-            [
-                new LinkedIdentity
-                {
-                    Provider = IDataSeeder.MockProvider,
-                    ProviderUserId = $"mock-{displayName}",
-                    LinkedAt = DateTime.UtcNow
-                }
-            ],
             CreatedAt = DateTime.UtcNow
         };
 

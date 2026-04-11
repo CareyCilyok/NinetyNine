@@ -22,10 +22,7 @@ public class PlayerRepositoryTests(MongoFixture fixture)
         {
             PlayerId = Guid.NewGuid(),
             DisplayName = displayName,
-            LinkedIdentities =
-            [
-                new LinkedIdentity { Provider = "Google", ProviderUserId = Guid.NewGuid().ToString() }
-            ]
+            EmailAddress = $"{displayName.ToLowerInvariant()}@example.local"
         };
     }
 
@@ -67,32 +64,6 @@ public class PlayerRepositoryTests(MongoFixture fixture)
     {
         var repo = CreateRepo();
         var result = await repo.GetByDisplayNameAsync("NoSuchName_xyz");
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task GetByLinkedIdentityAsync_ReturnsPlayer()
-    {
-        var repo = CreateRepo();
-        var providerUserId = Guid.NewGuid().ToString();
-        var player = new Player
-        {
-            PlayerId = Guid.NewGuid(),
-            DisplayName = "LinkedIdentityTest",
-            LinkedIdentities = [new LinkedIdentity { Provider = "Google", ProviderUserId = providerUserId }]
-        };
-        await repo.CreateAsync(player);
-
-        var found = await repo.GetByLinkedIdentityAsync("Google", providerUserId);
-        found.Should().NotBeNull();
-        found!.PlayerId.Should().Be(player.PlayerId);
-    }
-
-    [Fact]
-    public async Task GetByLinkedIdentityAsync_ReturnsNull_WhenNotFound()
-    {
-        var repo = CreateRepo();
-        var result = await repo.GetByLinkedIdentityAsync("Google", "nonexistent-sub");
         result.Should().BeNull();
     }
 
@@ -195,26 +166,4 @@ public class PlayerRepositoryTests(MongoFixture fixture)
         await act.Should().ThrowAsync<Exception>("duplicate display names violate unique index");
     }
 
-    [Fact]
-    public async Task UniqueIndex_OnLinkedIdentity_PreventsInsertDuplicate()
-    {
-        var repo = CreateRepo();
-        var sharedProviderUserId = Guid.NewGuid().ToString();
-        var p1 = new Player
-        {
-            PlayerId = Guid.NewGuid(),
-            DisplayName = "LinkDup1",
-            LinkedIdentities = [new LinkedIdentity { Provider = "Google", ProviderUserId = sharedProviderUserId }]
-        };
-        var p2 = new Player
-        {
-            PlayerId = Guid.NewGuid(),
-            DisplayName = "LinkDup2",
-            LinkedIdentities = [new LinkedIdentity { Provider = "Google", ProviderUserId = sharedProviderUserId }]
-        };
-        await repo.CreateAsync(p1);
-
-        var act = async () => await repo.CreateAsync(p2);
-        await act.Should().ThrowAsync<Exception>("duplicate linked identity violates unique compound index");
-    }
 }

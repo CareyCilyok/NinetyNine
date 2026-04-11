@@ -27,19 +27,6 @@ public sealed class PlayerRepository(INinetyNineDbContext context, ILogger<Playe
         return await _collection.Find(filter).FirstOrDefaultAsync(ct);
     }
 
-    public async Task<Player?> GetByLinkedIdentityAsync(
-        string provider, string providerUserId, CancellationToken ct = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(provider);
-        ArgumentException.ThrowIfNullOrWhiteSpace(providerUserId);
-
-        var filter = Builders<Player>.Filter.ElemMatch(
-            p => p.LinkedIdentities,
-            li => li.Provider == provider && li.ProviderUserId == providerUserId);
-
-        return await _collection.Find(filter).FirstOrDefaultAsync(ct);
-    }
-
     public async Task<bool> DisplayNameExistsAsync(string displayName, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);

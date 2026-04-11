@@ -24,8 +24,9 @@ public sealed partial class PlayerService(
         string displayName, string provider, string providerUserId, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(provider);
-        ArgumentException.ThrowIfNullOrWhiteSpace(providerUserId);
+        // provider and providerUserId are kept in the signature for interface compatibility;
+        // they are no longer persisted on the Player. WP-05 will replace this method body
+        // with email/password registration.
 
         ValidateDisplayNameFormat(displayName);
 
@@ -36,21 +37,13 @@ public sealed partial class PlayerService(
         var player = new Player
         {
             DisplayName = displayName,
-            LinkedIdentities =
-            [
-                new LinkedIdentity
-                {
-                    Provider = provider,
-                    ProviderUserId = providerUserId
-                }
-            ],
             CreatedAt = DateTime.UtcNow
         };
 
         await playerRepository.CreateAsync(player, ct);
         logger.LogInformation(
-            "Registered new player {PlayerId} with DisplayName '{DisplayName}' via {Provider}",
-            player.PlayerId, displayName, provider);
+            "Registered new player {PlayerId} with DisplayName '{DisplayName}'",
+            player.PlayerId, displayName);
 
         return player;
     }
@@ -58,10 +51,8 @@ public sealed partial class PlayerService(
     public Task<Player?> LoginAsync(
         string provider, string providerUserId, CancellationToken ct = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(provider);
-        ArgumentException.ThrowIfNullOrWhiteSpace(providerUserId);
-
-        return playerRepository.GetByLinkedIdentityAsync(provider, providerUserId, ct);
+        // TODO(WP-05): implement email/password login. OAuth login removed in WP-01.
+        return Task.FromResult<Player?>(null);
     }
 
     public async Task<Player> UpdateProfileAsync(
@@ -85,7 +76,7 @@ public sealed partial class PlayerService(
             }
         }
 
-        if (update.EmailAddress is not null) player.EmailAddress = update.EmailAddress;
+        if (update.EmailAddress is not null) player.EmailAddress = update.EmailAddress.ToLowerInvariant();
         if (update.PhoneNumber is not null) player.PhoneNumber = update.PhoneNumber;
         if (update.FirstName is not null) player.FirstName = update.FirstName;
         if (update.MiddleName is not null) player.MiddleName = update.MiddleName;

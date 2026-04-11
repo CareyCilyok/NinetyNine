@@ -33,11 +33,7 @@ public class BsonConfigurationTests(MongoFixture fixture)
                 WidthPx = 512,
                 HeightPx = 512,
                 SizeBytes = 12345
-            },
-            LinkedIdentities =
-            [
-                new LinkedIdentity { Provider = "Google", ProviderUserId = "google-sub-123" }
-            ]
+            }
         };
 
         await collection.InsertOneAsync(player);
@@ -57,9 +53,6 @@ public class BsonConfigurationTests(MongoFixture fixture)
         retrieved.Avatar.Should().NotBeNull();
         retrieved.Avatar!.StorageKey.Should().Be("507f1f77bcf86cd799439011");
         retrieved.Avatar.ContentType.Should().Be("image/png");
-        retrieved.LinkedIdentities.Should().HaveCount(1);
-        retrieved.LinkedIdentities[0].Provider.Should().Be("Google");
-        retrieved.LinkedIdentities[0].ProviderUserId.Should().Be("google-sub-123");
     }
 
     [Fact]

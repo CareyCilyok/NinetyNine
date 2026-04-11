@@ -1,6 +1,5 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.RateLimiting;
 using NinetyNine.Repository;
 using NinetyNine.Services;
@@ -46,15 +45,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    })
-    .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
-    {
-        options.ClientId = builder.Configuration["Auth:Google:ClientId"] ?? "dev-noop";
-        options.ClientSecret = builder.Configuration["Auth:Google:ClientSecret"] ?? "dev-noop";
-        options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.CallbackPath = "/signin-google";
-        options.Events = ExternalLoginHandler.CreateOAuthEvents();
     });
+    // TODO(WP-05): wire password auth
 
 builder.Services.AddAuthorization();
 

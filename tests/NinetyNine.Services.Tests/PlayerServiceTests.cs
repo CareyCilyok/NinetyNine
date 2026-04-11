@@ -25,16 +25,13 @@ public class PlayerServiceTests(MongoFixture fixture)
     private IPlayerService CreateService() => CreateService(out _);
 
     [Fact]
-    public async Task RegisterAsync_CreatesPlayerWithLinkedIdentity()
+    public async Task RegisterAsync_CreatesPlayer()
     {
         var svc = CreateService();
-        var player = await svc.RegisterAsync("NewPlayer1", "Google", "google-sub-001");
+        var player = await svc.RegisterAsync("NewPlayer1", "Mock", "mock-sub-001");
 
         player.Should().NotBeNull();
         player.DisplayName.Should().Be("NewPlayer1");
-        player.LinkedIdentities.Should().HaveCount(1);
-        player.LinkedIdentities[0].Provider.Should().Be("Google");
-        player.LinkedIdentities[0].ProviderUserId.Should().Be("google-sub-001");
     }
 
     [Fact]
@@ -62,24 +59,14 @@ public class PlayerServiceTests(MongoFixture fixture)
             $"display name '{invalidName}' should be rejected");
     }
 
+    // LoginAsync is stubbed in WP-01 (returns null); WP-05 will re-implement
+    // email/password login and restore these tests.
     [Fact]
-    public async Task LoginAsync_ReturnsPlayer_WhenIdentityExists()
+    public async Task LoginAsync_ReturnsNull_Stub()
     {
         var svc = CreateService();
-        var providerUserId = Guid.NewGuid().ToString();
-        await svc.RegisterAsync("LoginPlayer", "Google", providerUserId);
-
-        var found = await svc.LoginAsync("Google", providerUserId);
-        found.Should().NotBeNull();
-        found!.DisplayName.Should().Be("LoginPlayer");
-    }
-
-    [Fact]
-    public async Task LoginAsync_ReturnsNull_WhenNotFound()
-    {
-        var svc = CreateService();
-        var result = await svc.LoginAsync("Google", "nobody-here");
-        result.Should().BeNull();
+        var result = await svc.LoginAsync("Mock", "anyone");
+        result.Should().BeNull("LoginAsync is a stub until WP-05 wires email/password auth");
     }
 
     [Fact]
@@ -137,7 +124,7 @@ public class PlayerServiceTests(MongoFixture fixture)
     [Fact]
     public async Task SetAvatarAsync_UploadsAndSetsRef()
     {
-        var svc = CreateService();
+        var svc = CreateService(out var ctx);
         var player = await svc.RegisterAsync("AvatarPlayer", "Google", Guid.NewGuid().ToString());
 
         // Minimal 1×1 PNG
@@ -146,9 +133,9 @@ public class PlayerServiceTests(MongoFixture fixture)
         using var stream = new MemoryStream(pngBytes);
         await svc.SetAvatarAsync(player.PlayerId, stream, "image/png");
 
-        // Verify via login that avatar ref is set
-        var updated = await svc.LoginAsync("Google",
-            player.LinkedIdentities[0].ProviderUserId);
+        // Verify avatar ref was persisted by loading the player from the repository
+        var repo = new PlayerRepository(ctx, NullLogger<PlayerRepository>.Instance);
+        var updated = await repo.GetByIdAsync(player.PlayerId);
         updated.Should().NotBeNull();
         updated!.Avatar.Should().NotBeNull("avatar should be set after upload");
         updated.Avatar!.ContentType.Should().Be("image/png");
@@ -182,7 +169,7 @@ public class PlayerServiceTests(MongoFixture fixture)
     [Fact]
     public async Task RemoveAvatarAsync_ClearsRefAndDeletesBlob()
     {
-        var svc = CreateService();
+        var svc = CreateService(out var ctx);
         var player = await svc.RegisterAsync("RemoveAvatar", "Google", Guid.NewGuid().ToString());
 
         // Upload an avatar first
@@ -194,8 +181,9 @@ public class PlayerServiceTests(MongoFixture fixture)
         // Now remove it
         await svc.RemoveAvatarAsync(player.PlayerId);
 
-        var updated = await svc.LoginAsync("Google",
-            player.LinkedIdentities[0].ProviderUserId);
+        // Verify via repository that avatar ref is cleared
+        var repo = new PlayerRepository(ctx, NullLogger<PlayerRepository>.Instance);
+        var updated = await repo.GetByIdAsync(player.PlayerId);
         updated!.Avatar.Should().BeNull("avatar ref should be cleared after removal");
     }
 }

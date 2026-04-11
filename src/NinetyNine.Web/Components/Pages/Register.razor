@@ -144,16 +144,10 @@
 
     protected override void OnInitialized()
     {
-        var context = HttpContextAccessor.HttpContext;
-        if (context is null) return;
-
-        var cookie = ExternalLoginHandler.ReadTempRegistrationCookie(context.Request.Cookies);
-        if (cookie is not null)
-        {
-            _hasRegistrationCookie = true;
-            _provider = cookie.Value.Provider;
-            _providerUserId = cookie.Value.ProviderUserId;
-        }
+        // TODO(WP-08): wire email/password registration flow.
+        // ExternalLoginHandler removed in WP-01; temp-cookie pattern replaced by
+        // email/password form in WP-08/WP-09.
+        _hasRegistrationCookie = true;
     }
 
     private void OnDisplayNameInput(ChangeEventArgs e)
@@ -240,14 +234,8 @@
             // For OAuth providers we bounce through /login to re-run the external
             // handshake (provider session still live). For mock mode we sign the
             // user in directly via the mock endpoint.
-            var context = HttpContextAccessor.HttpContext;
-            if (context is not null)
-                ExternalLoginHandler.ClearTempRegistrationCookie(context.Response);
-
-            if (_provider == IDataSeeder.MockProvider)
-                Navigation.NavigateTo($"/mock/signin-as?playerId={player.PlayerId}", forceLoad: true);
-            else
-                Navigation.NavigateTo("/login", forceLoad: true);
+            // TODO(WP-08): post-registration redirect logic (email verification flow).
+            Navigation.NavigateTo("/login", forceLoad: true);
         }
         catch (Exception ex)
         {

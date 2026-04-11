@@ -1,204 +1,392 @@
 /* =====================================================================
    NinetyNine — theme.css
-   Design tokens (CSS custom properties) for light + dark themes.
+   Design tokens for the NinetyNine scorekeeper UI.
    ---------------------------------------------------------------------
-   Scoping:
-     :root                     -> light theme (default)
-     [data-bs-theme="dark"]    -> dark theme overrides (Bootstrap 5.3+
-                                  uses this same attribute, so Bootstrap
-                                  components flip automatically)
-   All colors have been picked for WCAG AA contrast (>= 4.5:1 for text).
+   THEME DIRECTION
+   ---------------
+   Dark-first. The pool-hall is dimly lit, the felt is teal-green, the
+   overhead lights throw warm gold pools on the table. We want the UI to
+   feel like that room — not like a bright office app, and absolutely not
+   like a 1990s printed paper score card.
+
+   Backgrounds are deep neutrals (never pure black — that causes eye
+   strain and kills the sense of depth). Brand accent is a pool-felt
+   teal; the warm highlight is a soft billiard-light gold. Typography
+   uses system sans for prose and JetBrains Mono for anything numeric
+   so score cells feel like a digital readout.
+
+   SCOPING
+   -------
+     :root                     -> dark theme (DEFAULT)
+     [data-bs-theme="light"]   -> light theme overrides (secondary toggle)
+
+   Bootstrap 5.3 reads its own CSS variables from whichever scope matches
+   [data-bs-theme], so we override the relevant --bs-* vars alongside our
+   own --nn-* tokens. Stock Bootstrap components (.btn, .card, .alert,
+   .form-control, .table) pick up the new palette automatically.
+
+   WCAG 2.2 AA
+   -----------
+   Every text/background pairing in this file has been verified against
+   WCAG AA (4.5:1 for body text, 3:1 for large text / UI components).
+   Contrast ratios are quoted inline next to the token definitions.
    ===================================================================== */
 
 :root {
-  /* ---- Brand ------------------------------------------------------- */
-  /* Pool-table felt green. Primary is dark enough to carry white text
-     at AA contrast (contrast vs white = 8.28:1). */
-  --nn-primary: #0f5132;
-  --nn-primary-hover: #0c4228;
-  --nn-primary-active: #093220;
-  --nn-primary-text: #ffffff;          /* text on primary fills */
-  --nn-primary-subtle: #d1e7dd;        /* tinted backgrounds */
-  --nn-primary-subtle-text: #0a3622;
+  /* -------------------------------------------------------------------
+     SURFACES — dark hierarchy (not pure black).
+     ----------------------------------------------------------------- */
+  --nn-bg-primary:       #141719;   /* page background */
+  --nn-bg-secondary:     #1c2024;   /* cards, raised panels */
+  --nn-bg-tertiary:      #262b30;   /* inputs, hover fills */
+  --nn-surface-raised:   #2e353b;   /* menus, popovers */
+  --nn-surface-overlay:  #3a434a;   /* modal scrim base */
 
-  /* Warm accent — used for the active frame highlight. Mustard yellow
-     evokes billiard-ball lighting; contrast vs --nn-ink = 8.1:1. */
-  --nn-accent: #d4a017;
-  --nn-accent-hover: #b8860b;
-  --nn-accent-text: #1a1a1a;
-  --nn-accent-subtle: #fdf4d9;
+  /* -------------------------------------------------------------------
+     TEXT — contrast verified vs each background tier.
+     ----------------------------------------------------------------- */
+  --nn-text-primary:     #e8ecef;   /* vs bg-primary 15.15:1 AAA,
+                                       vs bg-secondary 13.79:1 AAA */
+  --nn-text-secondary:   #a9b2b9;   /* vs bg-primary 8.36:1 AAA,
+                                       vs bg-secondary 7.61:1 AAA */
+  --nn-text-tertiary:    #848e96;   /* vs bg-primary 5.39:1 AA,
+                                       vs bg-secondary 4.91:1 AA */
+  --nn-text-inverse:     #0a0d0f;   /* on light fills (toast, tag) */
+  --nn-text-on-accent:   #0a1512;   /* on teal fills — 7.38:1 AAA */
 
-  /* ---- Score-card surfaces ---------------------------------------- */
-  /* Paper = the cream background of a printed P&B card. */
-  --nn-paper: #fdfcf7;
-  --nn-paper-alt: #f5f2e8;             /* subtle banding */
-  --nn-paper-border: #c9c2a6;          /* printed rules */
-  --nn-ink: #1f1b13;                   /* pen strokes */
-  --nn-ink-muted: #6b6556;             /* completed frames */
-  --nn-ink-faint: #a8a192;             /* empty frames */
+  /* -------------------------------------------------------------------
+     BRAND ACCENTS
+     -----------------------------------------------------------------
+     Teal is the brand primary — pool-table felt rendered in a slightly
+     brighter, more saturated form so it punches on dark backgrounds.
+     Gold is the warm highlight for active/selected states, evoking the
+     overhead lamps above a pool table.
+     ----------------------------------------------------------------- */
+  --nn-accent-teal:         #1fb892;   /* vs bg-primary 7.14:1 AAA */
+  --nn-accent-teal-hover:   #26d0a6;
+  --nn-accent-teal-muted:   #0e5c48;   /* filled subtle backgrounds */
+  --nn-accent-teal-rgb:     31, 184, 146;
 
-  /* ---- App surfaces ----------------------------------------------- */
-  --nn-surface: #ffffff;               /* cards, panels */
-  --nn-surface-alt: #f6f7f9;           /* page background */
-  --nn-surface-sunken: #eceff3;        /* inset areas */
-  --nn-border: #dee2e6;                /* subtle dividers */
-  --nn-border-strong: #adb5bd;         /* emphasized dividers */
+  --nn-accent-gold:         #e0b46c;   /* vs bg-primary 9.36:1 AAA */
+  --nn-accent-gold-hover:   #edc88a;
+  --nn-accent-gold-muted:   #5a4520;
+  --nn-accent-gold-rgb:     224, 180, 108;
 
-  /* ---- Text ------------------------------------------------------- */
-  --nn-text: #212529;                  /* body text on surface  (16.1:1) */
-  --nn-text-muted: #5c636a;            /* muted copy           (7.0:1) */
-  --nn-text-subtle: #6c757d;           /* placeholder-ish      (5.6:1) */
-  --nn-text-inverse: #ffffff;
+  /* -------------------------------------------------------------------
+     SEMANTIC COLORS — each paired with a muted background tint so
+     alerts and badges have sufficient contrast without being garish.
+     ----------------------------------------------------------------- */
+  --nn-success:        #4ade80;   /* vs bg-primary 10.33:1 AAA */
+  --nn-success-bg:     #0e2a1a;   /* subtle tinted background */
+  --nn-success-border: #1f6b42;
 
-  /* ---- Semantic --------------------------------------------------- */
-  --nn-success: #146c43;
-  --nn-success-text: #ffffff;
-  --nn-danger: #b02a37;
-  --nn-danger-text: #ffffff;
-  --nn-warning: #997404;
-  --nn-warning-text: #ffffff;
-  --nn-info: #087990;
-  --nn-info-text: #ffffff;
+  --nn-danger:         #f87171;   /* vs bg-primary  6.51:1 AA  */
+  --nn-danger-bg:      #2a0e0e;
+  --nn-danger-border:  #7a2020;
 
-  /* ---- Typography ------------------------------------------------- */
-  --nn-font-sans: system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Noto Sans", sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji";
-  --nn-font-mono: "JetBrains Mono", "Fira Code", ui-monospace,
-    SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
-    monospace;
+  --nn-warning:        #fbbf24;   /* vs bg-primary 10.79:1 AAA */
+  --nn-warning-bg:     #2a200a;
+  --nn-warning-border: #7a5a14;
+
+  --nn-info:           #38bdf8;   /* vs bg-primary  8.40:1 AAA */
+  --nn-info-bg:        #0a1f2a;
+  --nn-info-border:    #1d5a7a;
+
+  /* -------------------------------------------------------------------
+     BORDERS & DIVIDERS — three tiers so hierarchy reads without color.
+     ----------------------------------------------------------------- */
+  --nn-border-subtle:    rgba(255, 255, 255, 0.06);
+  --nn-border-default:   rgba(255, 255, 255, 0.12);
+  --nn-border-strong:    rgba(255, 255, 255, 0.24);
+  --nn-focus-ring:       rgba(31, 184, 146, 0.55);  /* teal @ 55% */
+
+  /* -------------------------------------------------------------------
+     SHADOWS — on dark surfaces, elevation reads best as a combination
+     of a warm-black outer drop and a soft inset highlight along the
+     top edge (mimicking catching a little of the room light).
+     ----------------------------------------------------------------- */
+  --nn-shadow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  --nn-shadow-md:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  --nn-shadow-lg:
+    0 18px 40px rgba(0, 0, 0, 0.55),
+    0 6px 12px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  --nn-shadow-glow-teal:
+    0 0 0 1px rgba(31, 184, 146, 0.6),
+    0 0 18px rgba(31, 184, 146, 0.35);
+  --nn-shadow-glow-gold:
+    0 0 0 1px rgba(224, 180, 108, 0.6),
+    0 0 18px rgba(224, 180, 108, 0.35);
+
+  /* -------------------------------------------------------------------
+     TYPOGRAPHY
+     ----------------------------------------------------------------- */
+  --nn-font-sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --nn-font-mono:
+    "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
+    "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --nn-font-display: var(--nn-font-sans);
 
-  /* ---- Spacing scale (4px base) ----------------------------------- */
-  --nn-space-0: 0;
-  --nn-space-1: 0.25rem;   /*  4px */
-  --nn-space-2: 0.5rem;    /*  8px */
-  --nn-space-3: 0.75rem;   /* 12px */
-  --nn-space-4: 1rem;      /* 16px */
-  --nn-space-5: 1.5rem;    /* 24px */
-  --nn-space-6: 2rem;      /* 32px */
-  --nn-space-7: 3rem;      /* 48px */
-  --nn-space-8: 4rem;      /* 64px */
+  /* -------------------------------------------------------------------
+     RADIUS SCALE
+     ----------------------------------------------------------------- */
+  --nn-radius-sm:   0.25rem;   /*  4px */
+  --nn-radius-md:   0.5rem;    /*  8px */
+  --nn-radius-lg:   0.875rem;  /* 14px */
+  --nn-radius-full: 9999px;
 
-  /* ---- Radii ------------------------------------------------------ */
-  --nn-radius-xs: 0.125rem;
-  --nn-radius-sm: 0.25rem;
-  --nn-radius-md: 0.5rem;
-  --nn-radius-lg: 0.75rem;
-  --nn-radius-pill: 999px;
+  /* -------------------------------------------------------------------
+     SPACING SCALE — 4px base (0.25rem steps).
+     ----------------------------------------------------------------- */
+  --nn-space-0:  0;
+  --nn-space-1:  0.25rem;   /*  4px */
+  --nn-space-2:  0.5rem;    /*  8px */
+  --nn-space-3:  0.75rem;   /* 12px */
+  --nn-space-4:  1rem;      /* 16px */
+  --nn-space-5:  1.5rem;    /* 24px */
+  --nn-space-6:  2rem;      /* 32px */
+  --nn-space-7:  2.5rem;    /* 40px */
+  --nn-space-8:  3rem;      /* 48px */
+  --nn-space-9:  4rem;      /* 64px */
+  --nn-space-10: 5rem;      /* 80px */
+  --nn-space-11: 6rem;      /* 96px */
+  --nn-space-12: 8rem;      /* 128px */
 
-  /* ---- Elevation -------------------------------------------------- */
-  --nn-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --nn-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08),
-                  0 1px 2px rgba(15, 23, 42, 0.04);
-  --nn-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.10),
-                  0 2px 4px -2px rgba(15, 23, 42, 0.06);
-  --nn-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.10),
-                  0 4px 6px -4px rgba(15, 23, 42, 0.05);
+  /* -------------------------------------------------------------------
+     TOUCH TARGET — WCAG 2.2 AA target for interactive controls.
+     ----------------------------------------------------------------- */
+  --nn-touch-target: 2.75rem;   /* 44px */
 
-  /* ---- Motion ----------------------------------------------------- */
+  /* -------------------------------------------------------------------
+     MOTION — reduced-motion override lives in app.css.
+     ----------------------------------------------------------------- */
   --nn-transition-fast: 120ms cubic-bezier(0.2, 0, 0.2, 1);
   --nn-transition-base: 200ms cubic-bezier(0.2, 0, 0.2, 1);
   --nn-transition-slow: 320ms cubic-bezier(0.2, 0, 0.2, 1);
 
-  /* ---- Focus ring ------------------------------------------------- */
-  --nn-focus-ring: 0 0 0 3px rgba(13, 110, 253, 0.35);
-  --nn-focus-ring-accent: 0 0 0 3px rgba(212, 160, 23, 0.45);
+  /* -------------------------------------------------------------------
+     Z-INDEX SCALE — named layers to prevent arbitrary numbers leaking
+     into component CSS.
+     ----------------------------------------------------------------- */
+  --nn-z-dropdown: 1000;
+  --nn-z-sticky:   1020;
+  --nn-z-overlay:  1040;
+  --nn-z-modal:    1060;
+  --nn-z-toast:    1080;
 
-  /* ---- Layout ----------------------------------------------------- */
+  /* -------------------------------------------------------------------
+     LAYOUT CHROME — heights used by layout components.
+     ----------------------------------------------------------------- */
   --nn-navbar-height: 3.5rem;
   --nn-footer-height: 3rem;
-  --nn-touch-target: 2.75rem;          /* 44px WCAG minimum */
 
-  /* ---- Bootstrap overrides ---------------------------------------- */
-  /* Bootstrap 5.3 reads CSS variables; override brand colors so default
-     .btn-primary, .bg-primary, .link-primary, etc. pick up our green. */
-  --bs-primary: var(--nn-primary);
-  --bs-primary-rgb: 15, 81, 50;
-  --bs-primary-bg-subtle: var(--nn-primary-subtle);
-  --bs-primary-text-emphasis: var(--nn-primary-subtle-text);
-  --bs-link-color: var(--nn-primary);
-  --bs-link-color-rgb: 15, 81, 50;
-  --bs-link-hover-color: var(--nn-primary-hover);
-  --bs-body-font-family: var(--nn-font-sans);
-  --bs-body-color: var(--nn-text);
-  --bs-body-bg: var(--nn-surface-alt);
-  --bs-border-color: var(--nn-border);
+  /* ===================================================================
+     BOOTSTRAP 5.3 OVERRIDES
+     -------------------------------------------------------------------
+     Point the Bootstrap tokens at our --nn-* values so stock components
+     adopt the theme without markup changes. Keep these grouped so
+     future Bootstrap version bumps can be diffed in one place.
+     =================================================================== */
+  color-scheme: dark;
+
+  --bs-body-bg:              var(--nn-bg-primary);
+  --bs-body-bg-rgb:          20, 23, 25;
+  --bs-body-color:           var(--nn-text-primary);
+  --bs-body-color-rgb:       232, 236, 239;
+  --bs-body-font-family:     var(--nn-font-sans);
+  --bs-body-font-size:       1rem;
+  --bs-body-line-height:     1.55;
+
+  --bs-emphasis-color:       var(--nn-text-primary);
+  --bs-emphasis-color-rgb:   232, 236, 239;
+  --bs-secondary-color:      var(--nn-text-secondary);
+  --bs-secondary-color-rgb:  169, 178, 185;
+  --bs-secondary-bg:         var(--nn-bg-secondary);
+  --bs-secondary-bg-rgb:     28, 32, 36;
+  --bs-tertiary-color:       var(--nn-text-tertiary);
+  --bs-tertiary-color-rgb:   132, 142, 150;
+  --bs-tertiary-bg:          var(--nn-bg-tertiary);
+  --bs-tertiary-bg-rgb:      38, 43, 48;
+
+  --bs-heading-color:        var(--nn-text-primary);
+
+  --bs-link-color:           var(--nn-accent-teal);
+  --bs-link-color-rgb:       var(--nn-accent-teal-rgb);
+  --bs-link-hover-color:     var(--nn-accent-teal-hover);
+  --bs-link-hover-color-rgb: 38, 208, 166;
+
+  --bs-border-color:               var(--nn-border-default);
+  --bs-border-color-translucent:   var(--nn-border-subtle);
+
+  --bs-primary:              var(--nn-accent-teal);
+  --bs-primary-rgb:          var(--nn-accent-teal-rgb);
+  --bs-primary-bg-subtle:    var(--nn-accent-teal-muted);
+  --bs-primary-border-subtle: var(--nn-accent-teal-muted);
+  --bs-primary-text-emphasis: var(--nn-accent-teal);
+
+  --bs-secondary:            var(--nn-surface-raised);
+  --bs-secondary-rgb:        46, 53, 59;
+
+  --bs-success:              var(--nn-success);
+  --bs-success-rgb:          74, 222, 128;
+  --bs-success-bg-subtle:    var(--nn-success-bg);
+  --bs-success-border-subtle: var(--nn-success-border);
+  --bs-success-text-emphasis: var(--nn-success);
+
+  --bs-danger:               var(--nn-danger);
+  --bs-danger-rgb:           248, 113, 113;
+  --bs-danger-bg-subtle:     var(--nn-danger-bg);
+  --bs-danger-border-subtle: var(--nn-danger-border);
+  --bs-danger-text-emphasis: var(--nn-danger);
+
+  --bs-warning:              var(--nn-warning);
+  --bs-warning-rgb:          251, 191, 36;
+  --bs-warning-bg-subtle:    var(--nn-warning-bg);
+  --bs-warning-border-subtle: var(--nn-warning-border);
+  --bs-warning-text-emphasis: var(--nn-warning);
+
+  --bs-info:                 var(--nn-info);
+  --bs-info-rgb:             56, 189, 248;
+  --bs-info-bg-subtle:       var(--nn-info-bg);
+  --bs-info-border-subtle:   var(--nn-info-border);
+  --bs-info-text-emphasis:   var(--nn-info);
+
+  --bs-focus-ring-color:     var(--nn-focus-ring);
+  --bs-focus-ring-width:     0.2rem;
+  --bs-focus-ring-opacity:   0.75;
+
+  --bs-form-control-bg:      var(--nn-bg-tertiary);
+  --bs-form-control-disabled-bg: var(--nn-bg-secondary);
 }
 
 /* =====================================================================
-   Dark theme — triggered by [data-bs-theme="dark"] on <html> or <body>.
-   Chosen to preserve the "paper" feel of the score card while reducing
-   eye-strain in low-light pool halls. We darken paper to a warm charcoal
-   rather than pure black so ink remains readable.
+   LIGHT THEME — secondary, engaged via a future user toggle.
+   Keep the same token names; swap the values. Contrast verified vs
+   a #fafafa base:
+     text-primary   #1f2937 on #fafafa  14.06:1 AAA
+     text-secondary #4b5563 on #fafafa   7.24:1 AAA
+     text-tertiary  #6b7280 on #fafafa   4.63:1 AA
+     accent-teal    #0f766e on #fafafa   5.24:1 AA
+     accent-gold    #92400e on #fafafa   6.79:1 AA
    ===================================================================== */
-[data-bs-theme="dark"] {
-  /* Brand: lighten primary a touch so it reads on dark backgrounds. */
-  --nn-primary: #2f9e6a;
-  --nn-primary-hover: #42b07c;
-  --nn-primary-active: #55c28d;
-  --nn-primary-text: #062013;
-  --nn-primary-subtle: #14331f;
-  --nn-primary-subtle-text: #a7d8bd;
+[data-bs-theme="light"] {
+  --nn-bg-primary:       #fafafa;
+  --nn-bg-secondary:     #f3f4f6;
+  --nn-bg-tertiary:      #e5e7eb;
+  --nn-surface-raised:   #ffffff;
+  --nn-surface-overlay:  #ffffff;
 
-  /* Accent: brighter gold for contrast on dark surfaces. */
-  --nn-accent: #f1c232;
-  --nn-accent-hover: #f7d053;
-  --nn-accent-text: #1a1a1a;
-  --nn-accent-subtle: #3a2f0f;
+  --nn-text-primary:     #1f2937;
+  --nn-text-secondary:   #4b5563;
+  --nn-text-tertiary:    #6b7280;
+  --nn-text-inverse:     #fafafa;
+  --nn-text-on-accent:   #f0fdf6;
 
-  /* Paper in dark mode = warm ink-stained charcoal. */
-  --nn-paper: #1b1a16;
-  --nn-paper-alt: #242218;
-  --nn-paper-border: #4a4639;
-  --nn-ink: #f1ece0;                   /* Contrast vs paper = 13.3:1 */
-  --nn-ink-muted: #9f9b8e;
-  --nn-ink-faint: #6a6659;
+  --nn-accent-teal:        #0f766e;
+  --nn-accent-teal-hover:  #0d5c55;
+  --nn-accent-teal-muted:  #ccfbf1;
+  --nn-accent-teal-rgb:    15, 118, 110;
 
-  /* App surfaces. */
-  --nn-surface: #1e2024;
-  --nn-surface-alt: #141618;
-  --nn-surface-sunken: #0e1013;
-  --nn-border: #2e3238;
-  --nn-border-strong: #474d55;
+  --nn-accent-gold:        #92400e;
+  --nn-accent-gold-hover:  #78350f;
+  --nn-accent-gold-muted:  #fef3c7;
+  --nn-accent-gold-rgb:    146, 64, 14;
 
-  /* Text. */
-  --nn-text: #e9ecef;                  /* Contrast vs surface = 13.4:1 */
-  --nn-text-muted: #adb5bd;            /* Contrast vs surface = 8.6:1  */
-  --nn-text-subtle: #868e96;           /* Contrast vs surface = 5.4:1  */
-  --nn-text-inverse: #111418;
+  --nn-success:        #166534;
+  --nn-success-bg:     #dcfce7;
+  --nn-success-border: #86efac;
 
-  /* Semantic — slightly lifted for dark backgrounds. */
-  --nn-success: #39c07c;
-  --nn-success-text: #04210f;
-  --nn-danger: #ea6570;
-  --nn-danger-text: #2a0407;
-  --nn-warning: #f0c24a;
-  --nn-warning-text: #2a1e02;
-  --nn-info: #5bc0de;
-  --nn-info-text: #052a32;
+  --nn-danger:         #b91c1c;
+  --nn-danger-bg:      #fee2e2;
+  --nn-danger-border:  #fca5a5;
 
-  /* Elevation: softer shadows on dark. */
-  --nn-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --nn-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.55),
-                  0 1px 2px rgba(0, 0, 0, 0.35);
-  --nn-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.55),
-                  0 2px 4px -2px rgba(0, 0, 0, 0.4);
-  --nn-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6),
-                  0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --nn-warning:        #92400e;
+  --nn-warning-bg:     #fef3c7;
+  --nn-warning-border: #fcd34d;
 
-  --nn-focus-ring: 0 0 0 3px rgba(90, 180, 255, 0.45);
-  --nn-focus-ring-accent: 0 0 0 3px rgba(241, 194, 50, 0.55);
+  --nn-info:           #0369a1;
+  --nn-info-bg:        #e0f2fe;
+  --nn-info-border:    #7dd3fc;
 
-  /* Bootstrap overrides for dark. */
-  --bs-primary: var(--nn-primary);
-  --bs-primary-rgb: 47, 158, 106;
-  --bs-primary-bg-subtle: var(--nn-primary-subtle);
-  --bs-primary-text-emphasis: var(--nn-primary-subtle-text);
-  --bs-link-color: var(--nn-primary);
-  --bs-link-color-rgb: 47, 158, 106;
-  --bs-link-hover-color: var(--nn-primary-hover);
-  --bs-body-color: var(--nn-text);
-  --bs-body-bg: var(--nn-surface-alt);
-  --bs-border-color: var(--nn-border);
+  --nn-border-subtle:    rgba(15, 23, 42, 0.06);
+  --nn-border-default:   rgba(15, 23, 42, 0.14);
+  --nn-border-strong:    rgba(15, 23, 42, 0.28);
+  --nn-focus-ring:       rgba(15, 118, 110, 0.45);
+
+  --nn-shadow-sm:
+    0 1px 2px rgba(15, 23, 42, 0.08),
+    0 1px 2px rgba(15, 23, 42, 0.04);
+  --nn-shadow-md:
+    0 4px 10px rgba(15, 23, 42, 0.1),
+    0 2px 4px rgba(15, 23, 42, 0.06);
+  --nn-shadow-lg:
+    0 18px 40px rgba(15, 23, 42, 0.15),
+    0 6px 12px rgba(15, 23, 42, 0.08);
+  --nn-shadow-glow-teal:
+    0 0 0 1px rgba(15, 118, 110, 0.5),
+    0 0 16px rgba(15, 118, 110, 0.25);
+  --nn-shadow-glow-gold:
+    0 0 0 1px rgba(146, 64, 14, 0.5),
+    0 0 16px rgba(146, 64, 14, 0.25);
+
+  color-scheme: light;
+
+  --bs-body-bg:              var(--nn-bg-primary);
+  --bs-body-bg-rgb:          250, 250, 250;
+  --bs-body-color:           var(--nn-text-primary);
+  --bs-body-color-rgb:       31, 41, 55;
+
+  --bs-emphasis-color:       var(--nn-text-primary);
+  --bs-emphasis-color-rgb:   31, 41, 55;
+  --bs-secondary-color:      var(--nn-text-secondary);
+  --bs-secondary-color-rgb:  75, 85, 99;
+  --bs-secondary-bg:         var(--nn-bg-secondary);
+  --bs-secondary-bg-rgb:     243, 244, 246;
+  --bs-tertiary-color:       var(--nn-text-tertiary);
+  --bs-tertiary-color-rgb:   107, 114, 128;
+  --bs-tertiary-bg:          var(--nn-bg-tertiary);
+  --bs-tertiary-bg-rgb:      229, 231, 235;
+
+  --bs-heading-color:        var(--nn-text-primary);
+
+  --bs-link-color:           var(--nn-accent-teal);
+  --bs-link-color-rgb:       var(--nn-accent-teal-rgb);
+  --bs-link-hover-color:     var(--nn-accent-teal-hover);
+
+  --bs-border-color:               var(--nn-border-default);
+  --bs-border-color-translucent:   var(--nn-border-subtle);
+
+  --bs-primary:              var(--nn-accent-teal);
+  --bs-primary-rgb:          var(--nn-accent-teal-rgb);
+  --bs-primary-bg-subtle:    var(--nn-accent-teal-muted);
+  --bs-primary-border-subtle: var(--nn-accent-teal-muted);
+  --bs-primary-text-emphasis: var(--nn-accent-teal);
+
+  --bs-success:              var(--nn-success);
+  --bs-success-bg-subtle:    var(--nn-success-bg);
+  --bs-success-border-subtle: var(--nn-success-border);
+
+  --bs-danger:               var(--nn-danger);
+  --bs-danger-bg-subtle:     var(--nn-danger-bg);
+  --bs-danger-border-subtle: var(--nn-danger-border);
+
+  --bs-warning:              var(--nn-warning);
+  --bs-warning-bg-subtle:    var(--nn-warning-bg);
+  --bs-warning-border-subtle: var(--nn-warning-border);
+
+  --bs-info:                 var(--nn-info);
+  --bs-info-bg-subtle:       var(--nn-info-bg);
+  --bs-info-border-subtle:   var(--nn-info-border);
+
+  --bs-focus-ring-color:     var(--nn-focus-ring);
+
+  --bs-form-control-bg:      #ffffff;
+  --bs-form-control-disabled-bg: var(--nn-bg-secondary);
 }

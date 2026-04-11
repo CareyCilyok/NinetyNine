@@ -67,11 +67,6 @@ public static class BsonConfiguration
             BsonClassMap.RegisterClassMap<ProfileVisibility>(cm => cm.AutoMap());
         }
 
-        if (!BsonClassMap.IsClassMapRegistered(typeof(LinkedIdentity)))
-        {
-            BsonClassMap.RegisterClassMap<LinkedIdentity>(cm => cm.AutoMap());
-        }
-
         if (!BsonClassMap.IsClassMapRegistered(typeof(AvatarRef)))
         {
             BsonClassMap.RegisterClassMap<AvatarRef>(cm => cm.AutoMap());

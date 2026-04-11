@@ -9,7 +9,6 @@ public interface IPlayerRepository
 {
     Task<Player?> GetByIdAsync(Guid playerId, CancellationToken ct = default);
     Task<Player?> GetByDisplayNameAsync(string displayName, CancellationToken ct = default);
-    Task<Player?> GetByLinkedIdentityAsync(string provider, string providerUserId, CancellationToken ct = default);
     Task<bool> DisplayNameExistsAsync(string displayName, CancellationToken ct = default);
     Task<IReadOnlyList<Player>> SearchAsync(string query, int limit, CancellationToken ct = default);
     Task CreateAsync(Player player, CancellationToken ct = default);

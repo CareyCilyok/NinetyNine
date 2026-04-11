@@ -17,12 +17,11 @@ public class ModelEntityTests
         var player = new Player();
         player.PlayerId.Should().NotBeEmpty("PlayerId auto-generated");
         player.DisplayName.Should().Be("");
-        player.EmailAddress.Should().BeNull();
+        player.EmailAddress.Should().Be("");
         player.PhoneNumber.Should().BeNull();
         player.FirstName.Should().BeNull();
         player.MiddleName.Should().BeNull();
         player.LastName.Should().BeNull();
-        player.LinkedIdentities.Should().NotBeNull().And.BeEmpty();
         player.Avatar.Should().BeNull();
         player.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
@@ -81,30 +80,6 @@ public class ModelEntityTests
         vis.PhoneNumber.Should().BeTrue();
         vis.RealName.Should().BeTrue();
         vis.Avatar.Should().BeFalse();
-    }
-
-    // ── LinkedIdentity ────────────────────────────────────────────────────────
-
-    [Fact]
-    public void LinkedIdentity_Defaults()
-    {
-        var li = new LinkedIdentity();
-        li.Provider.Should().Be("");
-        li.ProviderUserId.Should().Be("");
-        li.LinkedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-    }
-
-    [Fact]
-    public void LinkedIdentity_CanSetProperties()
-    {
-        var li = new LinkedIdentity
-        {
-            Provider = "Google",
-            ProviderUserId = "sub-12345",
-            LinkedAt = DateTime.UtcNow
-        };
-        li.Provider.Should().Be("Google");
-        li.ProviderUserId.Should().Be("sub-12345");
     }
 
     // ── AvatarRef ─────────────────────────────────────────────────────────────
