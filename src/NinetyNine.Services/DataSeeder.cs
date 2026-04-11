@@ -15,6 +15,7 @@ public sealed class DataSeeder(
     IPlayerRepository playerRepository,
     IVenueRepository venueRepository,
     IGameRepository gameRepository,
+    IFriendshipRepository friendshipRepository,
     ILogger<DataSeeder> logger,
     IPasswordHasher<Player> passwordHasher) : IDataSeeder
 {
@@ -124,6 +125,13 @@ public sealed class DataSeeder(
         // populated dev database without a full reseed.
         var addedVenues = await ReconcileSeededVenuesAsync(ct);
 
+        // Friendship reconcile pass: insert canonical mutual friendships
+        // between every pair of seeded test players so the /friends page
+        // is not empty on first run. Runs on every startup; the unique
+        // index on Friendship.PlayerIdsKey makes the pass idempotent.
+        // See docs/plans/friends-communities-v1.md Sprint 1 S1.5.
+        var addedFriendships = await ReconcileSeededFriendshipsAsync(ct);
+
         // Idempotent creation: if the primary test player already exists,
         // we've already seeded at some point — skip the rest of the seed.
         var existing = await playerRepository.GetByDisplayNameAsync(
@@ -134,6 +142,7 @@ public sealed class DataSeeder(
             if (visibilityHealed > 0) parts.Add($"migrated {visibilityHealed} player(s) to Audience enum");
             if (healed > 0) parts.Add($"healed {healed} test player(s)");
             if (addedVenues > 0) parts.Add($"added {addedVenues} venue(s)");
+            if (addedFriendships > 0) parts.Add($"seeded {addedFriendships} friendship(s)");
             if (parts.Count > 0)
                 logger.LogInformation("Seed skipped — test players already exist. {Parts}.",
                     string.Join(", ", parts));
@@ -155,6 +164,12 @@ public sealed class DataSeeder(
         await playerRepository.CreateAsync(carey, ct);
         await playerRepository.CreateAsync(george, ct);
         await playerRepository.CreateAsync(careyB, ct);
+
+        // ── Seed pre-befriended mutual friendships between the three
+        //    test players so /friends has real data on first run.
+        //    (The reconcile pass above ran before the players existed, so
+        //    it short-circuited; call it again now that the players exist.)
+        await ReconcileSeededFriendshipsAsync(ct);
 
         // ── Load the venues we just reconciled so seeded games can
         //    reference them by name. ─────────────────────────────────────
@@ -193,6 +208,60 @@ public sealed class DataSeeder(
         logger.LogInformation(
             "Seed complete: 3 players, {VenueCount} venues, 6 completed games, 1 in-progress game.",
             SeededVenueDefinitions.Length);
+    }
+
+    /// <summary>
+    /// Inserts canonical mutual friendships between every pair of seeded
+    /// test players so Sprint 1's <c>/friends</c> page shows real data
+    /// on first visit. Idempotent via the unique index on
+    /// <c>Friendship.PlayerIdsKey</c>: duplicate inserts are caught and
+    /// silently ignored. Returns the number of friendships actually
+    /// added (zero on steady-state runs).
+    /// </summary>
+    private async Task<int> ReconcileSeededFriendshipsAsync(CancellationToken ct)
+    {
+        // Resolve the three seeded display names to PlayerIds. If any of
+        // them does not exist yet (fresh DB before the main seed runs),
+        // skip — the main seed branch will create them and the pass will
+        // succeed on the next startup.
+        var players = new List<Player>();
+        foreach (var displayName in IDataSeeder.TestPlayerDisplayNames)
+        {
+            var p = await playerRepository.GetByDisplayNameAsync(displayName, ct);
+            if (p is null) return 0;
+            players.Add(p);
+        }
+
+        int added = 0;
+        for (int i = 0; i < players.Count; i++)
+        {
+            for (int j = i + 1; j < players.Count; j++)
+            {
+                var a = players[i];
+                var b = players[j];
+
+                if (await friendshipRepository.GetByPairAsync(a.PlayerId, b.PlayerId, ct) is not null)
+                    continue;
+
+                var friendship = Friendship.Create(
+                    a.PlayerId, b.PlayerId, via: "seeder");
+
+                try
+                {
+                    await friendshipRepository.CreateAsync(friendship, ct);
+                    added++;
+                    logger.LogInformation(
+                        "Seeded friendship: {A} <-> {B}", a.DisplayName, b.DisplayName);
+                }
+                catch (MongoDB.Driver.MongoWriteException ex)
+                    when (ex.WriteError?.Category == MongoDB.Driver.ServerErrorCategory.DuplicateKey)
+                {
+                    // Raced another reconcile run; benign.
+                }
+            }
+        }
+
+        return added;
     }
 
     /// <summary>
