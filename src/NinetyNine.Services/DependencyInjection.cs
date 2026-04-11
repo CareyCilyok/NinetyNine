@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using NinetyNine.Services.Auth;
 
 namespace NinetyNine.Services;
 
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<AvatarService>();
         services.AddScoped<IDataSeeder, DataSeeder>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

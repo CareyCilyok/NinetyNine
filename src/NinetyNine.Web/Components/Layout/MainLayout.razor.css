@@ -1,0 +1,281 @@
+/* =====================================================================
+   MainLayout.razor.css  (Blazor scoped)
+   ---------------------------------------------------------------------
+   Owns the top-level shell: sidebar + main pane + footer, plus the
+   mobile hamburger/off-canvas drawer. All colors come from the global
+   --nn-* token namespace (theme.css); never hardcode here.
+
+   Breakpoints (mobile-first):
+     <  768px    off-canvas sidebar, hamburger visible
+     >= 768px    persistent 200px sidebar
+     >= 992px    persistent 240px sidebar
+   ===================================================================== */
+
+::deep * {
+    box-sizing: border-box;
+}
+
+.nn-layout {
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    background-color: var(--nn-bg-primary);
+    color: var(--nn-text-primary);
+    position: relative;
+}
+
+/* -------------------------------------------------------------------
+   Sidebar shell — persistent on >=768px, off-canvas drawer below.
+   ------------------------------------------------------------------- */
+.nn-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    width: 240px;
+    background-color: var(--nn-bg-secondary);
+    border-right: 1px solid var(--nn-border-subtle);
+    box-shadow: var(--nn-shadow-sm);
+    z-index: var(--nn-z-sticky);
+
+    /* On mobile (default in this mobile-first file) the sidebar is an
+       off-canvas drawer: pinned to the viewport, slid off-screen until
+       the hamburger toggles .nn-layout--sidebar-open on the parent. */
+    position: fixed;
+    inset: 0 auto 0 0;
+    transform: translateX(-100%);
+    transition: transform var(--nn-transition-base);
+}
+
+.nn-layout--sidebar-open .nn-sidebar {
+    transform: translateX(0);
+}
+
+/* -------------------------------------------------------------------
+   Brand block — logo + wordmark at the top of the sidebar.
+   ------------------------------------------------------------------- */
+.nn-sidebar__brand {
+    display: flex;
+    align-items: center;
+    padding: var(--nn-space-5) var(--nn-space-4) var(--nn-space-4);
+    border-bottom: 1px solid var(--nn-border-subtle);
+}
+
+.nn-sidebar__brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+    color: var(--nn-text-primary);
+    text-decoration: none;
+    font-weight: 700;
+    border-radius: var(--nn-radius-md);
+    padding: var(--nn-space-1) var(--nn-space-2);
+    transition: color var(--nn-transition-fast);
+}
+
+.nn-sidebar__brand-link:hover,
+.nn-sidebar__brand-link:focus-visible {
+    color: var(--nn-accent-teal);
+    text-decoration: none;
+}
+
+.nn-sidebar__brand-link:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+}
+
+.nn-sidebar__brand-glyph {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    /* Phosphor/pool SVG is black; tint to brand teal via filter.
+       These filter values were tuned to reach ~#1fb892 from #000. */
+    filter: invert(63%) sepia(81%) saturate(344%) hue-rotate(118deg) brightness(91%) contrast(87%);
+}
+
+.nn-sidebar__brand-text {
+    font-family: var(--nn-font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--nn-text-primary);
+}
+
+/* -------------------------------------------------------------------
+   Nav + footer regions inside the sidebar.
+   ------------------------------------------------------------------- */
+.nn-sidebar__nav {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: var(--nn-space-3) var(--nn-space-3);
+}
+
+.nn-sidebar__footer {
+    flex-shrink: 0;
+    padding: var(--nn-space-3) var(--nn-space-3) var(--nn-space-4);
+    border-top: 1px solid var(--nn-border-subtle);
+    background-color: var(--nn-bg-secondary);
+}
+
+/* -------------------------------------------------------------------
+   Main content pane — fills the rest of the viewport beside the sidebar.
+   ------------------------------------------------------------------- */
+.nn-layout__main {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;       /* prevents flex children from overflowing */
+    min-height: 100vh;
+    min-height: 100dvh;
+    background-color: var(--nn-bg-primary);
+}
+
+.nn-layout__content {
+    flex: 1 0 auto;
+    padding: var(--nn-space-4);
+}
+
+.nn-layout__footer {
+    flex-shrink: 0;
+    padding: var(--nn-space-3) var(--nn-space-4);
+    text-align: center;
+    border-top: 1px solid var(--nn-border-subtle);
+    color: var(--nn-text-tertiary);
+    font-family: var(--nn-font-sans);
+    background-color: var(--nn-bg-primary);
+}
+
+.nn-layout__footer small {
+    font-size: 0.8rem;
+    color: var(--nn-text-tertiary);
+}
+
+/* -------------------------------------------------------------------
+   Hamburger button + dimming overlay (mobile only).
+   ------------------------------------------------------------------- */
+.nn-layout__menu-button {
+    position: fixed;
+    top: var(--nn-space-3);
+    left: var(--nn-space-3);
+    z-index: calc(var(--nn-z-overlay) + 1);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--nn-touch-target);
+    height: var(--nn-touch-target);
+    padding: 0;
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    background-color: var(--nn-bg-secondary);
+    color: var(--nn-text-primary);
+    box-shadow: var(--nn-shadow-sm);
+    cursor: pointer;
+    transition: background-color var(--nn-transition-fast),
+                border-color var(--nn-transition-fast);
+}
+
+.nn-layout__menu-button:hover,
+.nn-layout__menu-button:focus-visible {
+    background-color: var(--nn-bg-tertiary);
+    border-color: var(--nn-border-strong);
+}
+
+.nn-layout__menu-button:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+}
+
+.nn-layout__menu-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    /* Tint black phosphor SVG to current --nn-text-primary. */
+    filter: invert(92%) sepia(3%) saturate(162%) hue-rotate(174deg) brightness(95%) contrast(89%);
+}
+
+.nn-layout__overlay {
+    position: fixed;
+    inset: 0;
+    /* Scrim derived from the theme's bg-primary at 60% opacity so it
+       tracks light/dark automatically without hardcoding a color. */
+    background-color: color-mix(in srgb, var(--nn-bg-primary) 60%, transparent);
+    backdrop-filter: blur(1px);
+    z-index: var(--nn-z-overlay);
+    animation: nn-fade-in var(--nn-transition-base) forwards;
+}
+
+@keyframes nn-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* -------------------------------------------------------------------
+   Tablet — sidebar becomes persistent at 200px; hamburger hidden.
+   ------------------------------------------------------------------- */
+@media (min-width: 768px) {
+    .nn-sidebar {
+        position: sticky;
+        top: 0;
+        bottom: auto;
+        inset: auto;
+        height: 100vh;
+        height: 100dvh;
+        width: 200px;
+        transform: none;
+        transition: none;
+    }
+
+    .nn-layout__menu-button,
+    .nn-layout__overlay {
+        display: none;
+    }
+
+    .nn-layout__content {
+        padding: var(--nn-space-5) var(--nn-space-5);
+    }
+}
+
+/* -------------------------------------------------------------------
+   Desktop — wider sidebar, more generous content padding.
+   ------------------------------------------------------------------- */
+@media (min-width: 992px) {
+    .nn-sidebar {
+        width: 240px;
+    }
+
+    .nn-layout__content {
+        padding: var(--nn-space-6);
+    }
+}
+
+/* -------------------------------------------------------------------
+   Reduced motion — kill the slide-in and fade transitions.
+   ------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .nn-sidebar {
+        transition: none;
+    }
+
+    .nn-layout__overlay {
+        animation: none;
+    }
+}
+
+/* -------------------------------------------------------------------
+   Light theme overrides — the overlay needs less opacity on light.
+   ------------------------------------------------------------------- */
+:global([data-bs-theme="light"]) .nn-layout__overlay {
+    /* On light the bg-primary-derived scrim is too pale; ride the
+       surface-overlay token instead for a darker scrim. */
+    background-color: color-mix(in srgb, var(--nn-surface-overlay) 50%, transparent);
+}
+
+:global([data-bs-theme="light"]) .nn-sidebar__brand-glyph {
+    /* Darker teal for the light theme. */
+    filter: invert(34%) sepia(55%) saturate(527%) hue-rotate(127deg) brightness(94%) contrast(92%);
+}
+
+:global([data-bs-theme="light"]) .nn-layout__menu-icon {
+    filter: invert(12%) sepia(8%) saturate(668%) hue-rotate(182deg) brightness(92%) contrast(88%);
+}

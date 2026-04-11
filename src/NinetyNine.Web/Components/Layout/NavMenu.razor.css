@@ -1,0 +1,152 @@
+/* =====================================================================
+   NavMenu.razor.css  (Blazor scoped)
+   ---------------------------------------------------------------------
+   Individual nav link styling: icon alignment, hover/active/focus
+   states, typography. All tokens come from theme.css; this file holds
+   no literal colors.
+
+   Active state is distinguished by three reinforcing signals:
+     1. Teal text color
+     2. Muted teal background (10% alpha teal, driven by --nn-accent-teal-rgb)
+     3. 3px teal left border (the primary visual anchor)
+   ===================================================================== */
+
+.nn-nav {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-1);
+}
+
+.nn-nav__item {
+    margin: 0;
+}
+
+/* -------------------------------------------------------------------
+   Link row — flex(row): icon + label. NavLink renders an <a>, which
+   inherits Bootstrap/anchor styles from app.css; we reset them here.
+   ------------------------------------------------------------------- */
+.nn-nav__link {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+    min-height: var(--nn-touch-target);
+    padding: var(--nn-space-2) var(--nn-space-3);
+
+    color: var(--nn-text-secondary);
+    text-decoration: none;
+    border-radius: var(--nn-radius-md);
+    border-left: 3px solid transparent;
+
+    font-family: var(--nn-font-sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    line-height: 1.2;
+
+    transition: background-color var(--nn-transition-fast),
+                color var(--nn-transition-fast),
+                border-color var(--nn-transition-fast);
+}
+
+.nn-nav__link:hover {
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-primary);
+    text-decoration: none;
+}
+
+.nn-nav__link:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+    color: var(--nn-text-primary);
+    text-decoration: none;
+}
+
+/* -------------------------------------------------------------------
+   Active state — NavLink auto-applies the `active` class on the
+   current route. Use that to stamp the teal treatment.
+   ------------------------------------------------------------------- */
+.nn-nav__link.active {
+    color: var(--nn-accent-teal);
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.10);
+    border-left-color: var(--nn-accent-teal);
+}
+
+.nn-nav__link.active:hover {
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.18);
+    color: var(--nn-accent-teal-hover);
+}
+
+.nn-nav__link.active .nn-nav__icon {
+    /* Re-tint the black SVG toward the brand teal when active. */
+    filter: invert(63%) sepia(81%) saturate(344%) hue-rotate(118deg) brightness(91%) contrast(87%);
+}
+
+/* -------------------------------------------------------------------
+   Icons — phosphor SVGs shipped as black glyphs. The filter inverts
+   them to match --nn-text-secondary on dark; hover/active swap it out.
+   ------------------------------------------------------------------- */
+.nn-nav__icon {
+    width: 1.5rem;   /* 24px */
+    height: 1.5rem;
+    flex-shrink: 0;
+    display: inline-block;
+    /* Tint black SVG -> --nn-text-secondary (#a9b2b9) on dark. */
+    filter: invert(76%) sepia(5%) saturate(287%) hue-rotate(174deg) brightness(93%) contrast(89%);
+    transition: filter var(--nn-transition-fast);
+}
+
+.nn-nav__link:hover .nn-nav__icon,
+.nn-nav__link:focus-visible .nn-nav__icon {
+    /* Closer to --nn-text-primary on dark. */
+    filter: invert(92%) sepia(3%) saturate(162%) hue-rotate(174deg) brightness(95%) contrast(89%);
+}
+
+.nn-nav__label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------
+   aria-current — NavLink also sets aria-current="page" on the active
+   anchor; make sure we don't style that any differently than .active.
+   ------------------------------------------------------------------- */
+.nn-nav__link[aria-current="page"] {
+    color: var(--nn-accent-teal);
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.10);
+    border-left-color: var(--nn-accent-teal);
+}
+
+/* -------------------------------------------------------------------
+   Reduced motion — no icon tint or background transitions.
+   ------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .nn-nav__link,
+    .nn-nav__icon {
+        transition: none;
+    }
+}
+
+/* -------------------------------------------------------------------
+   Light theme overrides — darker base tint for the icons on a pale
+   background so they don't wash out.
+   ------------------------------------------------------------------- */
+:global([data-bs-theme="light"]) .nn-nav__icon {
+    /* Tint black SVG -> mid-gray on the light background. */
+    filter: invert(42%) sepia(6%) saturate(363%) hue-rotate(176deg) brightness(94%) contrast(87%);
+}
+
+:global([data-bs-theme="light"]) .nn-nav__link:hover .nn-nav__icon,
+:global([data-bs-theme="light"]) .nn-nav__link:focus-visible .nn-nav__icon {
+    filter: invert(12%) sepia(8%) saturate(668%) hue-rotate(182deg) brightness(92%) contrast(88%);
+}
+
+:global([data-bs-theme="light"]) .nn-nav__link.active .nn-nav__icon {
+    /* Darker teal for light theme accent. */
+    filter: invert(34%) sepia(55%) saturate(527%) hue-rotate(127deg) brightness(94%) contrast(92%);
+}

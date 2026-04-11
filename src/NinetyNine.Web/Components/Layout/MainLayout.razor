@@ -1,31 +1,88 @@
 @inherits LayoutComponentBase
 
-<header class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="/">
-            <span class="me-1" aria-hidden="true">&#9899;</span>NinetyNine
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#mainNav" aria-controls="mainNav"
-                aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+@*
+    MainLayout — application shell.
+    -----------------------------------------------------------------
+    Persistent left sidebar (brand + NavMenu + UserMenu) on the left,
+    a flex-growing main content pane on the right, and a thin footer
+    pinned below @Body. On mobile (<768px) the sidebar becomes an
+    off-canvas drawer toggled by a hamburger button. The drawer state
+    is pure Blazor bool + CSS — no JS interop required.
 
-        <div class="collapse navbar-collapse" id="mainNav">
-            <NavMenu />
-            <div class="ms-auto d-flex align-items-center">
-                <LoginDisplay />
-            </div>
+    Auth state is cascaded globally via Program.cs
+    (AddCascadingAuthenticationState), so no <CascadingAuthenticationState>
+    wrapper is needed here.
+*@
+
+<div class="nn-layout @(_sidebarOpen ? "nn-layout--sidebar-open" : string.Empty)">
+
+    @* Hamburger — visible only on mobile via scoped CSS. *@
+    <button type="button"
+            class="nn-layout__menu-button"
+            aria-label="Toggle navigation"
+            aria-expanded="@(_sidebarOpen ? "true" : "false")"
+            aria-controls="nn-primary-sidebar"
+            @onclick="ToggleSidebar">
+        <img src="icons/phosphor/regular/list.svg"
+             alt=""
+             role="presentation"
+             class="nn-layout__menu-icon" />
+    </button>
+
+    @* Off-canvas dimming overlay — only rendered on mobile when open. *@
+    @if (_sidebarOpen)
+    {
+        <div class="nn-layout__overlay"
+             role="presentation"
+             @onclick="CloseSidebar"></div>
+    }
+
+    <aside id="nn-primary-sidebar"
+           class="nn-sidebar"
+           aria-label="Primary navigation">
+
+        <div class="nn-sidebar__brand">
+            <a href="/" class="nn-sidebar__brand-link" @onclick="CloseSidebar">
+                <img src="icons/pool/cue-sports-pictogram.svg"
+                     alt=""
+                     role="presentation"
+                     class="nn-sidebar__brand-glyph" />
+                <span class="nn-sidebar__brand-text">NinetyNine</span>
+            </a>
         </div>
-    </div>
-</header>
 
-<main class="container-fluid py-4" role="main">
-    @Body
-</main>
+        <nav class="nn-sidebar__nav" role="navigation" aria-label="Main">
+            <NavMenu OnNavigate="CloseSidebar" />
+        </nav>
 
-<footer class="footer py-3 bg-dark text-light text-center">
-    <div class="container">
-        <small>NinetyNine Pool Scorekeeper &mdash; P&amp;B RPI Rules</small>
-    </div>
-</footer>
+        <div class="nn-sidebar__footer">
+            <UserMenu />
+        </div>
+    </aside>
+
+    <main class="nn-layout__main" role="main">
+        <div class="nn-layout__content">
+            @Body
+        </div>
+
+        <footer class="nn-layout__footer">
+            <small>
+                NinetyNine &mdash; Pool scorekeeper. &copy; @DateTime.UtcNow.Year
+            </small>
+        </footer>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <a class="dismiss">&#x2715;</a>
+</div>
+
+@code {
+    private bool _sidebarOpen;
+
+    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
+
+    private void CloseSidebar() => _sidebarOpen = false;
+}

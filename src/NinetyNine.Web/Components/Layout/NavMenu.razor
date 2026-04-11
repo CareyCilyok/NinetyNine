@@ -1,27 +1,113 @@
-<ul class="navbar-nav me-auto mb-2 mb-lg-0">
-    <li class="nav-item">
-        <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-            Home
+@*
+    NavMenu — sidebar primary navigation.
+    -----------------------------------------------------------------
+    Renders the six top-level destinations as Blazor NavLink rows
+    (icon + label). Home uses NavLinkMatch.All so it's only active on
+    exactly "/"; the rest use NavLinkMatch.Prefix so nested routes
+    (e.g. /games/new under /games) still highlight correctly.
+
+    Each row is a 44px-min touch target (var(--nn-touch-target)).
+    Active styling (teal text, muted teal background, 3px left border)
+    is applied via the scoped .razor.css file using Blazor's built-in
+    `.active` class that NavLink adds automatically.
+
+    OnNavigate is an optional parent callback — MainLayout uses it to
+    close the mobile drawer after a link is activated.
+*@
+
+<ul class="nn-nav" role="list">
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
+                 href=""
+                 Match="NavLinkMatch.All"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/house.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">Home</span>
         </NavLink>
     </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="/games/new">
-            New Game
+
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
+                 href="games/new"
+                 Match="NavLinkMatch.Prefix"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/plus.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">New Game</span>
         </NavLink>
     </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="/games">
-            History
+
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
+                 href="games"
+                 Match="NavLinkMatch.All"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/list.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">History</span>
         </NavLink>
     </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="/stats">
-            Leaderboard
+
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
+                 href="stats"
+                 Match="NavLinkMatch.Prefix"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/chart-bar.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">Stats</span>
         </NavLink>
     </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="/venues">
-            Venues
+
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
+                 href="venues"
+                 Match="NavLinkMatch.Prefix"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/map-pin.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">Venues</span>
+        </NavLink>
+    </li>
+
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
+                 href="players/me"
+                 Match="NavLinkMatch.Prefix"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/user.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">Profile</span>
         </NavLink>
     </li>
 </ul>
+
+@code {
+    /// <summary>
+    /// Optional callback invoked after any nav link is activated.
+    /// MainLayout uses this to close the mobile off-canvas drawer.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnNavigate { get; set; }
+
+    private async Task HandleNavigate()
+    {
+        if (OnNavigate.HasDelegate)
+        {
+            await OnNavigate.InvokeAsync();
+        }
+    }
+}

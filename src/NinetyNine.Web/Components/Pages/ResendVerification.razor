@@ -1,0 +1,75 @@
+@page "/resend-verification"
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Resend verification email &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-auth-page">
+    <div class="nn-auth-card">
+        <div class="nn-auth-card__wordmark" aria-hidden="true">NinetyNine</div>
+        <h1 class="nn-auth-card__title">Resend verification email</h1>
+        <p class="nn-auth-card__subtitle">
+            Enter the email address you registered with and we will send a new verification link.
+        </p>
+
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <div class="alert alert-success" role="alert">@_successMessage</div>
+        }
+
+        @if (!_submitted)
+        {
+            <EditForm Model="_model" OnValidSubmit="HandleSubmitAsync">
+                <DataAnnotationsValidator />
+
+                <div class="form-group">
+                    <label class="form-label" for="email">Email address</label>
+                    <InputText id="email" type="email"
+                               class="form-control"
+                               @bind-Value="_model.Email"
+                               autocomplete="email" required />
+                    <ValidationMessage For="() => _model.Email" />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100" disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span>Sending&hellip;</span>
+                    }
+                    else
+                    {
+                        <span>Resend verification email</span>
+                    }
+                </button>
+            </EditForm>
+        }
+
+        <p class="nn-auth-card__aside">
+            <a href="/login">Back to sign in</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    private ResendVerificationModel _model = new();
+    private string _successMessage = "";
+    private bool _isSubmitting;
+    private bool _submitted;
+
+    private async Task HandleSubmitAsync()
+    {
+        // TODO(WP-08): wire IAuthService.ResendVerificationAsync(...) — scaffolds only in WP-07.
+        // Always show a generic success message regardless of whether the email exists,
+        // to prevent user enumeration.
+        _isSubmitting = true;
+        _submitted = true;
+        _isSubmitting = false;
+        _successMessage = "If an unverified account with that email exists, a new verification link has been sent. Check your inbox.";
+    }
+
+    private sealed class ResendVerificationModel
+    {
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        public string Email { get; set; } = "";
+    }
+}

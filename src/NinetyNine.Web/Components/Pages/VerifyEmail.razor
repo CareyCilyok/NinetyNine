@@ -1,0 +1,37 @@
+@page "/verify-email"
+
+<PageTitle>Verify email &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-auth-page">
+    <div class="nn-auth-card">
+        <div class="nn-auth-card__wordmark" aria-hidden="true">NinetyNine</div>
+        <h1 class="nn-auth-card__title">Verifying your email&hellip;</h1>
+        <p class="nn-auth-card__subtitle">Please wait while we confirm your account.</p>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <div class="alert alert-success" role="alert">@_successMessage</div>
+        }
+
+        <p class="nn-auth-card__aside">
+            <a href="/login">Back to sign in</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? Token { get; set; }
+
+    private string _errorMessage = "";
+    private string _successMessage = "";
+
+    protected override Task OnInitializedAsync()
+    {
+        // TODO(WP-09): call IAuthService.VerifyEmailAsync(Token) and set message accordingly.
+        return Task.CompletedTask;
+    }
+}

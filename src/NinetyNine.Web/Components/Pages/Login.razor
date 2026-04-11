@@ -2,86 +2,125 @@
 @inject IConfiguration Configuration
 @inject IPlayerRepository PlayerRepository
 @inject IWebHostEnvironment Environment
+@using System.ComponentModel.DataAnnotations
 @using NinetyNine.Model
 @using NinetyNine.Repository.Repositories
 @using NinetyNine.Services
 
-<PageTitle>Sign In &mdash; NinetyNine</PageTitle>
+<PageTitle>Sign in &mdash; NinetyNine</PageTitle>
 
-<div class="row justify-content-center mt-5">
-    <div class="col-md-7 col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-body p-5">
-                <h1 class="h3 card-title mb-3 text-center">Sign In</h1>
+<div class="nn-page nn-auth-page">
+    <div class="nn-auth-card">
+        <div class="nn-auth-card__wordmark" aria-hidden="true">NinetyNine</div>
+        <h1 class="nn-auth-card__title">Sign in to NinetyNine</h1>
 
-                @if (IsMockEnabled)
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="HandleSubmitAsync">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label class="form-label" for="email">Email address</label>
+                <InputText id="email" type="email"
+                           class="form-control"
+                           @bind-Value="_model.Email"
+                           autocomplete="email" required />
+                <ValidationMessage For="() => _model.Email" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <InputText id="password" type="password"
+                           class="form-control"
+                           @bind-Value="_model.Password"
+                           autocomplete="current-password" required />
+                <ValidationMessage For="() => _model.Password" />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" disabled="@_isSubmitting">
+                @if (_isSubmitting)
                 {
-                    <div class="alert alert-warning small" role="alert">
-                        <strong>Mock auth mode.</strong> OAuth is bypassed for UX prototyping.
-                        Pick a test player below or create a new account — no credentials required.
-                    </div>
-
-                    <h2 class="h5 mt-4 mb-3">Sign in as a test player</h2>
-
-                    @if (_mockPlayers.Count == 0)
-                    {
-                        <p class="text-muted small">No seeded players found. Check the app logs for seeder errors.</p>
-                    }
-                    else
-                    {
-                        <div class="list-group mb-4">
-                            @foreach (var player in _mockPlayers)
-                            {
-                                <a href="@($"/mock/signin-as?playerId={player.PlayerId}")"
-                                   class="list-group-item list-group-item-action d-flex align-items-center gap-3">
-                                    <AvatarImage DisplayName="@player.DisplayName"
-                                                 AvatarUrl="@(player.Avatar is not null ? $"/api/avatars/{player.PlayerId}" : null)"
-                                                 SizePx="48" />
-                                    <div class="flex-grow-1">
-                                        <div class="fw-semibold">@player.DisplayName</div>
-                                        @if (player.Visibility.RealName && !string.IsNullOrEmpty(player.FirstName))
-                                        {
-                                            <div class="text-muted small">@player.FirstName @player.LastName</div>
-                                        }
-                                    </div>
-                                    <span class="btn btn-sm btn-outline-primary">Sign in</span>
-                                </a>
-                            }
-                        </div>
-                    }
-
-                    <h2 class="h5 mt-4 mb-3">Or create a new account</h2>
-                    <a href="/mock/signin-new" class="btn btn-primary w-100">
-                        Create new test account
-                    </a>
+                    <span>Signing in&hellip;</span>
                 }
                 else
                 {
-                    <p class="text-muted mb-4 text-center">
-                        Use your Google account to sign in. No password needed.
-                    </p>
-
-                    <a href="/auth/challenge?provider=Google"
-                       class="btn btn-outline-danger btn-lg w-100 d-flex align-items-center justify-content-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
-                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-                        </svg>
-                        Sign in with Google
-                    </a>
-
-                    <p class="mt-4 text-muted small text-center">
-                        New here? You will be prompted to pick a display name after signing in.
-                    </p>
+                    <span>Sign in</span>
                 }
+            </button>
+        </EditForm>
+
+        <p class="nn-auth-card__links">
+            <a href="/forgot-password">Forgot password?</a>
+            <span class="nn-auth-card__links-sep">&middot;</span>
+            <a href="/resend-verification">Resend verification email</a>
+        </p>
+
+        <p class="nn-auth-card__aside">
+            New to NinetyNine? <a href="/register">Create an account</a>.
+        </p>
+
+        @* ================================================================
+           DEVELOPMENT ONLY — mock auth picker.
+           Visible only when Auth:Mock:Enabled = true in appsettings.Development.json.
+           This bypasses real authentication for UX prototyping. Removed in production.
+           WP-08 will integrate this section with the real auth flow.
+           ================================================================ *@
+        @if (IsMockEnabled)
+        {
+            <hr class="nn-auth-card__divider" />
+
+            <div class="nn-auth-mock" role="region" aria-label="Development mock authentication">
+                <div class="alert alert-warning small" role="alert">
+                    <strong>Development only.</strong> Mock auth is enabled. OAuth is bypassed for UX prototyping.
+                    Pick a test player below &mdash; no credentials required.
+                </div>
+
+                <h2 class="nn-auth-mock__heading">Sign in as a test player</h2>
+
+                @if (_mockPlayers.Count == 0)
+                {
+                    <p class="nn-auth-mock__empty">No seeded players found. Check the app logs for seeder errors.</p>
+                }
+                else
+                {
+                    <div class="list-group nn-auth-mock__list">
+                        @foreach (var player in _mockPlayers)
+                        {
+                            <a href="@($"/mock/signin-as?playerId={player.PlayerId}")"
+                               class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                                <AvatarImage DisplayName="@player.DisplayName"
+                                             AvatarUrl="@(player.Avatar is not null ? $"/api/avatars/{player.PlayerId}" : null)"
+                                             SizePx="48" />
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">@player.DisplayName</div>
+                                    @if (player.Visibility.RealName && !string.IsNullOrEmpty(player.FirstName))
+                                    {
+                                        <div class="text-muted small">@player.FirstName @player.LastName</div>
+                                    }
+                                </div>
+                                <span class="btn btn-sm btn-outline-primary">Sign in</span>
+                            </a>
+                        }
+                    </div>
+                }
+
+                <h2 class="nn-auth-mock__heading mt-3">Or create a new test account</h2>
+                <a href="/mock/signin-new" class="btn btn-primary w-100">
+                    Create new test account
+                </a>
             </div>
-        </div>
+        }
     </div>
 </div>
 
 @code {
+    private LoginModel _model = new();
+    private string _errorMessage = "";
+    private bool _isSubmitting;
+
     private List<Player> _mockPlayers = new();
 
     private bool IsMockEnabled =>
@@ -96,5 +135,23 @@
             var player = await PlayerRepository.GetByDisplayNameAsync(displayName);
             if (player is not null) _mockPlayers.Add(player);
         }
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        // TODO(WP-08): wire IAuthService.LoginAsync(...) — scaffolds only in WP-07.
+        _isSubmitting = true;
+        await Task.CompletedTask;
+        _isSubmitting = false;
+    }
+
+    private sealed class LoginModel
+    {
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Password is required.")]
+        public string Password { get; set; } = "";
     }
 }

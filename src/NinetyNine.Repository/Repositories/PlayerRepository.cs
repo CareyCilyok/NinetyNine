@@ -12,6 +12,66 @@ public sealed class PlayerRepository(INinetyNineDbContext context, ILogger<Playe
 {
     private readonly IMongoCollection<Player> _collection = context.Players;
 
+    /// <summary>
+    /// Looks up a player by email address using a case-insensitive match.
+    /// Returns <c>null</c> if no player with that address exists.
+    /// </summary>
+    /// <param name="email">The email address to search for. Trimmed and lowercased before querying.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    public async Task<Player?> GetByEmailAsync(string email, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return null;
+
+        var normalized = email.Trim().ToLowerInvariant();
+        var filter = Builders<Player>.Filter.Eq(p => p.EmailAddress, normalized);
+        return await _collection.Find(filter).FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// Looks up a player by their current email verification token using an exact match.
+    /// Returns <c>null</c> if the token is not found. The caller is responsible for expiry checks.
+    /// </summary>
+    /// <param name="token">The email verification token to look up.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    public async Task<Player?> GetByEmailVerificationTokenAsync(string token, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return null;
+
+        var filter = Builders<Player>.Filter.Eq(p => p.EmailVerificationToken, token);
+        return await _collection.Find(filter).FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// Looks up a player by their current password reset token using an exact match.
+    /// Returns <c>null</c> if the token is not found. The caller is responsible for expiry checks.
+    /// </summary>
+    /// <param name="token">The password reset token to look up.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    public async Task<Player?> GetByPasswordResetTokenAsync(string token, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return null;
+
+        var filter = Builders<Player>.Filter.Eq(p => p.PasswordResetToken, token);
+        return await _collection.Find(filter).FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if a player with the given email address already exists (case-insensitive).
+    /// Uses <c>CountDocumentsAsync</c> with <c>Limit = 1</c> for a server-side short-circuit.
+    /// </summary>
+    /// <param name="email">The email address to check. Trimmed and lowercased before querying.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    public async Task<bool> EmailExistsAsync(string email, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return false;
+
+        var normalized = email.Trim().ToLowerInvariant();
+        var filter = Builders<Player>.Filter.Eq(p => p.EmailAddress, normalized);
+        var options = new CountOptions { Limit = 1 };
+        var count = await _collection.CountDocumentsAsync(filter, options, ct);
+        return count > 0;
+    }
+
     public async Task<Player?> GetByIdAsync(Guid playerId, CancellationToken ct = default)
     {
         logger.LogDebug("Getting player by ID {PlayerId}", playerId);

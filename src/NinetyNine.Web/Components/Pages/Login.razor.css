@@ -1,0 +1,87 @@
+/* Auth page layout — scoped to Login.razor */
+
+.nn-auth-page {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nn-auth-card {
+    width: 100%;
+    max-width: 480px;
+    padding: var(--nn-space-6);
+    background: var(--nn-surface-raised);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+    border: 1px solid var(--nn-border-default);
+}
+
+.nn-auth-card__wordmark {
+    font-weight: 700;
+    font-size: 1.125rem;
+    letter-spacing: 0.02em;
+    color: var(--nn-accent-teal);
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-auth-card__title {
+    font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-3);
+}
+
+.form-group {
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-auth-card__aside {
+    margin-top: var(--nn-space-5);
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.nn-auth-card__links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--nn-space-2);
+    margin-top: var(--nn-space-4);
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+    margin-bottom: 0;
+}
+
+.nn-auth-card__links-sep {
+    color: var(--nn-text-tertiary);
+}
+
+.nn-auth-card__divider {
+    margin: var(--nn-space-5) 0;
+    border-color: var(--nn-border-default);
+}
+
+.nn-auth-mock__heading {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--nn-text-secondary);
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-auth-mock__empty {
+    font-size: 0.875rem;
+    color: var(--nn-text-tertiary);
+}
+
+.nn-auth-mock__list {
+    margin-bottom: var(--nn-space-3);
+}
+
+.btn.w-100 {
+    width: 100%;
+    margin-top: var(--nn-space-2);
+}

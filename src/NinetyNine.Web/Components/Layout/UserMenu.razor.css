@@ -1,0 +1,246 @@
+/* =====================================================================
+   UserMenu.razor.css  (Blazor scoped)
+   ---------------------------------------------------------------------
+   User block pinned to the bottom of the sidebar. When authenticated,
+   clicking the trigger pops a dropdown UPWARD (because the trigger
+   lives at the very bottom of the viewport-high sidebar). When
+   unauthenticated, shows a Sign in button + Create account link.
+
+   All colors via --nn-* tokens.
+   ===================================================================== */
+
+.nn-user {
+    position: relative;
+}
+
+/* -------------------------------------------------------------------
+   Trigger — full-width 44px-min row: avatar + name + caret.
+   ------------------------------------------------------------------- */
+.nn-user__trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+    width: 100%;
+    min-height: var(--nn-touch-target);
+    padding: var(--nn-space-2) var(--nn-space-3);
+
+    background-color: transparent;
+    color: var(--nn-text-primary);
+    border: 1px solid transparent;
+    border-radius: var(--nn-radius-md);
+
+    font-family: var(--nn-font-sans);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+
+    transition: background-color var(--nn-transition-fast),
+                border-color var(--nn-transition-fast);
+}
+
+.nn-user__trigger:hover {
+    background-color: var(--nn-bg-tertiary);
+    border-color: var(--nn-border-subtle);
+}
+
+.nn-user__trigger:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+}
+
+.nn-user--open .nn-user__trigger {
+    background-color: var(--nn-bg-tertiary);
+    border-color: var(--nn-border-default);
+}
+
+.nn-user__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--nn-text-primary);
+    font-weight: 600;
+}
+
+.nn-user__caret {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    /* Tint black svg -> text-secondary on dark. */
+    filter: invert(76%) sepia(5%) saturate(287%) hue-rotate(174deg) brightness(93%) contrast(89%);
+    transition: transform var(--nn-transition-fast);
+}
+
+.nn-user__trigger:hover .nn-user__caret {
+    filter: invert(92%) sepia(3%) saturate(162%) hue-rotate(174deg) brightness(95%) contrast(89%);
+}
+
+/* -------------------------------------------------------------------
+   Backdrop — transparent full-viewport catcher for "click outside".
+   Stays below the menu itself but above everything else so the first
+   click anywhere off the menu closes the dropdown.
+   ------------------------------------------------------------------- */
+.nn-user__backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: transparent;
+    z-index: calc(var(--nn-z-dropdown) - 1);
+}
+
+/* -------------------------------------------------------------------
+   Dropdown menu — pops UP above the trigger because the user block is
+   at the bottom of the sidebar. Rendered BEFORE the trigger in the DOM
+   and absolutely positioned so it stacks above it visually.
+   ------------------------------------------------------------------- */
+.nn-user__menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + var(--nn-space-2));
+    z-index: var(--nn-z-dropdown);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-1);
+
+    padding: var(--nn-space-2);
+    background-color: var(--nn-surface-raised);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    box-shadow: var(--nn-shadow-lg);
+
+    animation: nn-user-menu-in var(--nn-transition-fast) ease-out;
+}
+
+@keyframes nn-user-menu-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.nn-user__item {
+    display: flex;
+    align-items: center;
+    min-height: var(--nn-touch-target);
+    padding: var(--nn-space-2) var(--nn-space-3);
+
+    color: var(--nn-text-primary);
+    background-color: transparent;
+    border: 0;
+    border-radius: var(--nn-radius-sm);
+
+    font-family: var(--nn-font-sans);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    width: 100%;
+
+    transition: background-color var(--nn-transition-fast),
+                color var(--nn-transition-fast);
+}
+
+.nn-user__item:hover,
+.nn-user__item:focus-visible {
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-primary);
+    text-decoration: none;
+}
+
+.nn-user__item:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: -2px;
+}
+
+.nn-user__item--danger {
+    color: var(--nn-danger);
+}
+
+.nn-user__item--danger:hover,
+.nn-user__item--danger:focus-visible {
+    background-color: var(--nn-danger-bg);
+    color: var(--nn-danger);
+}
+
+.nn-user__divider {
+    height: 1px;
+    margin: var(--nn-space-1) 0;
+    background-color: var(--nn-border-subtle);
+}
+
+.nn-user__signout-form {
+    margin: 0;
+    padding: 0;
+    display: block;
+}
+
+/* -------------------------------------------------------------------
+   Unauthenticated state — stacked sign in button + create account link.
+   ------------------------------------------------------------------- */
+.nn-user__signin {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-2);
+    align-items: stretch;
+}
+
+.nn-user__signin-btn {
+    width: 100%;
+    justify-content: center;
+}
+
+.nn-user__signin-link {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--nn-text-secondary);
+    text-decoration: none;
+    padding: var(--nn-space-1) var(--nn-space-2);
+    border-radius: var(--nn-radius-sm);
+    transition: color var(--nn-transition-fast);
+}
+
+.nn-user__signin-link:hover,
+.nn-user__signin-link:focus-visible {
+    color: var(--nn-accent-teal);
+    text-decoration: underline;
+}
+
+.nn-user__signin-link:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------
+   Reduced motion — disable dropdown enter animation.
+   ------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .nn-user__menu {
+        animation: none;
+    }
+
+    .nn-user__trigger,
+    .nn-user__caret,
+    .nn-user__item,
+    .nn-user__signin-link {
+        transition: none;
+    }
+}
+
+/* -------------------------------------------------------------------
+   Light theme overrides — re-tint caret for the light palette.
+   ------------------------------------------------------------------- */
+:global([data-bs-theme="light"]) .nn-user__caret {
+    filter: invert(42%) sepia(6%) saturate(363%) hue-rotate(176deg) brightness(94%) contrast(87%);
+}
+
+:global([data-bs-theme="light"]) .nn-user__trigger:hover .nn-user__caret {
+    filter: invert(12%) sepia(8%) saturate(668%) hue-rotate(182deg) brightness(92%) contrast(88%);
+}

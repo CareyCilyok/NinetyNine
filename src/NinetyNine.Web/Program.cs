@@ -1,10 +1,15 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
+using NinetyNine.Model;
 using NinetyNine.Repository;
 using NinetyNine.Services;
 using NinetyNine.Web.Auth;
+using NinetyNine.Web.Auth.EmailSender;
 using NinetyNine.Web.Components;
+using ServicesIEmailSender = NinetyNine.Services.Auth.IEmailSender;
 
 // Mock auth toggle: enabled in Development by default; never honored in
 // Production regardless of config. See docs/architecture.md for the OAuth
@@ -46,7 +51,31 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
-    // TODO(WP-05): wire password auth
+
+// ── Email sender factory ──────────────────────────────────────────────────────
+// Selects the Services-layer IEmailSender implementation based on Email:Provider config.
+// "MailKit" = production SMTP via MailKit adapter;
+// "Mock"    = in-memory test accumulator adapter;
+// anything else (including "Console" or unset) = structured-log fallback adapter.
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddSingleton<ServicesIEmailSender>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<EmailSettings>>().Value;
+    var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+    return settings.Provider?.ToLowerInvariant() switch
+    {
+        "mailkit" => (ServicesIEmailSender)new MailKitEmailSenderAdapter(
+            new MailKitEmailSender(
+                sp.GetRequiredService<IOptions<EmailSettings>>(),
+                loggerFactory.CreateLogger<MailKitEmailSender>())),
+        "mock" => new MockEmailSenderAdapter(new MockEmailSender()),
+        _ => new ConsoleEmailSenderAdapter(
+            new ConsoleEmailSender(loggerFactory.CreateLogger<ConsoleEmailSender>())),
+    };
+});
+
+// ── Password hasher (PBKDF2 via ASP.NET Core Identity) ───────────────────────
+builder.Services.AddScoped<IPasswordHasher<Player>, PasswordHasher<Player>>();
 
 builder.Services.AddAuthorization();
 

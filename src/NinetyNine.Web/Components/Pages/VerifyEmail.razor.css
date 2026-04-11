@@ -1,0 +1,46 @@
+/* Auth page layout — scoped to VerifyEmail.razor */
+
+.nn-auth-page {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nn-auth-card {
+    width: 100%;
+    max-width: 480px;
+    padding: var(--nn-space-6);
+    background: var(--nn-surface-raised);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+    border: 1px solid var(--nn-border-default);
+}
+
+.nn-auth-card__wordmark {
+    font-weight: 700;
+    font-size: 1.125rem;
+    letter-spacing: 0.02em;
+    color: var(--nn-accent-teal);
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-auth-card__title {
+    font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-auth-card__subtitle {
+    color: var(--nn-text-secondary);
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-auth-card__aside {
+    margin-top: var(--nn-space-5);
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+    text-align: center;
+    margin-bottom: 0;
+}

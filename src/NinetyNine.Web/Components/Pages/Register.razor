@@ -1,266 +1,120 @@
 @page "/register"
-@implements IDisposable
-@inject IPlayerService PlayerService
-@inject NavigationManager Navigation
-@inject IHttpContextAccessor HttpContextAccessor
-@inject ILogger<Register> Logger
-@using NinetyNine.Services
+@using System.ComponentModel.DataAnnotations
 
-<PageTitle>Create Profile &mdash; NinetyNine</PageTitle>
+<PageTitle>Create account &mdash; NinetyNine</PageTitle>
 
-<div class="row justify-content-center mt-4">
-    <div class="col-md-7 col-lg-5">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <h1 class="h3 card-title mb-1">Create Your Profile</h1>
-                <p class="text-muted mb-4">
-                    Choose a display name to get started. All other fields are optional.
-                </p>
+<div class="nn-page nn-auth-page">
+    <div class="nn-auth-card">
+        <div class="nn-auth-card__wordmark" aria-hidden="true">NinetyNine</div>
+        <h1 class="nn-auth-card__title">Create your NinetyNine account</h1>
+        <p class="nn-auth-card__subtitle">
+            Track your Ninety-Nine runs and see how you stack up.
+        </p>
 
-                @if (!string.IsNullOrEmpty(_errorMessage))
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <div class="alert alert-success" role="alert">@_successMessage</div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="HandleSubmitAsync">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label class="form-label" for="email">Email address</label>
+                <InputText id="email" type="email"
+                           class="form-control"
+                           @bind-Value="_model.Email"
+                           autocomplete="email" required
+                           aria-describedby="email-hint" />
+                <ValidationMessage For="() => _model.Email" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="display-name">Display name</label>
+                <InputText id="display-name"
+                           class="form-control"
+                           @bind-Value="_model.DisplayName"
+                           autocomplete="username" required
+                           aria-describedby="display-name-hint" />
+                <div id="display-name-hint" class="form-text">2&ndash;32 characters. Letters, numbers, _ and - only.</div>
+                <ValidationMessage For="() => _model.DisplayName" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <InputText id="password" type="password"
+                           class="form-control"
+                           @bind-Value="_model.Password"
+                           autocomplete="new-password" required
+                           aria-describedby="password-hint" />
+                <div id="password-hint" class="form-text">
+                    At least 10 characters with uppercase, lowercase, digit, and symbol.
+                </div>
+                <ValidationMessage For="() => _model.Password" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="confirm-password">Confirm password</label>
+                <InputText id="confirm-password" type="password"
+                           class="form-control"
+                           @bind-Value="_model.ConfirmPassword"
+                           autocomplete="new-password" required />
+                <ValidationMessage For="() => _model.ConfirmPassword" />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" disabled="@_isSubmitting">
+                @if (_isSubmitting)
                 {
-                    <div class="alert alert-danger" role="alert">@_errorMessage</div>
-                }
-
-                @if (!_hasRegistrationCookie)
-                {
-                    <div class="alert alert-warning" role="alert">
-                        No pending registration found. Please <a href="/login">sign in</a> first.
-                    </div>
+                    <span>Creating account&hellip;</span>
                 }
                 else
                 {
-                    <EditForm Model="_model" OnValidSubmit="HandleRegister">
-                        <DataAnnotationsValidator />
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold" for="display-name">
-                                Display Name <span class="text-danger" aria-hidden="true">*</span>
-                            </label>
-                            <div class="input-group">
-                                <InputText id="display-name"
-                                           class="@DisplayNameCssClass"
-                                           @bind-Value="_model.DisplayName"
-                                           @oninput="OnDisplayNameInput"
-                                           placeholder="e.g. sharky_mike"
-                                           autocomplete="username"
-                                           aria-describedby="display-name-feedback" />
-                                @if (_checkingName)
-                                {
-                                    <span class="input-group-text">
-                                        <span class="spinner-border spinner-border-sm" role="status" aria-label="Checking availability"></span>
-                                    </span>
-                                }
-                            </div>
-                            <div id="display-name-feedback" class="form-text">
-                                2–32 characters, letters, numbers, _ and - only.
-                                @if (_displayNameAvailable == true)
-                                {
-                                    <span class="text-success">Available!</span>
-                                }
-                                else if (_displayNameAvailable == false)
-                                {
-                                    <span class="text-danger">That name is taken.</span>
-                                }
-                            </div>
-                            <ValidationMessage For="() => _model.DisplayName" />
-                        </div>
-
-                        <hr class="my-3" />
-                        <p class="text-muted small">
-                            Optional information — all hidden by default. Use the toggles to make fields public.
-                        </p>
-
-                        <div class="mb-3 d-flex gap-2 align-items-start">
-                            <div class="flex-grow-1">
-                                <label class="form-label" for="first-name">First Name</label>
-                                <InputText id="first-name" class="form-control"
-                                           @bind-Value="_model.FirstName"
-                                           autocomplete="given-name" />
-                            </div>
-                        </div>
-
-                        <div class="mb-3 d-flex gap-2 align-items-start">
-                            <div class="flex-grow-1">
-                                <label class="form-label" for="last-name">Last Name</label>
-                                <InputText id="last-name" class="form-control"
-                                           @bind-Value="_model.LastName"
-                                           autocomplete="family-name" />
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label" for="email">Email</label>
-                            <InputText id="email" class="form-control"
-                                       @bind-Value="_model.EmailAddress"
-                                       autocomplete="email"
-                                       inputmode="email" />
-                        </div>
-
-                        <div class="mb-4">
-                            <VisibilityToggle Label="Show real name publicly"
-                                              @bind-Value="_model.ShowRealName" />
-                            <VisibilityToggle Label="Show email publicly"
-                                              @bind-Value="_model.ShowEmail" />
-                        </div>
-
-                        <button type="submit"
-                                class="btn btn-primary w-100"
-                                disabled="@(_isSaving || _displayNameAvailable == false)">
-                            @if (_isSaving)
-                            {
-                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                <span>Creating profile&hellip;</span>
-                            }
-                            else
-                            {
-                                <span>Create Profile</span>
-                            }
-                        </button>
-                    </EditForm>
+                    <span>Create account</span>
                 }
-            </div>
-        </div>
+            </button>
+        </EditForm>
+
+        <p class="nn-auth-card__aside">
+            Already have an account? <a href="/login">Sign in</a>.
+        </p>
     </div>
 </div>
 
 @code {
-    private string DisplayNameCssClass => _displayNameAvailable switch
-    {
-        true => "form-control is-valid",
-        false => "form-control is-invalid",
-        _ => "form-control"
-    };
-
     private RegisterModel _model = new();
     private string _errorMessage = "";
-    private bool _hasRegistrationCookie;
-    private string _provider = "";
-    private string _providerUserId = "";
-    private bool? _displayNameAvailable;
-    private bool _checkingName;
-    private bool _isSaving;
-    private System.Timers.Timer? _debounceTimer;
+    private string _successMessage = "";
+    private bool _isSubmitting;
 
-    protected override void OnInitialized()
+    private async Task HandleSubmitAsync()
     {
-        // TODO(WP-08): wire email/password registration flow.
-        // ExternalLoginHandler removed in WP-01; temp-cookie pattern replaced by
-        // email/password form in WP-08/WP-09.
-        _hasRegistrationCookie = true;
+        // TODO(WP-08): wire IAuthService.RegisterAsync(...) -- scaffolds only in WP-07.
+        _isSubmitting = true;
+        await Task.CompletedTask;
+        _isSubmitting = false;
     }
-
-    private void OnDisplayNameInput(ChangeEventArgs e)
-    {
-        _model.DisplayName = e.Value?.ToString() ?? "";
-        _displayNameAvailable = null;
-        _debounceTimer?.Dispose();
-
-        if (_model.DisplayName.Length >= 2)
-        {
-            _debounceTimer = new System.Timers.Timer(400);
-            _debounceTimer.Elapsed += async (_, _) =>
-            {
-                _debounceTimer?.Dispose();
-                await InvokeAsync(CheckDisplayNameAsync);
-            };
-            _debounceTimer.AutoReset = false;
-            _debounceTimer.Start();
-        }
-    }
-
-    private async Task CheckDisplayNameAsync()
-    {
-        _checkingName = true;
-        StateHasChanged();
-        try
-        {
-            _displayNameAvailable = await PlayerService.IsDisplayNameAvailableAsync(_model.DisplayName);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "Failed to check display name availability.");
-        }
-        finally
-        {
-            _checkingName = false;
-            StateHasChanged();
-        }
-    }
-
-    private async Task HandleRegister()
-    {
-        if (!_hasRegistrationCookie)
-        {
-            _errorMessage = "Registration session expired. Please sign in again.";
-            return;
-        }
-
-        _isSaving = true;
-        _errorMessage = "";
-
-        try
-        {
-            var player = await PlayerService.RegisterAsync(
-                _model.DisplayName,
-                _provider,
-                _providerUserId);
-
-            // Apply optional profile update
-            var hasOptional = _model.FirstName is not null
-                || _model.LastName is not null
-                || _model.EmailAddress is not null;
-
-            if (hasOptional)
-            {
-                var update = new PlayerProfileUpdate(
-                    DisplayName: null,
-                    EmailAddress: _model.EmailAddress,
-                    PhoneNumber: null,
-                    FirstName: _model.FirstName,
-                    MiddleName: null,
-                    LastName: _model.LastName,
-                    Visibility: new ProfileVisibility
-                    {
-                        RealName = _model.ShowRealName,
-                        EmailAddress = _model.ShowEmail,
-                        Avatar = true
-                    });
-
-                await PlayerService.UpdateProfileAsync(player.PlayerId, update);
-            }
-
-            // Clear temp cookie and redirect to sign-in.
-            // For OAuth providers we bounce through /login to re-run the external
-            // handshake (provider session still live). For mock mode we sign the
-            // user in directly via the mock endpoint.
-            // TODO(WP-08): post-registration redirect logic (email verification flow).
-            Navigation.NavigateTo("/login", forceLoad: true);
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = ex.Message;
-            Logger.LogWarning(ex, "Registration failed for display name {DisplayName}.", _model.DisplayName);
-        }
-        finally
-        {
-            _isSaving = false;
-        }
-    }
-
-    public void Dispose() => _debounceTimer?.Dispose();
 
     private sealed class RegisterModel
     {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Display name is required.")]
-        [System.ComponentModel.DataAnnotations.StringLength(32, MinimumLength = 2, ErrorMessage = "Display name must be 2–32 characters.")]
-        [System.ComponentModel.DataAnnotations.RegularExpression(@"^[a-zA-Z0-9_-]+$", ErrorMessage = "Only letters, numbers, underscores, and hyphens allowed.")]
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Display name is required.")]
+        [StringLength(32, MinimumLength = 2, ErrorMessage = "Display name must be 2-32 characters.")]
+        [RegularExpression(@"^[a-zA-Z0-9_-]+$", ErrorMessage = "Only letters, numbers, underscores, and hyphens.")]
         public string DisplayName { get; set; } = "";
 
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-        public string? EmailAddress { get; set; }
-        public bool ShowRealName { get; set; }
-        public bool ShowEmail { get; set; }
+        [Required(ErrorMessage = "Password is required.")]
+        [StringLength(128, MinimumLength = 10, ErrorMessage = "Password must be at least 10 characters.")]
+        public string Password { get; set; } = "";
+
+        [Required(ErrorMessage = "Please confirm your password.")]
+        [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
+        public string ConfirmPassword { get; set; } = "";
     }
 }

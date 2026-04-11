@@ -1,45 +1,120 @@
-@inject NavigationManager Navigation
+@*
+    UserMenu — sidebar-footer user block.
+    -----------------------------------------------------------------
+    Two states:
+      * NotAuthorized: a compact "Sign in" primary button + a muted
+        "Create account" link, sized to fit inside the sidebar footer.
+      * Authorized: an avatar + display name trigger that toggles a
+        dropdown popping UP above the block (because it lives at the
+        bottom of the sidebar). Menu items: View profile, Edit profile,
+        Settings, Sign out (the last is a form POST with antiforgery).
+
+    Dropdown state is a single bool. Click outside closes it via a
+    full-viewport "catcher" element. Escape key closes it via @onkeydown.
+    No JS interop.
+*@
 
 <AuthorizeView>
     <Authorized Context="authContext">
         @{
             var displayName = authContext.User.Identity?.Name ?? "Player";
             var avatarUrl = authContext.User.FindFirst(ClaimNames.AvatarUrl)?.Value;
-            var playerIdStr = authContext.User.FindFirst(ClaimNames.PlayerId)?.Value;
         }
-        <div class="dropdown">
-            <button class="btn btn-link nav-link dropdown-toggle d-flex align-items-center gap-2 text-light"
-                    type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                    aria-label="User menu for @displayName">
-                <AvatarImage AvatarUrl="@avatarUrl" DisplayName="@displayName" SizePx="32" />
-                <span class="d-none d-lg-inline">@displayName</span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                @if (!string.IsNullOrEmpty(playerIdStr))
-                {
-                    <li>
-                        <a class="dropdown-item" href="/players/me">
-                            Profile
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="/stats/me">
-                            My Stats
-                        </a>
-                    </li>
-                }
-                <li><hr class="dropdown-divider" /></li>
-                <li>
-                    <form method="post" action="/logout">
+
+        @if (_dropdownOpen)
+        {
+            @* Transparent full-viewport backdrop catches outside clicks. *@
+            <div class="nn-user__backdrop"
+                 role="presentation"
+                 @onclick="Close"></div>
+        }
+
+        <div class="nn-user @(_dropdownOpen ? "nn-user--open" : string.Empty)"
+             @onkeydown="HandleKeyDown">
+
+            @if (_dropdownOpen)
+            {
+                <div class="nn-user__menu"
+                     role="menu"
+                     aria-label="User menu">
+                    <a class="nn-user__item"
+                       role="menuitem"
+                       href="players/me"
+                       @onclick="Close">
+                        View profile
+                    </a>
+                    <a class="nn-user__item"
+                       role="menuitem"
+                       href="players/me/edit"
+                       @onclick="Close">
+                        Edit profile
+                    </a>
+                    <a class="nn-user__item"
+                       role="menuitem"
+                       href="settings"
+                       @onclick="Close">
+                        Settings
+                    </a>
+                    <div class="nn-user__divider" role="separator"></div>
+                    <form method="post" action="logout" class="nn-user__signout-form">
                         <AntiforgeryToken />
-                        <button type="submit" class="dropdown-item">Sign out</button>
+                        <button type="submit"
+                                role="menuitem"
+                                class="nn-user__item nn-user__item--danger">
+                            Sign out
+                        </button>
                     </form>
-                </li>
-            </ul>
+                </div>
+            }
+
+            <button type="button"
+                    class="nn-user__trigger"
+                    aria-haspopup="menu"
+                    aria-expanded="@(_dropdownOpen ? "true" : "false")"
+                    aria-label="User menu for @displayName"
+                    @onclick="Toggle"
+                    @onclick:stopPropagation="true">
+
+                <AvatarImage AvatarUrl="@avatarUrl"
+                             DisplayName="@displayName"
+                             SizePx="40" />
+
+                <span class="nn-user__name">@displayName</span>
+
+                <img src="@(_dropdownOpen
+                            ? "icons/phosphor/regular/caret-down.svg"
+                            : "icons/phosphor/regular/caret-up.svg")"
+                     alt=""
+                     role="presentation"
+                     class="nn-user__caret" />
+            </button>
         </div>
     </Authorized>
+
+    <NotAuthorized>
+        <div class="nn-user__signin">
+            <a href="login" class="btn btn-primary nn-user__signin-btn">
+                Sign in
+            </a>
+            <a href="register" class="nn-user__signin-link">
+                Create account
+            </a>
+        </div>
+    </NotAuthorized>
 </AuthorizeView>
 
 @code {
-    // Intentionally thin — all logic is handled via AuthorizeView + ClaimNames.
+    private bool _dropdownOpen;
+
+    private void Toggle() => _dropdownOpen = !_dropdownOpen;
+
+    private void Close() => _dropdownOpen = false;
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && _dropdownOpen)
+        {
+            _dropdownOpen = false;
+        }
+    }
 }
