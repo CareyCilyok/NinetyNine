@@ -1,8 +1,8 @@
 # NinetyNine Smoke Test Checklist
 
-<!-- markdownlint-disable MD024 -->
-<!-- Checklists naturally repeat subsection names like "Prerequisites" -->
-<!-- across multiple top-level sections; that is a feature, not a bug. -->
+<!-- markdownlint-disable MD024 MD040 MD060 -->
+<!-- MD024: checklists naturally repeat subsection names like "Prerequisites". -->
+<!-- MD040/MD060: cosmetic — code fences and table column alignment. -->
 
 Executed against: __________  (local / staging / prod)
 Date: __________
@@ -410,6 +410,65 @@ Result: __________  (PASS / FAIL / BLOCKED)
 
 ---
 
+### 17. Friends end-to-end (Sprint 1)
+
+*First sprint that ships user-facing UI for Friends. Exercises the full send-accept-decline-cancel lifecycle plus the sidebar badge, the Home card, and the seeded pre-befriended state.*
+
+#### Prerequisites
+
+- Stack running via `./deploy.sh up`.
+- Signed in as `carey` via the mock picker (`http://localhost:8080/mock/signin-as?displayName=carey`).
+
+#### 17.1 — Seeded pre-befriended friends
+
+- [ ] Navigate to `/friends` (or tap the sidebar **Friends** link).
+- [ ] Verify: the Friends tab is active by default.
+- [ ] Verify: the friends list shows **carey_b** and **george**, sorted alphabetically. Each row has an avatar (initials), display name, and a "Remove" button.
+- [ ] Verify: the tab badge next to "Friends" shows `2`.
+- [ ] Verify: the sidebar **Friends** nav link shows no pending-request badge (count is 0).
+
+#### 17.2 — Send a friend request from the Find tab
+
+- [ ] Open a second browser window (private / different profile) and sign in as **george** via `http://localhost:8080/mock/signin-as?displayName=george`. *(Needed because we don't yet have a fourth seeded player to friend fresh.)*
+- [ ] Return to the `carey` window. First **remove** `george` from Friends (so we can re-friend via the UI). Confirm the Friends list drops to just `carey_b`.
+- [ ] Click **Find friends** tab.
+- [ ] Type `george` into the search box and click **Search**.
+- [ ] Verify: one result card shows `george` with the appropriate chip. Since you just unfriended, the relationship should read `None` and the action button should be **Send request**.
+- [ ] Click **Send request**.
+- [ ] Verify: the browser redirects to `/friends?tab=requests&flash=sent` with the success banner "Friend request sent."
+- [ ] Verify: the **Outgoing** section lists george with a **Cancel** button.
+
+#### 17.3 — Accept the request from the other account
+
+- [ ] Switch to the `george` window.
+- [ ] Verify: the **Home** page renders a prominent **Friend requests** card above the "Jump back in" grid with "1 pending" and a preview row showing `carey`.
+- [ ] Verify: the sidebar **Friends** link shows a teal badge with the number `1`.
+- [ ] Click **View all requests**.
+- [ ] Verify: redirected to `/friends?tab=requests`, and the **Incoming** section lists carey with Accept / Decline buttons.
+- [ ] Click **Accept**.
+- [ ] Verify: redirect to `/friends?tab=friends&flash=accepted` with "Friend request accepted."
+- [ ] Verify: carey now appears in george's Friends list.
+
+#### 17.4 — Cancel and decline error paths
+
+- [ ] In the `carey` window, navigate back to `/friends?tab=find`, search for `george` again. Verify the chip now reads **Friends**.
+- [ ] Click **Remove** on george in the Friends tab to unfriend.
+- [ ] Search `george` again and click **Send request**.
+- [ ] Switch to the `george` window, navigate to `/friends?tab=requests`, click **Decline** on the incoming request.
+- [ ] Verify: the Incoming section becomes empty and the flash reads "Friend request declined."
+- [ ] Switch back to the `carey` window, search `george`, try **Send request** a second time.
+- [ ] Verify: the page shows the inline error "This player declined a recent friend request. You can try again later." (the 90-day `FriendRequestCooldown`).
+
+#### 17.5 — Rate-limit message
+
+- [ ] Sign into 11 non-existent target accounts would require data setup — skip unless you want to validate the `10-outbound-pending` cap. *(Unit test `Max10PendingOutbound_BlocksEleventh` covers this path automatically.)*
+
+#### 17.6 — No visible regression
+
+- [ ] Navigate through `/games`, `/stats`, `/venues`, `/players/me` — verify none of the Sprint 0 / existing pages have layout regressions from the new sidebar item or cascading badge.
+
+---
+
 ## Cross-Browser Results Table
 
 Run the complete checklist (sections 1–15) three times — once per browser — and record the result for each section.
@@ -463,4 +522,3 @@ An automated in-process HTTP smoke test (`tests/NinetyNine.Web.Tests/SmokeTests.
 3. The existing `NinetyNine.Web.Tests.csproj` targets `net10.0` and uses `bUnit` but does not currently reference `Microsoft.AspNetCore.Mvc.Testing`. Adding it without a running Mongo instance would cause all startup-dependent tests to fail.
 
 **Recommended path forward (future WP):** Add `public partial class Program {}` at the end of `Program.cs`, reference `Microsoft.AspNetCore.Mvc.Testing` in the Web test project, and implement a `CustomWebApplicationFactory` that replaces `INinetyNineDbContext` with a Testcontainers-backed Mongo fixture (consistent with the pattern already used in `NinetyNine.Repository.Tests` and `NinetyNine.Services.Tests`). Route smoke tests — asserting 200/302 on all §8.3 routes — can then be implemented with approximately 30–40 lines of xUnit code and run in CI without a browser.
-
