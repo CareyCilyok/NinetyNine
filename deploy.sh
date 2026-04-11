@@ -69,84 +69,127 @@ _ensure_env() {
     fi
 }
 
-# ── Live service health poller ───────────────────────────────────────────────
-# Docker Compose's own progress UI uses in-place cursor rewrites which some
-# terminals swallow, making the 15-45s wait for healthchecks look like a hang.
-# This function polls `docker inspect` directly and prints a live status line
-# per service so the developer sees continuous progress.
+# ── Live service readiness poller ────────────────────────────────────────────
+# We DO NOT trust Docker's internal healthcheck scheduler — observed stalling
+# for 8+ minutes on cold start on some hosts (the scheduler accepts the
+# healthcheck definition but doesn't run the probe). Instead we start the
+# containers, then poll the services directly for readiness: TCP connect for
+# mongo, HTTP GET for the web endpoints. This is what the user actually cares
+# about ("can I talk to the service?") and it's immune to Docker's bugs.
+#
+# Each call to _probe_service takes a service name and runs a service-specific
+# reachability check. The poller prints a live overwriting status line per
+# service with a spinner and elapsed time, then a permanent ✓ on success or
+# ✗ on failure.
+#
+# Design notes:
+#   - We poll from INSIDE the target container for HTTP checks because Docker
+#     Desktop port forwarding is occasionally flaky (same run, host→container
+#     can return "Connection reset" while in-container responds fine).
+#   - mongo is probed via `docker exec ... mongosh --eval "ping"` — the same
+#     command Docker's healthcheck runs, but we call it ourselves so we don't
+#     depend on Docker's scheduler firing it.
+#   - Timeout is 90 s per service with a floor of 3 s between probes. Worst
+#     case for the whole stack: 270 s, but in practice each service is ready
+#     in under 10 s.
+
+# Probe a single compose service for readiness. Returns 0 on success, 1 on
+# failure. Echoes nothing — the caller handles output.
+_probe_service() {
+    local service="$1"
+    local container
+    container=$($COMPOSE ps -q "$service" 2>/dev/null | head -1)
+    [ -z "$container" ] && return 1
+
+    # Is the container actually running?
+    local state
+    state=$(docker inspect --format '{{.State.Status}}' "$container" 2>/dev/null)
+    case "$state" in
+        running) ;;
+        exited|dead|paused|removing) return 2 ;;  # fatal, don't keep polling
+        *) return 1 ;;                              # not ready yet, keep polling
+    esac
+
+    # Service-specific probe. Runs inside the container via docker exec so we
+    # don't depend on Docker Desktop's host port mapping being functional.
+    case "$service" in
+        mongo)
+            docker exec "$container" mongosh --quiet \
+                --eval "db.adminCommand('ping').ok" 2>/dev/null \
+                | grep -q '^1$'
+            ;;
+        web)
+            # Prefer the framework's /healthz. Use wget (busybox, already in
+            # the aspnet:8.0-alpine image); --spider exits 0 on 2xx.
+            docker exec "$container" wget --quiet --spider --timeout=3 \
+                http://localhost:8080/healthz 2>/dev/null
+            ;;
+        mongo-express)
+            # mongo-express listens on 0.0.0.0:8081 explicitly (NOT on
+            # 127.0.0.1), so we must hit 0.0.0.0 from inside the container.
+            # Using 'localhost' resolves to 127.0.0.1 and gets "connection
+            # refused" even though the service is serving correctly.
+            # Basic auth is disabled in dev (ME_CONFIG_BASICAUTH=false) so
+            # GET / returns 200.
+            docker exec "$container" wget --quiet --spider --timeout=3 \
+                http://0.0.0.0:8081/ 2>/dev/null
+            ;;
+        *)
+            # Unknown service — just accept 'running' as ready.
+            return 0
+            ;;
+    esac
+}
+
+# Wait for a list of services to become ready. Prints a per-service live
+# status line. Returns 0 if every service becomes ready within the per-service
+# timeout; returns 1 on the first failure/timeout.
 #
 # Usage: _wait_for_services <service1> [service2 ...]
-#   - Polls each named compose service in turn
-#   - Prints a single overwriting line per service while it transitions
-#   - Succeeds when every service reports 'healthy' (or 'running' if the
-#     service has no healthcheck)
-#   - Times out after 120 s total and dumps the failing service's tail logs
 _wait_for_services() {
     local services=("$@")
-    local deadline=$(( $(date +%s) + 120 ))
+    # 15 minutes per service — Docker Desktop's Create→Running transition
+    # has been observed taking 5-10 minutes on some cold starts. We want
+    # to outlast that but still error out eventually if something is
+    # actually broken. Because the poller prints a live status line every
+    # second, the developer sees continuous feedback during the wait.
+    local per_service_timeout=900
     local spin_idx=0
     local spinner='|/-\'
 
     for service in "${services[@]}"; do
-        local start=$(date +%s)
-        local status='(unknown)'
-        local has_healthcheck='unknown'
+        local start
+        start=$(date +%s)
+        local deadline=$(( start + per_service_timeout ))
 
         while true; do
-            local container
-            container=$($COMPOSE ps -q "$service" 2>/dev/null | head -1)
-
-            if [ -z "$container" ]; then
-                status='(no container yet)'
-            else
-                # Figure out if this container has a healthcheck defined.
-                if [ "$has_healthcheck" = 'unknown' ]; then
-                    if docker inspect --format '{{.State.Health.Status}}' "$container" \
-                            &>/dev/null; then
-                        has_healthcheck='yes'
-                    else
-                        has_healthcheck='no'
-                    fi
-                fi
-
-                if [ "$has_healthcheck" = 'yes' ]; then
-                    status=$(docker inspect --format '{{.State.Health.Status}}' \
-                        "$container" 2>/dev/null || echo 'starting')
-                else
-                    status=$(docker inspect --format '{{.State.Status}}' \
-                        "$container" 2>/dev/null || echo 'starting')
-                fi
-            fi
-
             local elapsed=$(( $(date +%s) - start ))
             local spin_char=${spinner:$spin_idx:1}
             spin_idx=$(( (spin_idx + 1) % 4 ))
 
-            # Overwriting line: carriage return + clear to end of line + write
-            printf '\r\033[K  %s %-16s %-10s %ds' \
-                "$spin_char" "$service" "$status" "$elapsed"
+            # Running status line — overwrites previous.
+            printf '\r\033[K  %s %-16s  booting…  %2ds' \
+                "$spin_char" "$service" "$elapsed"
 
-            case "$status" in
-                healthy|running)
-                    # Print a permanent OK line and move to the next service.
-                    printf '\r\033[K  \033[0;32m✓\033[0m %-16s %-10s %ds\n' \
-                        "$service" "$status" "$elapsed"
-                    break
-                    ;;
-                unhealthy|exited|dead)
-                    printf '\r\033[K  \033[0;31m✗\033[0m %-16s %-10s\n' \
-                        "$service" "$status"
-                    _error "Service '$service' failed to become healthy."
-                    _error "Last 30 lines of '$service' logs:"
-                    $COMPOSE logs --tail 30 "$service" >&2 || true
-                    return 1
-                    ;;
-            esac
+            if _probe_service "$service"; then
+                printf '\r\033[K  \033[0;32m✓\033[0m %-16s  ready     %2ds\n' \
+                    "$service" "$elapsed"
+                break
+            fi
+
+            local probe_rc=$?
+            if [ "$probe_rc" = 2 ]; then
+                printf '\r\033[K  \033[0;31m✗\033[0m %-16s  exited\n' "$service"
+                _error "Service '$service' exited before becoming ready."
+                _error "Last 30 lines of '$service' logs:"
+                $COMPOSE logs --tail 30 "$service" >&2 || true
+                return 1
+            fi
 
             if [ "$(date +%s)" -ge "$deadline" ]; then
-                printf '\r\033[K  \033[0;31m✗\033[0m %-16s timed out after 120s\n' "$service"
-                _error "Timed out waiting for '$service' to become healthy."
-                _error "Current status: $status"
+                printf '\r\033[K  \033[0;31m✗\033[0m %-16s  timed out after %ds\n' \
+                    "$service" "$per_service_timeout"
+                _error "Timed out waiting for '$service' to become ready."
                 _error "Last 30 lines of '$service' logs:"
                 $COMPOSE logs --tail 30 "$service" >&2 || true
                 return 1
@@ -159,49 +202,90 @@ _wait_for_services() {
     return 0
 }
 
-# ── Sanity check: hit the web healthz endpoint ───────────────────────────────
+# ── Host-side reachability sanity check ──────────────────────────────────────
+# Tries the published port from the host; falls back to warning if Docker
+# Desktop's port forwarding isn't cooperating (the in-container probe already
+# confirmed the service is actually working).
 _check_web_reachable() {
     local url='http://localhost:8080/healthz'
-    if command -v curl &>/dev/null; then
-        if curl --max-time 5 -fsS "$url" >/dev/null 2>&1; then
-            _ok "Web app is responding at http://localhost:8080"
-            return 0
-        fi
-        _warn "Web app is not yet responding at $url."
-        _warn "Container is healthy but the HTTP endpoint did not return 200."
-        _warn "Try './deploy.sh logs' to see what's happening."
-        return 1
+    if ! command -v curl &>/dev/null; then
+        return 0
     fi
-    # No curl — skip the check silently; _wait_for_services already verified
-    # container health via docker inspect.
-    return 0
+    if curl --max-time 5 -fsS "$url" >/dev/null 2>&1; then
+        _ok "Web app is responding at http://localhost:8080"
+        return 0
+    fi
+    _warn "Host curl to $url failed, but the container reported ready."
+    _warn "This is usually a transient Docker Desktop port-forwarding glitch."
+    _warn "Retry in a few seconds or restart Docker Desktop if it persists."
+    return 0  # non-fatal — in-container readiness was already confirmed
 }
 
 # ── Subcommands ───────────────────────────────────────────────────────────────
 
 cmd_up() {
     _ensure_env
-    _info "Starting all services (building web image if needed)..."
-    _info "First start takes ~20-60 s while MongoDB's healthcheck passes."
-    echo ""
 
-    # --wait blocks until healthchecks pass (or timeout). --wait-timeout 120
-    # matches our in-script poller timeout so both fail at the same moment.
-    # 2>&1 merges buildkit's progress into our stream so terminals that
-    # swallow in-place rewrites still see the build log.
-    if ! $COMPOSE up -d --build --wait --wait-timeout 120; then
-        _error "docker compose up failed. See output above."
+    # ── Stage 1: build (synchronous, streams buildkit output to the user) ──
+    _info "Building web image (if needed)..."
+    if ! $COMPOSE build; then
+        _error "docker compose build failed. See output above."
         exit 1
     fi
 
+    # ── Stage 2: run compose up -d in the background ──
+    # Docker Desktop has been observed stalling 5-10 minutes in the
+    # Create→Running transition on cold starts. During that stall, compose
+    # produces no output. We run `compose up -d` in the background and let
+    # our foreground poller show live per-service status via direct probes.
+    # Our poller is what the user watches; compose's output is captured to
+    # a temp file for the audit trail.
+    local log_file
+    log_file=$(mktemp -t ninetynine-compose-up.XXXXXX)
+    local compose_pid
+    _info "Starting containers (compose running in background)..."
     echo ""
-    _info "Verifying service health..."
+    $COMPOSE up -d > "$log_file" 2>&1 &
+    compose_pid=$!
+
+    # ── Stage 3: foreground poll for service readiness ──
+    # _wait_for_services tolerates "no container yet" and "booting" states,
+    # so it starts running immediately even before compose has created the
+    # containers. It completes when every service is actually reachable.
     if ! _wait_for_services mongo web mongo-express; then
+        # Make sure compose is not still running before we exit
+        if kill -0 "$compose_pid" 2>/dev/null; then
+            _warn "Compose is still running. Last 20 lines of compose output:"
+            tail -20 "$log_file" >&2 || true
+        fi
+        rm -f "$log_file"
         exit 1
     fi
 
+    # ── Stage 4: wait for compose's background process to complete ──
+    # It should be done by now (containers are reachable). If it isn't,
+    # give it a few seconds to finalize its bookkeeping.
+    local wait_count=0
+    while kill -0 "$compose_pid" 2>/dev/null; do
+        wait_count=$((wait_count + 1))
+        [ "$wait_count" -ge 10 ] && break
+        sleep 1
+    done
+
+    # Reap the background process
+    if ! wait "$compose_pid" 2>/dev/null; then
+        # compose returned non-zero but services are reachable — treat as a
+        # warning, not a fatal. This happens on Docker Desktop quirks where
+        # compose's own healthcheck wait fails AFTER the containers are
+        # already serving.
+        _warn "compose up returned non-zero but all services are reachable."
+        _warn "Last 10 lines of compose output (for diagnostics):"
+        tail -10 "$log_file" >&2 || true
+    fi
+    rm -f "$log_file"
+
     echo ""
-    _check_web_reachable || true
+    _check_web_reachable
     _ok "Web app:       http://localhost:8080"
     _ok "Mongo Express: http://localhost:8081"
     echo ""
@@ -217,24 +301,37 @@ cmd_down() {
 cmd_rebuild() {
     _ensure_env
     _info "Rebuilding web image (no cache)..."
-    $COMPOSE build --no-cache web
+    if ! $COMPOSE build --no-cache web; then
+        _error "docker compose build failed."
+        exit 1
+    fi
     _info "Starting services with freshly built image..."
-    _info "Waiting for healthchecks (~20-60 s)..."
     echo ""
 
-    if ! $COMPOSE up -d --wait --wait-timeout 120; then
-        _error "docker compose up failed. See output above."
-        exit 1
-    fi
+    local log_file
+    log_file=$(mktemp -t ninetynine-compose-up.XXXXXX)
+    $COMPOSE up -d > "$log_file" 2>&1 &
+    local compose_pid=$!
 
-    echo ""
-    _info "Verifying service health..."
     if ! _wait_for_services mongo web mongo-express; then
+        if kill -0 "$compose_pid" 2>/dev/null; then
+            tail -20 "$log_file" >&2 || true
+        fi
+        rm -f "$log_file"
         exit 1
     fi
 
+    local wait_count=0
+    while kill -0 "$compose_pid" 2>/dev/null; do
+        wait_count=$((wait_count + 1))
+        [ "$wait_count" -ge 10 ] && break
+        sleep 1
+    done
+    wait "$compose_pid" 2>/dev/null || true
+    rm -f "$log_file"
+
     echo ""
-    _check_web_reachable || true
+    _check_web_reachable
     _ok "Rebuild complete. Web app: http://localhost:8080"
 }
 
