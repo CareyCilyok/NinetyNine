@@ -47,6 +47,16 @@ WORKDIR /app
 # Copy only the published output — no SDK, no source code.
 COPY --from=build /app/publish .
 
+# ── Data Protection key ring directory ───────────────────────────────────────
+# ASP.NET Core Data Protection persists its key ring here. Created with ownership
+# matching the non-root $APP_UID user so the app can write keys at startup.
+# Mount a volume at this path in compose to survive container rebuilds — without
+# persistence every rebuild regenerates the key ring and invalidates all existing
+# browser cookies (auth + antiforgery). The path is matched by the configuration
+# in Program.cs (Directory.CreateDirectory(dataProtectionKeysPath)).
+RUN mkdir -p /var/ninetynine/keys \
+    && chown -R $APP_UID:$APP_UID /var/ninetynine
+
 # ── Runtime configuration ─────────────────────────────────────────────────────
 # Bind to non-privileged port 8080 so the container runs without NET_BIND_SERVICE
 # capability. The reverse-proxy / compose port mapping handles 80 -> 8080.

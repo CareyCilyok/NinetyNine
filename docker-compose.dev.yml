@@ -40,6 +40,14 @@ services:
       mongo:
         condition: service_healthy
 
+    volumes:
+      # Persist ASP.NET Core Data Protection keys across container rebuilds so
+      # existing browser cookies (auth cookie, antiforgery cookie) remain
+      # decryptable. Without this, rebuilding the web image regenerates the
+      # key ring and every stale cookie triggers an antiforgery validation
+      # failure until the user clears their browser state and re-authenticates.
+      - dp_keys:/var/ninetynine/keys
+
     healthcheck:
       test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/healthz || exit 1"]
       interval: 30s
@@ -101,3 +109,8 @@ volumes:
     # No driver options — uses the default local driver.
     # Remove with `docker compose -f docker-compose.dev.yml down -v` or
     # use `./deploy.sh clean` which prompts for confirmation first.
+  dp_keys:
+    # ASP.NET Core Data Protection key ring. Shared across rebuilds of the web
+    # image so antiforgery and auth cookies don't get invalidated on every
+    # ./deploy.sh rebuild. Remove with `./deploy.sh clean` to force a fresh
+    # key ring (and log all users out).

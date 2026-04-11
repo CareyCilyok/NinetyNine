@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
@@ -19,6 +20,21 @@ using ServicesIEmailSender = NinetyNine.Services.Auth.IEmailSender;
 BsonConfiguration.Register();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── Data Protection ───────────────────────────────────────────────────────────
+// Persist the Data Protection key ring to a stable directory so auth and
+// antiforgery cookies remain decryptable across container rebuilds. Without
+// this, every rebuild generates a fresh key ring and all existing browser
+// cookies fail to decrypt (manifests as "antiforgery token could not be
+// decrypted" errors on form submission). The directory is mounted from a
+// named Docker volume in docker-compose.dev.yml. SetApplicationName pins the
+// keys to this app even if multiple apps share the same volume.
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"]
+    ?? (OperatingSystem.IsWindows() ? @"C:\ninetynine\keys" : "/var/ninetynine/keys");
+Directory.CreateDirectory(dataProtectionKeysPath);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+    .SetApplicationName("NinetyNine");
 
 // ── Razor / Blazor ────────────────────────────────────────────────────────────
 builder.Services.AddRazorComponents()

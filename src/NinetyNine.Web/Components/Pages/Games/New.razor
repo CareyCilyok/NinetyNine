@@ -137,21 +137,28 @@
         _isSaving = true;
         _errorMessage = "";
 
+        Game game;
         try
         {
-            var game = await GameService.StartNewGameAsync(
+            game = await GameService.StartNewGameAsync(
                 _playerId.Value,
                 Guid.Parse(_model.VenueId),
                 _model.TableSize);
-
-            Navigation.NavigateTo($"/games/{game.GameId}/play");
         }
         catch (Exception ex)
         {
             _errorMessage = "Failed to start the game. Please try again.";
             Logger.LogWarning(ex, "Failed to start new game for player {PlayerId}.", _playerId);
             _isSaving = false;
+            return;
         }
+
+        // NavigateTo from a static SSR form handler throws NavigationException
+        // as the signal-to-redirect mechanism. It MUST escape this method
+        // uncaught so Blazor's infrastructure can convert it into a 302
+        // redirect. Wrapping it in a try/catch (Exception) would swallow the
+        // redirect and leave the user on the form page with a generic error.
+        Navigation.NavigateTo($"/games/{game.GameId}/play");
     }
 
     private sealed class NewGameModel
