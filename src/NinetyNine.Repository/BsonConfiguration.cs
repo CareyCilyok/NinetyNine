@@ -50,6 +50,14 @@ public static class BsonConfiguration
         RegisterVenueClassMap();
         RegisterGameClassMap();
         RegisterFrameClassMap();
+
+        // Friends + Communities (Sprint 0 S0.3 — plan docs/plans/friends-communities-v1.md)
+        RegisterFriendshipClassMap();
+        RegisterFriendRequestClassMap();
+        RegisterCommunityClassMap();
+        RegisterCommunityMembershipClassMap();
+        RegisterCommunityInvitationClassMap();
+        RegisterCommunityJoinRequestClassMap();
     }
 
     private static void RegisterPlayerClassMap()
@@ -134,6 +142,128 @@ public static class BsonConfiguration
             cm.UnmapProperty(f => f.FrameScore);
             cm.UnmapProperty(f => f.IsValidScore);
             cm.UnmapProperty(f => f.IsPerfectFrame);
+        });
+    }
+
+    // ── Friends + Communities class maps (Sprint 0 S0.3) ────────────────
+    // All new entities use string-encoded Guid ids so Mongo tooling
+    // (mongo-express, mongosh) can display them cleanly and so joins to
+    // the existing Player / Venue collections serialize identically.
+
+    private static void RegisterFriendshipClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(Friendship))) return;
+
+        BsonClassMap.RegisterClassMap<Friendship>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(f => f.FriendshipId));
+            cm.GetMemberMap(f => f.FriendshipId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(f => f.PlayerAId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(f => f.PlayerBId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(f => f.InitiatedByPlayerId)
+              .SetSerializer(new NullableSerializer<Guid>(
+                  new GuidSerializer(BsonType.String)));
+        });
+    }
+
+    private static void RegisterFriendRequestClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(FriendRequest))) return;
+
+        BsonClassMap.RegisterClassMap<FriendRequest>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(r => r.RequestId));
+            cm.GetMemberMap(r => r.RequestId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(r => r.FromPlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(r => r.ToPlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+        });
+    }
+
+    private static void RegisterCommunityClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(Community))) return;
+
+        BsonClassMap.RegisterClassMap<Community>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(c => c.CommunityId));
+            cm.GetMemberMap(c => c.CommunityId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(c => c.OwnerPlayerId)
+              .SetSerializer(new NullableSerializer<Guid>(
+                  new GuidSerializer(BsonType.String)));
+            cm.GetMemberMap(c => c.OwnerVenueId)
+              .SetSerializer(new NullableSerializer<Guid>(
+                  new GuidSerializer(BsonType.String)));
+            cm.GetMemberMap(c => c.CreatedByPlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+        });
+    }
+
+    private static void RegisterCommunityMembershipClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(CommunityMembership))) return;
+
+        BsonClassMap.RegisterClassMap<CommunityMembership>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(m => m.MembershipId));
+            cm.GetMemberMap(m => m.MembershipId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(m => m.CommunityId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(m => m.PlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(m => m.InvitedByPlayerId)
+              .SetSerializer(new NullableSerializer<Guid>(
+                  new GuidSerializer(BsonType.String)));
+        });
+    }
+
+    private static void RegisterCommunityInvitationClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(CommunityInvitation))) return;
+
+        BsonClassMap.RegisterClassMap<CommunityInvitation>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(i => i.InvitationId));
+            cm.GetMemberMap(i => i.InvitationId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(i => i.CommunityId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(i => i.InvitedPlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(i => i.InvitedByPlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+        });
+    }
+
+    private static void RegisterCommunityJoinRequestClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(CommunityJoinRequest))) return;
+
+        BsonClassMap.RegisterClassMap<CommunityJoinRequest>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(r => r.RequestId));
+            cm.GetMemberMap(r => r.RequestId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(r => r.CommunityId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(r => r.PlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(r => r.DecidedByPlayerId)
+              .SetSerializer(new NullableSerializer<Guid>(
+                  new GuidSerializer(BsonType.String)));
         });
     }
 
