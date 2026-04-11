@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@inject IFriendService FriendService
+@inject IHttpContextAccessor HttpContextAccessor
 
 @*
     MainLayout — application shell.
@@ -12,8 +14,15 @@
     Auth state is cascaded globally via Program.cs
     (AddCascadingAuthenticationState), so no <CascadingAuthenticationState>
     wrapper is needed here.
+
+    Pending-friend-request count is computed once per render from
+    IFriendService and exposed to NavMenu and UserMenu via a
+    CascadingValue so both can render badges without duplicating the
+    Mongo round trip. See docs/plans/friends-communities-v1.md
+    Sprint 1 S1.3.
 *@
 
+<CascadingValue Value="_pendingFriendRequestCount" Name="PendingFriendRequestCount">
 <div class="nn-layout @(_sidebarOpen ? "nn-layout--sidebar-open" : string.Empty)">
 
     @* Hamburger — visible only on mobile via scoped CSS. *@
@@ -72,6 +81,7 @@
         </footer>
     </main>
 </div>
+</CascadingValue>
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
@@ -81,8 +91,20 @@
 
 @code {
     private bool _sidebarOpen;
+    private int _pendingFriendRequestCount;
 
     private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 
     private void CloseSidebar() => _sidebarOpen = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var viewerId))
+            return;
+
+        var incoming = await FriendService.ListIncomingRequestsAsync(viewerId);
+        _pendingFriendRequestCount = incoming.Count;
+    }
 }

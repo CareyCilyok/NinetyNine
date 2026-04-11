@@ -51,6 +51,19 @@
                     </a>
                     <a class="nn-user__item"
                        role="menuitem"
+                       href="friends"
+                       @onclick="Close">
+                        Friends
+                        @if (PendingFriendRequestCount > 0)
+                        {
+                            <span class="nn-user__item-badge"
+                                  aria-label="@($"{PendingFriendRequestCount} pending")">
+                                @PendingFriendRequestCount
+                            </span>
+                        }
+                    </a>
+                    <a class="nn-user__item"
+                       role="menuitem"
                        href="settings"
                        @onclick="Close">
                         Settings
@@ -105,6 +118,14 @@
 
 @code {
     private bool _dropdownOpen;
+
+    /// <summary>
+    /// Cascaded from <c>MainLayout</c>. Matches <c>NavMenu.PendingFriendRequestCount</c>
+    /// so both the sidebar nav item and the user-menu item show the same
+    /// badge count without duplicating the Mongo round trip.
+    /// </summary>
+    [CascadingParameter(Name = "PendingFriendRequestCount")]
+    public int PendingFriendRequestCount { get; set; }
 
     private void Toggle() => _dropdownOpen = !_dropdownOpen;
 

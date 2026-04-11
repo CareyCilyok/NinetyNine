@@ -31,6 +31,26 @@
 
     <li class="nn-nav__item">
         <NavLink class="nn-nav__link"
+                 href="friends"
+                 Match="NavLinkMatch.Prefix"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/users-three.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">Friends</span>
+            @if (PendingFriendRequestCount > 0)
+            {
+                <span class="nn-nav__badge"
+                      aria-label="@($"{PendingFriendRequestCount} pending friend request(s)")">
+                    @PendingFriendRequestCount
+                </span>
+            }
+        </NavLink>
+    </li>
+
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
                  href="games/new"
                  Match="NavLinkMatch.Prefix"
                  @onclick="HandleNavigate">
@@ -102,6 +122,14 @@
     /// </summary>
     [Parameter]
     public EventCallback OnNavigate { get; set; }
+
+    /// <summary>
+    /// Cascaded from <c>MainLayout</c>. Computed once per render so the
+    /// Friends nav item (and UserMenu) can render their badge without
+    /// hitting IFriendService twice per page load. See Sprint 1 S1.3.
+    /// </summary>
+    [CascadingParameter(Name = "PendingFriendRequestCount")]
+    public int PendingFriendRequestCount { get; set; }
 
     private async Task HandleNavigate()
     {
