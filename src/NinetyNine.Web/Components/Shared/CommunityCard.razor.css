@@ -1,0 +1,109 @@
+.nn-community-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-4);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color var(--nn-transition-fast),
+                transform var(--nn-transition-fast),
+                box-shadow var(--nn-transition-fast);
+    min-height: 100%;
+}
+
+.nn-community-card:hover {
+    border-color: var(--nn-accent-teal);
+    box-shadow: var(--nn-shadow-md);
+    transform: translateY(-1px);
+}
+
+.nn-community-card:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+}
+
+.nn-community-card__header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--nn-space-2);
+}
+
+.nn-community-card__name {
+    flex: 1 1 auto;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nn-community-card__pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    border: 1px solid var(--nn-border-default);
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-secondary);
+    flex-shrink: 0;
+}
+
+.nn-community-card__pill--public {
+    color: var(--nn-accent-teal);
+    border-color: var(--nn-accent-teal);
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.08);
+}
+
+.nn-community-card__pill--private {
+    color: var(--nn-text-tertiary);
+    border-color: var(--nn-border-default);
+}
+
+.nn-community-card__pill--member {
+    color: var(--nn-text-on-accent);
+    background-color: var(--nn-accent-teal);
+    border-color: var(--nn-accent-teal);
+}
+
+.nn-community-card__description {
+    color: var(--nn-text-secondary);
+    font-size: 0.9375rem;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.nn-community-card__meta {
+    display: flex;
+    gap: var(--nn-space-3);
+    align-items: center;
+    color: var(--nn-text-tertiary);
+    font-size: 0.8125rem;
+    margin-top: auto;
+}
+
+.nn-community-card__meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-1);
+}
+
+.nn-community-card__meta-icon {
+    width: 14px;
+    height: 14px;
+    filter: invert(65%);
+}

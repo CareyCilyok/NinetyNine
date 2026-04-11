@@ -1,0 +1,101 @@
+.nn-communities-page {
+    display: flex;
+    justify-content: center;
+    padding: var(--nn-space-6) var(--nn-space-4);
+    min-height: calc(100vh - var(--nn-navbar-height));
+}
+
+.nn-communities-page__inner {
+    width: 100%;
+    max-width: 56rem;
+}
+
+.nn-communities-page__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--nn-space-4);
+    margin-bottom: var(--nn-space-6);
+}
+
+.nn-communities-page__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-communities-page__subtitle {
+    color: var(--nn-text-secondary);
+    margin: 0;
+}
+
+.nn-communities-page__create-btn {
+    flex-shrink: 0;
+}
+
+.nn-communities-page__flash {
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-communities-page__section {
+    margin-bottom: var(--nn-space-7);
+}
+
+.nn-communities-page__section-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--nn-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-communities-page__section-empty {
+    color: var(--nn-text-tertiary);
+    font-style: italic;
+}
+
+.nn-communities-page__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: var(--nn-space-3);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nn-communities-page__grid-item {
+    display: flex;
+}
+
+.nn-communities-page__search-row {
+    display: flex;
+    gap: var(--nn-space-2);
+    align-items: stretch;
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-communities-page__search-row .form-control {
+    flex: 1 1 auto;
+}
+
+.nn-communities-page__empty {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-7) var(--nn-space-6);
+    text-align: center;
+    box-shadow: var(--nn-shadow-md);
+}
+
+@media (max-width: 575px) {
+    .nn-communities-page__header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nn-communities-page__create-btn {
+        width: 100%;
+    }
+}

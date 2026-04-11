@@ -1,0 +1,47 @@
+@* Compact card preview of a community. Used on the /communities list
+   (my + browse), on the detail page for "other communities this venue
+   belongs to" in later sprints, and on profile pages.
+   See docs/plans/friends-communities-v1.md Sprint 2 S2.3. *@
+
+<a href="/communities/@Community.CommunityId" class="nn-community-card">
+    <div class="nn-community-card__header">
+        <h3 class="nn-community-card__name">@Community.Name</h3>
+        @if (ShowVisibility)
+        {
+            <span class="nn-community-card__pill @(Community.Visibility == CommunityVisibility.Private
+                ? "nn-community-card__pill--private"
+                : "nn-community-card__pill--public")"
+                  role="status">
+                @(Community.Visibility == CommunityVisibility.Private ? "Private" : "Public")
+            </span>
+        }
+        @if (IsMember)
+        {
+            <span class="nn-community-card__pill nn-community-card__pill--member" role="status">
+                Member
+            </span>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Community.Description))
+    {
+        <p class="nn-community-card__description">@Community.Description</p>
+    }
+
+    <div class="nn-community-card__meta">
+        <span class="nn-community-card__meta-item">
+            <img src="icons/phosphor/regular/users-three.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-community-card__meta-icon" />
+            @MemberCount @(MemberCount == 1 ? "member" : "members")
+        </span>
+    </div>
+</a>
+
+@code {
+    [Parameter, EditorRequired] public Community Community { get; set; } = default!;
+    [Parameter] public bool ShowVisibility { get; set; } = true;
+    [Parameter] public bool IsMember { get; set; }
+    [Parameter] public long MemberCount { get; set; }
+}

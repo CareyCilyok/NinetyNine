@@ -1,0 +1,102 @@
+.nn-community-new {
+    display: flex;
+    justify-content: center;
+    padding: var(--nn-space-6) var(--nn-space-4);
+    min-height: calc(100vh - var(--nn-navbar-height));
+}
+
+.nn-community-new__inner {
+    width: 100%;
+    max-width: 36rem;
+}
+
+.nn-community-new__header {
+    margin-bottom: var(--nn-space-6);
+}
+
+.nn-community-new__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-community-new__subtitle {
+    color: var(--nn-text-secondary);
+    margin-bottom: 0;
+}
+
+.nn-community-new__flash {
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-community-new__form-card {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-6);
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-community-new__field {
+    margin-bottom: var(--nn-space-5);
+    border: 0;
+    padding: 0;
+}
+
+.nn-community-new__field:last-of-type {
+    margin-bottom: 0;
+}
+
+.nn-community-new__visibility {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+    margin-top: var(--nn-space-2);
+}
+
+.nn-community-new__visibility-option {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-3);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    cursor: pointer;
+    transition: border-color var(--nn-transition-fast),
+                background-color var(--nn-transition-fast);
+}
+
+.nn-community-new__visibility-option:hover {
+    border-color: var(--nn-accent-teal);
+    background-color: var(--nn-bg-tertiary);
+}
+
+.nn-community-new__visibility-label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-1);
+    color: var(--nn-text-primary);
+}
+
+.nn-community-new__visibility-help {
+    color: var(--nn-text-tertiary);
+    font-size: 0.875rem;
+}
+
+.nn-community-new__actions {
+    display: flex;
+    gap: var(--nn-space-3);
+    margin-top: var(--nn-space-5);
+}
+
+.nn-community-new__submit {
+    min-height: var(--nn-touch-target);
+    flex: 1 1 auto;
+}
+
+@media (max-width: 575px) {
+    .nn-community-new__actions {
+        flex-direction: column-reverse;
+    }
+}

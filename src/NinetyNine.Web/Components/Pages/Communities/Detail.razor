@@ -1,0 +1,238 @@
+@page "/communities/{CommunityId:guid}"
+@attribute [Authorize]
+@inject ICommunityService CommunityService
+@inject IPlayerRepository PlayerRepository
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<Detail> Logger
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>
+    @(_community is not null ? $"{_community.Name} — NinetyNine" : "Community — NinetyNine")
+</PageTitle>
+
+<div class="nn-page nn-community-detail">
+    @if (_notFound)
+    {
+        <div class="nn-community-detail__not-found">
+            <h1 class="nn-community-detail__not-found-title">Community not found</h1>
+            <p class="nn-community-detail__not-found-body">
+                This community does not exist, or it's private and you are not a member.
+            </p>
+            <a href="/communities" class="btn btn-primary">Back to communities</a>
+        </div>
+    }
+    else if (_community is null)
+    {
+        <div class="nn-community-detail__loading" aria-live="polite" aria-busy="true">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Loading&hellip;
+        </div>
+    }
+    else
+    {
+        <div class="nn-community-detail__inner">
+            @if (!string.IsNullOrEmpty(_flashSuccess))
+            {
+                <div class="alert alert-success nn-community-detail__flash" role="status">
+                    @_flashSuccess
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_flashError))
+            {
+                <div class="alert alert-danger nn-community-detail__flash" role="alert">
+                    @_flashError
+                </div>
+            }
+
+            <header class="nn-community-detail__header">
+                <div class="nn-community-detail__header-info">
+                    <div class="nn-community-detail__title-row">
+                        <h1 class="nn-community-detail__title">@_community.Name</h1>
+                        <span class="nn-community-detail__pill @(_community.Visibility == CommunityVisibility.Private
+                            ? "nn-community-detail__pill--private"
+                            : "nn-community-detail__pill--public")">
+                            @(_community.Visibility == CommunityVisibility.Private ? "Private" : "Public")
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_community.Description))
+                    {
+                        <p class="nn-community-detail__description">@_community.Description</p>
+                    }
+                    <p class="nn-community-detail__meta">
+                        @_memberCount @(_memberCount == 1 ? "member" : "members")
+                    </p>
+                </div>
+
+                <div class="nn-community-detail__actions">
+                    @if (_isOwner)
+                    {
+                        <a href="/communities/@_community.CommunityId/settings"
+                           class="btn btn-ghost btn-sm">Settings</a>
+                    }
+                    else if (_isMember)
+                    {
+                        <EditForm Model="_leaveModel" method="post"
+                                  OnValidSubmit="HandleLeaveAsync"
+                                  FormName="leave-community">
+                            <button type="submit" class="btn btn-ghost btn-sm">Leave community</button>
+                        </EditForm>
+                    }
+                    else if (_community.Visibility == CommunityVisibility.Public)
+                    {
+                        <EditForm Model="_joinModel" method="post"
+                                  OnValidSubmit="HandleJoinAsync"
+                                  FormName="join-community">
+                            <button type="submit" class="btn btn-primary">Join community</button>
+                        </EditForm>
+                    }
+                    else
+                    {
+                        @* Private community the viewer is not a member of — but
+                           the route guard already 404s these, so this branch is
+                           only reachable for private communities visible because
+                           the viewer is in an earlier state we missed. *@
+                        <span class="nn-community-detail__private-note">
+                            Invitation only.
+                        </span>
+                    }
+                </div>
+            </header>
+
+            @* ── Members section ──────────────────────────────────── *@
+            <section class="nn-community-detail__section" aria-label="Members">
+                <h2 class="nn-community-detail__section-title">Members</h2>
+
+                @if (_members.Count == 0)
+                {
+                    <p class="nn-community-detail__section-empty">No members yet.</p>
+                }
+                else
+                {
+                    <ul class="nn-community-detail__members" role="list">
+                        @foreach (var m in _members)
+                        {
+                            <li class="nn-community-detail__member-row" role="listitem">
+                                <PlayerBadge PlayerId="@m.PlayerId"
+                                             DisplayName="@m.DisplayName"
+                                             AvatarUrl="@m.AvatarUrl"
+                                             AvatarSizePx="40" />
+                                <span class="nn-community-detail__member-role">
+                                    @(m.Role == CommunityRole.Owner ? "Owner"
+                                      : m.Role == CommunityRole.Admin ? "Admin"
+                                      : "Member")
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            @* ── Venues tab (empty placeholder — filled by Sprint 3) ── *@
+            <section class="nn-community-detail__section" aria-label="Affiliated venues">
+                <h2 class="nn-community-detail__section-title">Venues</h2>
+                <p class="nn-community-detail__section-empty">
+                    Venue affiliation ships in the next sprint. Stay tuned.
+                </p>
+            </section>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "flash")]
+    public string? Flash { get; set; }
+
+    [SupplyParameterFromForm]
+    private EmptyModel _joinModel { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    private EmptyModel _leaveModel { get; set; } = new();
+
+    private Guid? _viewerId;
+    private Community? _community;
+    private bool _notFound;
+    private bool _isMember;
+    private bool _isOwner;
+    private List<CommunityMemberView> _members = [];
+    private long _memberCount;
+    private string _flashSuccess = "";
+    private string _flashError = "";
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _viewerId = id;
+
+        _flashSuccess = Flash switch
+        {
+            "created" => "Community created.",
+            "joined" => "You joined the community.",
+            "invited" => "Invitation sent.",
+            _ => "",
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_viewerId is null)
+        {
+            Navigation.NavigateTo($"/login?ReturnUrl=/communities/{CommunityId}", forceLoad: true);
+            return;
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _community = await CommunityService.GetForViewerAsync(CommunityId, _viewerId);
+        if (_community is null)
+        {
+            _notFound = true;
+            return;
+        }
+
+        _isMember = await CommunityService.IsMemberAsync(CommunityId, _viewerId!.Value);
+        _isOwner = _community.OwnerType == CommunityOwnerType.Player
+                && _community.OwnerPlayerId == _viewerId;
+        _members = (await CommunityService.ListMembersAsync(CommunityId, _viewerId)).ToList();
+        _memberCount = _members.Count;
+    }
+
+    private async Task HandleJoinAsync()
+    {
+        if (_viewerId is null) return;
+
+        var result = await CommunityService.JoinPublicAsync(CommunityId, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not join the community.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=joined");
+    }
+
+    private async Task HandleLeaveAsync()
+    {
+        if (_viewerId is null) return;
+
+        var result = await CommunityService.LeaveAsync(CommunityId, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not leave the community.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo("/communities?flash=left");
+    }
+
+    private sealed class EmptyModel { }
+}

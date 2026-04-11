@@ -103,6 +103,19 @@
 
     <li class="nn-nav__item">
         <NavLink class="nn-nav__link"
+                 href="communities"
+                 Match="NavLinkMatch.Prefix"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/globe.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">Communities</span>
+        </NavLink>
+    </li>
+
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
                  href="players/me"
                  Match="NavLinkMatch.Prefix"
                  @onclick="HandleNavigate">

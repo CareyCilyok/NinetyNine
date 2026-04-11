@@ -1,0 +1,226 @@
+@page "/communities/new"
+@attribute [Authorize]
+@inject ICommunityService CommunityService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<New> Logger
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Create community &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-community-new">
+    <div class="nn-community-new__inner">
+        <header class="nn-community-new__header">
+            <h1 class="nn-community-new__title">Create a community</h1>
+            <p class="nn-community-new__subtitle">
+                A community groups friends around a place, a league, or a regular game.
+            </p>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger nn-community-new__flash" role="alert">
+                @_errorMessage
+            </div>
+        }
+
+        <div class="nn-community-new__form-card">
+            <EditForm Model="_model" method="post"
+                      OnValidSubmit="HandleSubmitAsync"
+                      FormName="create-community">
+                @* AntiforgeryToken auto-injected by Blazor SSR form handler.
+                   See docs/defects.md DEF-003. *@
+                <DataAnnotationsValidator />
+
+                <div class="nn-community-new__field">
+                    <label class="form-label" for="community-name">
+                        Name
+                        <span class="text-danger" aria-hidden="true">*</span>
+                    </label>
+                    <InputText id="community-name"
+                               class="form-control"
+                               @bind-Value="_model.Name"
+                               placeholder="e.g. Bumpers Regulars"
+                               maxlength="40"
+                               autocomplete="off"
+                               aria-required="true"
+                               aria-describedby="community-name-hint" />
+                    <div id="community-name-hint" class="form-text">
+                        2&ndash;40 characters. Must be unique across the app.
+                    </div>
+                    <ValidationMessage For="() => _model.Name" />
+                </div>
+
+                <div class="nn-community-new__field">
+                    <label class="form-label" for="community-slug">
+                        URL slug
+                        <span class="text-danger" aria-hidden="true">*</span>
+                    </label>
+                    <InputText id="community-slug"
+                               class="form-control"
+                               @bind-Value="_model.Slug"
+                               placeholder="bumpers-regulars"
+                               autocomplete="off"
+                               aria-required="true"
+                               aria-describedby="community-slug-hint" />
+                    <div id="community-slug-hint" class="form-text">
+                        Lowercase letters, numbers, and hyphens. Used in the community's URL.
+                    </div>
+                    <ValidationMessage For="() => _model.Slug" />
+                </div>
+
+                <div class="nn-community-new__field">
+                    <label class="form-label" for="community-description">
+                        Description
+                    </label>
+                    <InputTextArea id="community-description"
+                                   class="form-control"
+                                   @bind-Value="_model.Description"
+                                   rows="3"
+                                   maxlength="500"
+                                   placeholder="What's this community for?" />
+                    <div class="form-text">Optional. Up to 500 characters.</div>
+                </div>
+
+                <fieldset class="nn-community-new__field">
+                    <legend class="form-label">Visibility</legend>
+                    <div class="nn-community-new__visibility">
+                        <label class="nn-community-new__visibility-option">
+                            <InputRadioGroup @bind-Value="_model.Visibility" Name="_model.Visibility">
+                                <InputRadio id="vis-public" Value="@CommunityVisibility.Public" />
+                                <span class="nn-community-new__visibility-label">
+                                    <strong>Public</strong>
+                                    <span class="nn-community-new__visibility-help">
+                                        Anyone can find and join with one click.
+                                    </span>
+                                </span>
+                            </InputRadioGroup>
+                        </label>
+
+                        <label class="nn-community-new__visibility-option">
+                            <InputRadioGroup @bind-Value="_model.Visibility" Name="_model.Visibility">
+                                <InputRadio id="vis-private" Value="@CommunityVisibility.Private" />
+                                <span class="nn-community-new__visibility-label">
+                                    <strong>Private</strong>
+                                    <span class="nn-community-new__visibility-help">
+                                        Hidden from non-members. Join only by invitation or approved request.
+                                    </span>
+                                </span>
+                            </InputRadioGroup>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <div class="nn-community-new__actions">
+                    <button type="submit"
+                            class="btn btn-primary nn-community-new__submit"
+                            disabled="@_isSaving"
+                            aria-busy="@_isSaving.ToString().ToLowerInvariant()">
+                        @if (_isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"
+                                  role="status"
+                                  aria-hidden="true"></span>
+                            <span>Creating&hellip;</span>
+                        }
+                        else
+                        {
+                            <span>Create community</span>
+                        }
+                    </button>
+                    <a href="/communities" class="btn btn-ghost">Cancel</a>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm(FormName = "create-community")]
+    private CreateCommunityModel _model { get; set; } = new();
+
+    private Guid? _viewerId;
+    private string _errorMessage = "";
+    private bool _isSaving;
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _viewerId = id;
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Auto-generate a reasonable default slug from the name on first
+        // render if the user has not typed one yet. This runs per render
+        // so the slug "follows" the name until the user edits it manually.
+        if (!string.IsNullOrWhiteSpace(_model.Name) && string.IsNullOrWhiteSpace(_model.Slug))
+        {
+            _model.Slug = Slugify(_model.Name);
+        }
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (_viewerId is null)
+        {
+            Navigation.NavigateTo("/login?ReturnUrl=/communities/new", forceLoad: true);
+            return;
+        }
+
+        _isSaving = true;
+        _errorMessage = "";
+
+        var result = await CommunityService.CreatePlayerOwnedAsync(
+            _viewerId.Value,
+            _model.Name ?? string.Empty,
+            !string.IsNullOrWhiteSpace(_model.Slug)
+                ? _model.Slug!
+                : Slugify(_model.Name ?? string.Empty),
+            _model.Description,
+            _model.Visibility);
+
+        if (!result.Success)
+        {
+            _errorMessage = result.ErrorMessage ?? "Could not create the community.";
+            _isSaving = false;
+            return;
+        }
+
+        // NavigateTo from a static SSR form handler throws NavigationException
+        // as the signal-to-redirect mechanism — must escape uncaught. See
+        // docs/defects.md DEF-001's related-risks note on New.razor.
+        Navigation.NavigateTo($"/communities/{result.Value!.CommunityId}?flash=created");
+    }
+
+    private static string Slugify(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+        var cleaned = input.Trim().ToLowerInvariant();
+        var chars = cleaned.Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
+        var slug = new string(chars);
+        while (slug.Contains("--")) slug = slug.Replace("--", "-");
+        return slug.Trim('-');
+    }
+
+    private sealed class CreateCommunityModel
+    {
+        [Required(ErrorMessage = "Please enter a name.")]
+        [StringLength(40, MinimumLength = 2,
+            ErrorMessage = "Name must be 2–40 characters.")]
+        public string? Name { get; set; }
+
+        [Required(ErrorMessage = "Please enter a URL slug.")]
+        [RegularExpression(
+            "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            ErrorMessage = "Slug must be lowercase letters, numbers, and hyphens.")]
+        public string? Slug { get; set; }
+
+        [StringLength(500)]
+        public string? Description { get; set; }
+
+        public CommunityVisibility Visibility { get; set; } = CommunityVisibility.Public;
+    }
+}

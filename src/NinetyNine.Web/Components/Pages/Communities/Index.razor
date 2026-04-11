@@ -1,0 +1,184 @@
+@page "/communities"
+@attribute [Authorize]
+@inject ICommunityService CommunityService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<Index> Logger
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Communities &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-communities-page">
+    <div class="nn-communities-page__inner">
+        <header class="nn-communities-page__header">
+            <div>
+                <h1 class="nn-communities-page__title">Communities</h1>
+                <p class="nn-communities-page__subtitle">
+                    Groups around venues, leagues, and regular games.
+                </p>
+            </div>
+            <a href="/communities/new" class="btn btn-primary nn-communities-page__create-btn">
+                Create community
+            </a>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_flashSuccess))
+        {
+            <div class="alert alert-success nn-communities-page__flash" role="status">
+                @_flashSuccess
+            </div>
+        }
+
+        @* ── My communities ────────────────────────────────────────── *@
+        <section class="nn-communities-page__section" aria-label="My communities">
+            <h2 class="nn-communities-page__section-title">My communities</h2>
+
+            @if (_myCommunities.Count == 0)
+            {
+                <div class="nn-empty-state nn-communities-page__empty">
+                    <h3 class="nn-empty-state__heading">You haven't joined any communities</h3>
+                    <p class="nn-empty-state__body">
+                        Browse public communities below, or create your own.
+                    </p>
+                    <a href="/communities/new" class="btn btn-primary">Create community</a>
+                </div>
+            }
+            else
+            {
+                <ul class="nn-communities-page__grid" role="list">
+                    @foreach (var c in _myCommunities)
+                    {
+                        <li class="nn-communities-page__grid-item" role="listitem">
+                            <CommunityCard Community="c"
+                                           ShowVisibility="true"
+                                           MemberCount="@(_myMemberCounts.GetValueOrDefault(c.CommunityId, 0))" />
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        @* ── Browse public ────────────────────────────────────────── *@
+        <section class="nn-communities-page__section" aria-label="Browse public communities">
+            <h2 class="nn-communities-page__section-title">Browse public communities</h2>
+
+            <EditForm Model="_searchModel" method="post"
+                      OnValidSubmit="HandleSearchAsync"
+                      FormName="browse-communities">
+                <div class="nn-communities-page__search-row">
+                    <InputText id="browse-query"
+                               class="form-control"
+                               @bind-Value="_searchModel.Query"
+                               placeholder="Search by name"
+                               autocomplete="off" />
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </EditForm>
+
+            @if (_browseResults.Count == 0)
+            {
+                <p class="nn-communities-page__section-empty">
+                    @(_browseSearched
+                        ? $"No public communities matched \"{_searchModel.Query}\"."
+                        : "No public communities yet.")
+                </p>
+            }
+            else
+            {
+                <ul class="nn-communities-page__grid" role="list">
+                    @foreach (var c in _browseResults)
+                    {
+                        <li class="nn-communities-page__grid-item" role="listitem">
+                            <CommunityCard Community="c"
+                                           ShowVisibility="true"
+                                           MemberCount="@(_browseMemberCounts.GetValueOrDefault(c.CommunityId, 0))"
+                                           IsMember="@_myCommunityIds.Contains(c.CommunityId)" />
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "flash")]
+    public string? Flash { get; set; }
+
+    [SupplyParameterFromForm(FormName = "browse-communities")]
+    private SearchModel _searchModel { get; set; } = new();
+
+    private Guid? _viewerId;
+    private List<Community> _myCommunities = [];
+    private HashSet<Guid> _myCommunityIds = [];
+    private Dictionary<Guid, long> _myMemberCounts = [];
+    private List<Community> _browseResults = [];
+    private Dictionary<Guid, long> _browseMemberCounts = [];
+    private bool _browseSearched;
+    private string _flashSuccess = "";
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _viewerId = id;
+
+        _flashSuccess = Flash switch
+        {
+            "created" => "Community created.",
+            "joined" => "You joined the community.",
+            "left" => "You left the community.",
+            _ => "",
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_viewerId is null)
+        {
+            Navigation.NavigateTo("/login?ReturnUrl=/communities", forceLoad: true);
+            return;
+        }
+
+        _myCommunities = (await CommunityService.ListCommunitiesForPlayerAsync(_viewerId.Value)).ToList();
+        _myCommunityIds = _myCommunities.Select(c => c.CommunityId).ToHashSet();
+
+        // Public browse defaults to the first 20 public communities.
+        _browseResults = (await CommunityService.BrowsePublicAsync(namePrefix: null, limit: 20)).ToList();
+
+        await LoadMemberCountsAsync();
+    }
+
+    private async Task LoadMemberCountsAsync()
+    {
+        _myMemberCounts = new Dictionary<Guid, long>();
+        foreach (var c in _myCommunities)
+        {
+            _myMemberCounts[c.CommunityId] =
+                (await CommunityService.ListMembersAsync(c.CommunityId, _viewerId)).Count;
+        }
+
+        _browseMemberCounts = new Dictionary<Guid, long>();
+        foreach (var c in _browseResults)
+        {
+            _browseMemberCounts[c.CommunityId] =
+                (await CommunityService.ListMembersAsync(c.CommunityId, _viewerId)).Count;
+        }
+    }
+
+    private async Task HandleSearchAsync()
+    {
+        if (_viewerId is null) return;
+        _browseSearched = true;
+        _browseResults = (await CommunityService.BrowsePublicAsync(
+            (_searchModel.Query ?? string.Empty).Trim(),
+            limit: 20)).ToList();
+        await LoadMemberCountsAsync();
+    }
+
+    private sealed class SearchModel
+    {
+        public string? Query { get; set; }
+    }
+}
