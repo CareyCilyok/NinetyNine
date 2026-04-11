@@ -44,7 +44,8 @@
                           method="post"
                           FormName="save-venue"
                           OnValidSubmit="HandleSaveAsync">
-                    <AntiforgeryToken />
+                    @* AntiforgeryToken auto-injected by Blazor SSR form handler.
+                       See docs/defects.md DEF-003. *@
                     <DataAnnotationsValidator />
 
                     <div class="nn-venue-edit__field">
@@ -137,7 +138,8 @@
                               method="post"
                               FormName="delete-venue"
                               OnValidSubmit="HandleDeleteAsync">
-                        <AntiforgeryToken />
+                        @* AntiforgeryToken auto-injected by Blazor SSR form handler.
+                           See docs/defects.md DEF-003. *@
                         <DataAnnotationsValidator />
 
                         @* Hidden VenueId carried through the delete form *@

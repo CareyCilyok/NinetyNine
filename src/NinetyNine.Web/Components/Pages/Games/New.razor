@@ -35,7 +35,8 @@
         {
             <div class="nn-new-page__form-card">
                 <EditForm Model="_model" method="post" OnValidSubmit="HandleSubmitAsync" FormName="new-game">
-                    <AntiforgeryToken />
+                    @* AntiforgeryToken auto-injected by Blazor SSR form handler.
+                       See docs/defects.md DEF-003. *@
                     <DataAnnotationsValidator />
 
                     <div class="nn-new-page__field">

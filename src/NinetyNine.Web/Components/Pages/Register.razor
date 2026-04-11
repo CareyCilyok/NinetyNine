@@ -32,7 +32,8 @@
         else
         {
             <EditForm Model="_model" method="post" OnValidSubmit="HandleSubmitAsync" FormName="register">
-                <AntiforgeryToken />
+                @* AntiforgeryToken auto-injected by Blazor SSR form handler.
+                   See docs/defects.md DEF-003. *@
                 <DataAnnotationsValidator />
 
                 <div class="form-group">

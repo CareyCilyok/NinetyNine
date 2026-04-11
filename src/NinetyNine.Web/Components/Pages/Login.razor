@@ -37,7 +37,10 @@
         }
 
         <EditForm Model="_model" method="post" OnValidSubmit="HandleSubmitAsync" FormName="login">
-            <AntiforgeryToken />
+            @* AntiforgeryToken is injected automatically by the Blazor SSR form
+               handler when EditForm has method="post" + FormName. An explicit
+               <AntiforgeryToken /> would emit a duplicate hidden field and make
+               token validation fail with 400. See docs/defects.md DEF-003. *@
             <DataAnnotationsValidator />
 
             <div class="form-group">

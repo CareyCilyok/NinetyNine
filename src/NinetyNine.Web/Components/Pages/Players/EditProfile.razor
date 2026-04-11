@@ -115,7 +115,8 @@
                       method="post"
                       OnValidSubmit="HandleSubmitAsync"
                       FormName="edit-profile">
-                <AntiforgeryToken />
+                @* AntiforgeryToken auto-injected by Blazor SSR form handler.
+                   See docs/defects.md DEF-003. *@
                 <DataAnnotationsValidator />
 
                 @* Display name *@
