@@ -201,6 +201,16 @@ input[type="datetime-local"],
 input[type="time"],
 select,
 textarea {
+  /* width:100% and box-sizing:border-box are usually inherited from
+     Bootstrap's .form-control rule, but this project does not load
+     Bootstrap CSS — so without declaring them here, inputs fall back
+     to their intrinsic ~20ch default width and sit left-aligned in
+     flex/grid cells, producing visually uneven rows. See
+     docs/defects.md DEF-007. */
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+
   min-height: var(--nn-touch-target);
   background-color: var(--nn-bg-tertiary);
   color: var(--nn-text-primary);
