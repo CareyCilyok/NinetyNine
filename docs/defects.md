@@ -215,20 +215,28 @@ DEF-003 (duplicate antiforgery token) masked this bug during the initial report:
 
 ---
 
-## DEF-005 — New Game: venue dropdown styled unreadably / "corrupted" in the native popup
+## DEF-005 — New Game: venue dropdown chevron SVG tiles horizontally across the control
 
 **Discovered**: 2026-04-11 during Wave 7 manual smoke testing (section 6)
-**Status**: Open — **needs screenshot confirmation from tester to finalize diagnosis**
-**Severity**: Medium — venue is still selectable by keyboard and the first post-DEF-003-fix submission will still accept the chosen value, but the picker is visually unusable in dark mode.
+**Status**: **Fixed** — root cause confirmed from screenshot and resolved.
+**Severity**: Medium — venue was still selectable via keyboard but the chevron row looked like the control was broken.
 **Owner**: frontend
 
 ### Symptom
 
-Tester reports the venue dropdown on `/games/new` appears "corrupted". Exact visual symptom not yet documented (screenshot pending).
+On `/games/new`, the venue `<select>` rendered with a **row of seven-ish tiled chevron carets** stretching across the right two-thirds of the control instead of a single right-aligned chevron. The placeholder text ("-- Select a venue --") was visually overlapped by the leftmost chevron, making the label look garbled.
 
-### Most likely root cause (unconfirmed without screenshot)
+### Root cause (confirmed from screenshot)
 
-[New.razor.css:56-61](src/NinetyNine.Web/Components/Pages/Games/New.razor.css#L56-L61) styles the `<select>` with `background-color: var(--nn-bg-tertiary); color: var(--nn-text-primary);` (dark background, light text). Chromium and Firefox apply these styles to the closed `<select>` control, but **the native popup list of options uses OS-native rendering**, not the CSS from the `<select>` rule. On a dark OS theme the popup may render dark-on-dark (illegible); on a light OS theme the contrast flips unexpectedly when the select is hovered.
+[wwwroot/css/app.css:256-259](src/NinetyNine.Web/wwwroot/css/app.css#L256-L259) set `background-image` for `.form-select` (a custom teal-grey chevron SVG) but did **not** set any of the companion properties that control how a background image is sized and positioned:
+
+- `background-repeat: no-repeat`
+- `background-position: right 0.75rem center`
+- `background-size: 16px 12px`
+- `appearance: none` (so the browser's own native chevron is suppressed)
+- `padding-right: 2.25rem` (so option text doesn't run into the chevron)
+
+In most Blazor project templates these properties arrive via Bootstrap's own `.form-select` rules — but this project does **not** load Bootstrap CSS (verified: `grep -rn "bootstrap"` in `wwwroot/css/` returns no results). The only `.form-select` rules are the ones in `app.css`. With only `background-image` set, `background-repeat` defaults to `repeat`, which tiles the 16×12 chevron SVG across the full width of the control in both directions — producing the "corrupted" visual the tester captured.
 
 The rendered HTML itself is well-formed — two seeded venues render correctly as `<option>` elements with real `Guid` values — so this is not a data or Razor-template bug:
 
@@ -240,32 +248,17 @@ The rendered HTML itself is well-formed — two seeded venues render correctly a
 </select>
 ```
 
-### Alternate hypotheses to check against the screenshot
+### Fix
 
-1. **Native popup contrast inversion** (above) — most likely.
-2. **`<option>` text truncation** if the dropdown is width-constrained by the form card at narrow viewports — [New.razor.css:17](src/NinetyNine.Web/Components/Pages/Games/New.razor.css#L17) sets `max-width: 36rem`.
-3. **Em-dash rendering** — source uses `\u2014` (proper em dash), output renders as `&#x2014;`. Should look fine but a font without an em-dash glyph could show a `.notdef` box.
-4. **CSS-isolation scope markers on `<option>` elements** (`b-yflyr2nfxz`) — cosmetic only, not a rendering bug.
+Add the missing background-* companion properties to the `.form-select` rule in `app.css`. Also set `appearance: none` to suppress the browser's native chevron (which would otherwise render next to the custom one on some platforms) and `padding-right: 2.25rem` so option labels never collide with the chevron.
 
-### Fix options (for hypothesis 1)
+### Why the earlier deferral missed this
 
-1. Drop the custom dark background on `<select>` and rely on `color-scheme: dark` from the document root, which tells the browser to render the native popup in dark mode using OS-dark colors. [Program.cs:143](src/NinetyNine.Web/Program.cs#L143) does not currently include `color-scheme` — confirm the theme layer declares it.
-2. Replace the `<select>` with a custom popover component (significant scope, rejected unless other dropdowns in the app share this pain).
+The initial triage checked `color-scheme`, seed data, and the rendered option HTML and concluded the rendered output was well-formed. It was — the `<select>` element itself is fine. The bug was entirely in the **background-image tiling** of a CSS rule that applied to `.form-select`, which is only visible when looking at the control *visually*. Static HTML inspection could not have caught this.
 
-### Action required
+### Why this wasn't caught earlier in development
 
-Attach a screenshot of the "corrupted" dropdown to this defect before attempting a fix. Without a visual, the diagnosis above is a best guess.
-
-### Investigation summary (2026-04-11, while fixing DEF-002/003/004/006)
-
-Checked the following and found nothing that a speculative fix would clearly improve:
-
-- `color-scheme: dark` **is** declared on `:root` in [wwwroot/css/app.css:42](src/NinetyNine.Web/wwwroot/css/app.css#L42) and [wwwroot/css/theme.css:197](src/NinetyNine.Web/wwwroot/css/theme.css#L197), so hypothesis 1 (native popup contrast inversion from missing `color-scheme`) is ruled out — browsers should already render the popup in dark mode.
-- The seeded venue documents are clean (`Home Table`, `Summerville Billiards`, valid addresses), so it isn't a data defect.
-- Rendered `<option>` HTML is well-formed; no stray attributes that would break the control.
-- No CSS rule anywhere in `wwwroot/css/` or `Components/` explicitly targets `option {…}` — there's no custom style hiding or corrupting the option elements.
-
-**Deferred pending screenshot.** This defect is not blocking any smoke-test step because the venue is still selectable via keyboard (Tab to the select, arrow keys to pick, Enter to confirm) and the underlying form submission works (verified end-to-end during DEF-003 and DEF-004 fixes). Reopen with the screenshot when available, or dismiss as "not reproducible" if the tester can no longer see the original symptom after the DEF-003/004 rebuilds.
+Prior to Wave 5 (dark redesign), the only `<select>` in the app was on a page that used Bootstrap's default chevron, so `background-image` was never overridden. The custom dark-mode chevron was added as a single line in Wave 5 without the supporting properties, which is why the bug only surfaced during the first smoke test that exercised `/games/new` under the new theme. A bUnit test would not catch this — it's purely a rendered-CSS bug.
 
 ---
 

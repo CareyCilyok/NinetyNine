@@ -254,8 +254,21 @@ select:disabled {
 }
 
 .form-select {
-  /* Override Bootstrap's dark-mode select chevron with a teal one */
+  /* Custom dark-mode chevron. Bootstrap's own .form-select rules (which
+     normally set background-repeat/position/size) are not loaded in this
+     project — app.css is the only source — so every background-* property
+     the chevron relies on must be declared explicitly here. Without these,
+     the chevron SVG tiles horizontally across the control, producing a
+     row of repeated carets in place of a single right-aligned chevron.
+     See docs/defects.md DEF-005. */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23848e96'%3E%3Cpath d='M3.204 5L8 10.481 12.796 5H3.204z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  padding-right: 2.25rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 /* Checkbox + radio */
