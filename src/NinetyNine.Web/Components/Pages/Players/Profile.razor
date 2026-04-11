@@ -8,6 +8,7 @@
 @inject IStatisticsService StatisticsService
 @inject IGameRepository GameRepository
 @inject IVenueService VenueService
+@inject ICommunityService CommunityService
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<Profile> Logger
@@ -169,6 +170,39 @@
             }
         </section>
 
+        @* ── 3b. Communities card (Sprint 2 S2.5) ────────────────────────
+           Shows the target player's communities. For privacy, the service
+           layer is responsible for filtering — but since ICommunityService
+           currently has no viewer-scoped "which of this player's communities
+           can I see" query, the page does the filtering inline:
+             * Always include communities where the viewer is also a member.
+             * Include public communities the target belongs to.
+             * Exclude private communities where the viewer is not a member
+               (never reveal private community membership).
+           A v1.2 refactor will fold this into IPlayerService.GetProfileForViewerAsync. *@
+        @if (_visibleCommunities.Count > 0)
+        {
+            <section class="nn-profile-page__card nn-profile-page__communities-card"
+                     aria-label="Communities">
+                <h2 class="nn-profile-page__card-title">Communities</h2>
+                <ul class="nn-profile-page__communities-list" role="list">
+                    @foreach (var c in _visibleCommunities)
+                    {
+                        <li class="nn-profile-page__community-row" role="listitem">
+                            <a href="/communities/@c.CommunityId"
+                               class="nn-profile-page__community-link">
+                                <span class="nn-profile-page__community-name">@c.Name</span>
+                                @if (c.Visibility == CommunityVisibility.Private)
+                                {
+                                    <span class="nn-profile-page__community-pill">Private</span>
+                                }
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+
         @* ── 4. Recent games card ──────────────────────────────────────── *@
         <section class="nn-profile-page__card nn-profile-page__games-card"
                  aria-label="Recent games">
@@ -232,6 +266,7 @@
     private string? _avatarUrl;
     private List<Game> _recentGames = [];
     private Dictionary<Guid, string> _venueNames = new();
+    private List<Community> _visibleCommunities = [];
     private bool _loading = true;
     private bool _isOwnProfile;
 
@@ -308,6 +343,47 @@
             catch (Exception ex)
             {
                 Logger.LogWarning(ex, "Failed to load recent games for player {PlayerId}.", PlayerId);
+            }
+
+            // Communities section (Sprint 2 S2.5). Privacy filter:
+            //   * Own profile: all communities the target belongs to.
+            //   * Other viewer: public communities the target belongs to,
+            //     plus any private community where the viewer is also a
+            //     member. Never reveal private community membership to
+            //     non-members.
+            try
+            {
+                var all = await CommunityService.ListCommunitiesForPlayerAsync(PlayerId);
+                if (_isOwnProfile)
+                {
+                    _visibleCommunities = all.ToList();
+                }
+                else
+                {
+                    var viewer = HttpContextAccessor.HttpContext?.User?.FindFirst(ClaimNames.PlayerId)?.Value;
+                    Guid? viewerId = Guid.TryParse(viewer, out var vid) ? vid : null;
+
+                    var filtered = new List<Community>();
+                    foreach (var c in all)
+                    {
+                        if (c.Visibility == CommunityVisibility.Public)
+                        {
+                            filtered.Add(c);
+                            continue;
+                        }
+                        // Private: only include if the viewer is also a member.
+                        if (viewerId is not null
+                            && await CommunityService.IsMemberAsync(c.CommunityId, viewerId.Value))
+                        {
+                            filtered.Add(c);
+                        }
+                    }
+                    _visibleCommunities = filtered;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to load communities for player {PlayerId}.", PlayerId);
             }
         }
         catch (Exception ex)

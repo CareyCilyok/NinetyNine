@@ -308,6 +308,55 @@
     }
 }
 
+/* ── Communities card (Sprint 2 S2.5) ────────────────────────────────── */
+
+.nn-profile-page__communities-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--nn-space-2);
+}
+
+.nn-profile-page__community-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-2) var(--nn-space-3);
+    background: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    color: var(--nn-text-primary);
+    text-decoration: none;
+    transition: border-color var(--nn-transition-fast),
+                background-color var(--nn-transition-fast);
+}
+
+.nn-profile-page__community-link:hover {
+    border-color: var(--nn-accent-teal);
+    background-color: var(--nn-bg-secondary);
+}
+
+.nn-profile-page__community-name {
+    font-weight: 600;
+    font-size: 0.9375rem;
+}
+
+.nn-profile-page__community-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    background-color: var(--nn-bg-primary);
+    color: var(--nn-text-tertiary);
+    border: 1px solid var(--nn-border-default);
+}
+
 /* ── Reduced motion ──────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
     .nn-profile-page__game-row,
