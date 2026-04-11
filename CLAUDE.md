@@ -120,3 +120,18 @@ The application implements the official Ninety-Nine pool game rules:
 - **Trimming**: Uses `TrimMode=copyused` for Avalonia applications
 - **Debug Tools**: Avalonia.Diagnostics only included in Debug builds
 - **Platform Support**: Configured for Windows, Linux (X11), and macOS
+
+## Friends & Communities (in progress)
+
+An in-progress multi-sprint feature adding mutual friendships, player- and
+venue-owned communities, venue↔community affiliation, and a 4-tier profile
+audience model (`Private` / `Friends` / `Communities` / `Public`). The
+**canonical planning document** is [docs/plans/friends-communities-v1.md](docs/plans/friends-communities-v1.md)
+— fork selections, sprint stories, acceptance criteria, and a changelog live
+there. Keep it in sync with every user-directed scope or fork change.
+
+- **`Audience` enum** — `src/NinetyNine.Model/Player.cs` defines the four-tier enum ordered most-private-first so relationship checks are `relationship >= fieldAudience`. Legacy `bool` `ProfileVisibility` flags are kept one more sprint for read compatibility; the heal pass in `DataSeeder.HealProfileVisibilityAsync` migrates stored values on startup.
+- **New collections** — `friendships`, `friend_requests`, `communities`, `community_members`, plus lazily-created `community_invitations` and `community_join_requests`. Indexes ensured at startup via `NinetyNineDbContext.EnsureIndexes`.
+- **Repositories** — `IFriendshipRepository`, `IFriendRequestRepository`, `ICommunityRepository`, `ICommunityMemberRepository` in `src/NinetyNine.Repository/Repositories/`. Service layer (`IFriendService`, `ICommunityService`) lands in Sprint 1 / Sprint 2 respectively.
+- **Seeded test data** — `DataSeeder.HealProfileVisibilityAsync` runs for every player on every startup; once `SchemaVersion == 2` the pass is a no-op.
+- **Smoke test §16** in `docs/smoke-test-checklist.md` — data-layer-only verification; no UI changes ship in Sprint 0.

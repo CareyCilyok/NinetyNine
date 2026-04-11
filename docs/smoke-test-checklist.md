@@ -1,5 +1,9 @@
 # NinetyNine Smoke Test Checklist
 
+<!-- markdownlint-disable MD024 -->
+<!-- Checklists naturally repeat subsection names like "Prerequisites" -->
+<!-- across multiple top-level sections; that is a feature, not a bug. -->
+
 Executed against: __________  (local / staging / prod)
 Date: __________
 Tester: __________
@@ -339,6 +343,70 @@ Result: __________  (PASS / FAIL / BLOCKED)
 - [ ] **Negative test:** stop the MongoDB container (`docker compose -f docker-compose.dev.yml stop mongo`), then re-request `/healthz`.
 - [ ] Verify: the response is HTTP 503 (Unhealthy) or similar degraded status.
 - [ ] Restart MongoDB (`docker compose -f docker-compose.dev.yml start mongo`) and confirm `/healthz` returns 200 again.
+
+---
+
+### 16. Friends + Communities Foundation Migration (Sprint 0)
+
+*Post-Sprint-0 data-layer verification. No UI changes ship in Sprint 0 — this section verifies the heal pass, new collections, and indexes without touching the browser. Remove or expand this section once Sprint 1 lands the `/friends` page (§17) and Sprint 2 lands `/communities` (§18).*
+
+#### Prerequisites
+
+- Stack running via `./deploy.sh up`.
+- Fresh container logs available (`./deploy.sh logs web`).
+
+#### 16.1 — Visibility heal pass fired on first-after-S0 startup
+
+- [ ] Run `./deploy.sh logs web | grep "Migrated visibility"`.
+- [ ] Verify: one "Migrated visibility for player X" line per seeded player (`carey`, `george`, `carey_b`) on the first startup after S0.5 lands.
+- [ ] Verify: a "Profile visibility heal: migrated N player(s) to SchemaVersion 2." summary line follows.
+
+#### 16.2 — Second startup is a no-op (idempotency)
+
+- [ ] `docker compose -f docker-compose.dev.yml restart web`.
+- [ ] `./deploy.sh logs web | grep -E "Migrated visibility|Profile visibility heal"` (limited to the most recent startup).
+- [ ] Verify: no new "Migrated visibility" lines.
+- [ ] Verify: the only DataSeeder message is "Seed skipped — test players already exist." (no trailing count of heal/migration/venue additions).
+
+#### 16.3 — Audience enum persisted on every player
+
+- [ ] Run:
+
+  ```bash
+  docker exec ninetynine-mongo-1 mongosh \
+    "mongodb://root:devpassword@localhost:27017/NinetyNine?authSource=admin" \
+    --quiet --eval 'db.players.find({}, {displayName:1, schemaVersion:1, visibility:1}).toArray()'
+  ```
+
+- [ ] Verify: every player document has `schemaVersion: 2`.
+- [ ] Verify: every player's `visibility` embeds `emailAudience`, `phoneAudience`, `realNameAudience`, `avatarAudience` fields.
+- [ ] Verify: the locked migration map holds — `emailAudience`, `phoneAudience`, `realNameAudience` are all `"Private"` for the seeded players (they had `false` bool flags); `avatarAudience` is `"Public"`.
+- [ ] Verify: legacy bool fields (`emailAddress`, `phoneNumber`, `realName`, `avatar`) are still present for backward-compat reads (removed in Sprint 3).
+
+#### 16.4 — Four new collections exist with every index
+
+- [ ] Run:
+
+  ```bash
+  docker exec ninetynine-mongo-1 mongosh \
+    "mongodb://root:devpassword@localhost:27017/NinetyNine?authSource=admin" \
+    --quiet --eval '
+      ["friendships","friend_requests","communities","community_members"].forEach(c => {
+        const idxs = db.getCollection(c).getIndexes();
+        print(c + ": " + idxs.length + " indexes");
+      });'
+  ```
+
+- [ ] Verify: `friendships` reports 4 indexes (including `ux_friendships_playerIdsKey` UNIQUE).
+- [ ] Verify: `friend_requests` reports 4 indexes (including `ux_friend_requests_pending_pair` UNIQUE PARTIAL).
+- [ ] Verify: `communities` reports 6 indexes (including `ux_communities_name_ci` UNIQUE with collation and `ux_communities_slug` UNIQUE).
+- [ ] Verify: `community_members` reports 4 indexes (including `ux_community_members_player_community` UNIQUE).
+- [ ] Verify: `venues.getIndexes()` includes `idx_venues_communityId` (sparse).
+
+#### 16.5 — No visible UI change
+
+- [ ] Navigate to `http://localhost:8080/` and sign in as any seeded player via the mock picker.
+- [ ] Verify: every existing smoke-test section (§1–§15) still passes exactly as before. No new nav items, no new pages, no visual regressions. Sprint 0 is pure data layer.
 
 ---
 
