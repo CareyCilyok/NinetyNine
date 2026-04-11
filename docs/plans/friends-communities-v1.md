@@ -1,5 +1,10 @@
 # Friends + Communities — v1.0 → v1.2 Plan
 
+<!-- markdownlint-disable MD060 -->
+<!-- Table column alignment is relaxed for this planning doc: content changes -->
+<!-- frequently and re-aligning pipes every edit is busywork. Rendered output -->
+<!-- is identical; only the raw-source linter cares. -->
+
 **Status:** Accepted 2026-04-11 — Sprint 0 in progress
 **Owner:** Carey
 **Scope:** Add mutual friendships, public/private communities, venue↔community affiliation, and a 4-tier profile audience model to NinetyNine.
@@ -103,7 +108,7 @@ Each sprint is sized ~M (one focused week of solo work). Sprint 0 is a hard prer
 - Public `enum Audience { Private = 0, Friends = 1, Communities = 2, Public = 3 }` in `NinetyNine.Model`
 - XML doc comment on each value restating the locked semantics
 - `ProfileVisibility` class has 4 new `Audience` properties: `EmailAudience`, `PhoneAudience`, `RealNameAudience`, `AvatarAudience`
-- Old `bool` properties are kept temporarily with `[Obsolete("migrating to *Audience — see DEF-008")]` and are NOT removed yet
+- Old `bool` properties are kept temporarily and are NOT removed yet. They carry an XML comment pointing at the new `*Audience` replacement but are **not** marked `[Obsolete]` — `TreatWarningsAsErrors` is enabled on every csproj in this solution, so an `[Obsolete]` attribute would cascade ~20 build errors at every call site (Profile.razor, EditProfile.razor, Login.razor, DataSeeder). The legacy properties will be deleted in Sprint 3 once `GetProfileForViewerAsync` is the single read path. (See changelog 2026-04-11.)
 - Defaults: `EmailAudience = Private`, `PhoneAudience = Private`, `RealNameAudience = Private`, `AvatarAudience = Public`
 
 **Tasks:**
@@ -639,3 +644,4 @@ Every sprint's DB changes are additive (new collections, new fields). No destruc
 | Date | Change | By |
 |---|---|---|
 | 2026-04-11 | Initial plan accepted; Sprint 0 started. Fork selections A–E locked; all open questions answered per "most usable yet privacy-centric" north star. | Carey + Claude synthesis of 5 specialist sub-plans |
+| 2026-04-11 | S0.1 deviation: legacy `ProfileVisibility.{EmailAddress,PhoneNumber,RealName,Avatar}` bool properties are NOT marked `[Obsolete]` despite the plan's acceptance criteria calling for it. `TreatWarningsAsErrors=true` in every csproj would turn ~20 obsolete-usage warnings into build errors at call sites that don't migrate until Sprint 3. XML doc comments now carry the "legacy — use `*Audience`" signal instead. Functionally equivalent; no scope change. | Claude (during S0.1 implementation) |
