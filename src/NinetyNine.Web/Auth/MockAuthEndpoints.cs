@@ -16,25 +16,51 @@ public static class MockAuthEndpoints
 {
     public static void Map(WebApplication app)
     {
-        // Sign in as an existing seeded player by PlayerId.
-        // Example: GET /mock/signin-as?playerId={guid}&returnUrl=/games
+        // Sign in as an existing seeded player by displayName or playerId.
+        // Example: GET /mock/signin-as?displayName=carey&returnUrl=/games
+        // Example: GET /mock/signin-as?playerId={guid}&returnUrl=/games  (backward compat)
         app.MapGet("/mock/signin-as", async (
             HttpContext context,
-            Guid playerId,
+            string? displayName,
+            Guid? playerId,
             string? returnUrl,
             IPlayerRepository playerRepository,
             ILogger<Program> logger) =>
         {
-            var player = await playerRepository.GetByIdAsync(playerId, context.RequestAborted);
-            if (player is null)
+            Player? player;
+
+            if (displayName is not null)
             {
-                logger.LogWarning("Mock signin-as: player {PlayerId} not found.", playerId);
-                return Results.NotFound($"Player {playerId} not found.");
+                if (playerId is not null)
+                    logger.LogWarning(
+                        "Mock signin-as: both displayName and playerId provided; using displayName '{DisplayName}'.",
+                        displayName);
+
+                player = await playerRepository.GetByDisplayNameAsync(displayName, context.RequestAborted);
+                if (player is null)
+                {
+                    logger.LogWarning("Mock signin-as: player with displayName '{DisplayName}' not found.", displayName);
+                    return Results.NotFound($"Player '{displayName}' not found.");
+                }
+            }
+            else if (playerId is not null)
+            {
+                player = await playerRepository.GetByIdAsync(playerId.Value, context.RequestAborted);
+                if (player is null)
+                {
+                    logger.LogWarning("Mock signin-as: player {PlayerId} not found.", playerId);
+                    return Results.NotFound($"Player {playerId} not found.");
+                }
+            }
+            else
+            {
+                return Results.BadRequest("Must provide ?displayName=... or ?playerId=...");
             }
 
             await SignInAsAsync(context, player);
-            logger.LogInformation(
-                "Mock signin: {DisplayName} ({PlayerId})", player.DisplayName, player.PlayerId);
+            logger.LogWarning(
+                "Mock auth is ENABLED — signed in as {DisplayName} ({PlayerId}).",
+                player.DisplayName, player.PlayerId);
 
             return Results.Redirect(SanitizeReturnUrl(returnUrl) ?? "/");
         })

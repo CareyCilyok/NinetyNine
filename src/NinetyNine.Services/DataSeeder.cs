@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using NinetyNine.Model;
 using NinetyNine.Repository.Repositories;
@@ -14,8 +15,15 @@ public sealed class DataSeeder(
     IPlayerRepository playerRepository,
     IVenueRepository venueRepository,
     IGameRepository gameRepository,
-    ILogger<DataSeeder> logger) : IDataSeeder
+    ILogger<DataSeeder> logger,
+    IPasswordHasher<Player> passwordHasher) : IDataSeeder
 {
+    /// <summary>
+    /// Known dev password for all seeded test players. Satisfies all five
+    /// PasswordValidator rules: length ≥10, uppercase, lowercase, digit, symbol.
+    /// </summary>
+    private const string DevPassword = "Test1234!a";
+
     public async Task SeedAsync(CancellationToken ct = default)
     {
         // Idempotent: if any of the test players already exists, assume seeded.
@@ -88,15 +96,14 @@ public sealed class DataSeeder(
             "Seed complete: 3 players, 2 venues, 6 completed games, 1 in-progress game.");
     }
 
-    private static Player CreateTestPlayer(string displayName, string firstName, string? lastName)
-        => new()
+    private Player CreateTestPlayer(string displayName, string firstName, string? lastName)
+    {
+        var player = new Player
         {
             PlayerId = Guid.NewGuid(),
             DisplayName = displayName,
             EmailAddress = $"{displayName}@example.local",
             EmailVerified = true,
-            // TODO(WP-05): hash a known dev password
-            PasswordHash = "",
             FirstName = firstName,
             LastName = lastName,
             Visibility = new ProfileVisibility
@@ -106,6 +113,9 @@ public sealed class DataSeeder(
             },
             CreatedAt = DateTime.UtcNow
         };
+        player.PasswordHash = passwordHasher.HashPassword(player, DevPassword);
+        return player;
+    }
 
     private static Game BuildCompletedGame(
         Player player, Venue venue, int[] frameScores, int daysAgo)

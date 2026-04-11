@@ -1,20 +1,33 @@
 @page "/verify-email"
+@using NinetyNine.Services.Auth
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject ILogger<VerifyEmail> Logger
 
 <PageTitle>Verify email &mdash; NinetyNine</PageTitle>
 
 <div class="nn-page nn-auth-page">
     <div class="nn-auth-card">
         <div class="nn-auth-card__wordmark" aria-hidden="true">NinetyNine</div>
-        <h1 class="nn-auth-card__title">Verifying your email&hellip;</h1>
-        <p class="nn-auth-card__subtitle">Please wait while we confirm your account.</p>
 
-        @if (!string.IsNullOrEmpty(_errorMessage))
+        @if (_isLoading)
         {
-            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+            <h1 class="nn-auth-card__title">Verifying your email&hellip;</h1>
+            <p class="nn-auth-card__subtitle">Please wait while we confirm your account.</p>
+            <div class="nn-verify-spinner" role="status" aria-label="Verifying email"></div>
         }
-        @if (!string.IsNullOrEmpty(_successMessage))
+        else if (!string.IsNullOrEmpty(_successMessage))
         {
+            <h1 class="nn-auth-card__title">Email verified!</h1>
             <div class="alert alert-success" role="alert">@_successMessage</div>
+        }
+        else if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <h1 class="nn-auth-card__title">Verification failed</h1>
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+            <p class="nn-auth-card__subtitle">
+                <a href="/resend-verification">Request a new verification email</a>
+            </p>
         }
 
         <p class="nn-auth-card__aside">
@@ -28,10 +41,41 @@
 
     private string _errorMessage = "";
     private string _successMessage = "";
+    private bool _isLoading = true;
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
-        // TODO(WP-09): call IAuthService.VerifyEmailAsync(Token) and set message accordingly.
-        return Task.CompletedTask;
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            _isLoading = false;
+            _errorMessage = "Missing verification token. Please use the link from your email.";
+            return;
+        }
+
+        try
+        {
+            var result = await AuthService.VerifyEmailAsync(Token);
+            _isLoading = false;
+
+            if (result.Success)
+            {
+                _successMessage = "Your email has been verified. Redirecting to sign in\u2026";
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(2000);
+                    await InvokeAsync(() => Navigation.NavigateTo("/login?verified=1", forceLoad: false));
+                });
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Verification failed. The link may be invalid or expired.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error during email verification for token.");
+            _isLoading = false;
+            _errorMessage = "An unexpected error occurred. Please try again or request a new verification link.";
+        }
     }
 }

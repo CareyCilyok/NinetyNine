@@ -2,10 +2,19 @@
 @inject IConfiguration Configuration
 @inject IPlayerRepository PlayerRepository
 @inject IWebHostEnvironment Environment
+@inject IAuthService AuthService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<Login> Logger
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
 @using NinetyNine.Model
 @using NinetyNine.Repository.Repositories
 @using NinetyNine.Services
+@using NinetyNine.Services.Auth
+@using NinetyNine.Web.Auth
 
 <PageTitle>Sign in &mdash; NinetyNine</PageTitle>
 
@@ -16,10 +25,19 @@
 
         @if (!string.IsNullOrEmpty(_errorMessage))
         {
-            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+            <div class="alert alert-danger" role="alert">
+                @_errorMessage
+                @if (_showResendLink)
+                {
+                    <div class="mt-2">
+                        <a href="/resend-verification" class="alert-link">Resend verification email</a>
+                    </div>
+                }
+            </div>
         }
 
-        <EditForm Model="_model" OnValidSubmit="HandleSubmitAsync">
+        <EditForm Model="_model" method="post" OnValidSubmit="HandleSubmitAsync" FormName="login">
+            <AntiforgeryToken />
             <DataAnnotationsValidator />
 
             <div class="form-group">
@@ -66,7 +84,6 @@
            DEVELOPMENT ONLY — mock auth picker.
            Visible only when Auth:Mock:Enabled = true in appsettings.Development.json.
            This bypasses real authentication for UX prototyping. Removed in production.
-           WP-08 will integrate this section with the real auth flow.
            ================================================================ *@
         @if (IsMockEnabled)
         {
@@ -117,8 +134,14 @@
 </div>
 
 @code {
-    private LoginModel _model = new();
+    [SupplyParameterFromForm(FormName = "login")]
+    private LoginModel _model { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
     private string _errorMessage = "";
+    private bool _showResendLink;
     private bool _isSubmitting;
 
     private List<Player> _mockPlayers = new();
@@ -139,10 +162,44 @@
 
     private async Task HandleSubmitAsync()
     {
-        // TODO(WP-08): wire IAuthService.LoginAsync(...) — scaffolds only in WP-07.
         _isSubmitting = true;
-        await Task.CompletedTask;
-        _isSubmitting = false;
+        _errorMessage = "";
+        _showResendLink = false;
+
+        try
+        {
+            var result = await AuthService.LoginAsync(_model.Email, _model.Password);
+
+            if (result.Success && result.Value is Player player)
+            {
+                var http = HttpContextAccessor.HttpContext!;
+                await AuthEndpoints.SignInPlayerAsync(http, player);
+                Navigation.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
+                return;
+            }
+
+            var error = result.ErrorMessage ?? "Invalid credentials.";
+
+            if (error.Contains("locked", StringComparison.OrdinalIgnoreCase))
+            {
+                _errorMessage = "Too many failed attempts. Try again in 15 minutes.";
+            }
+            else if (error.Contains("verif", StringComparison.OrdinalIgnoreCase))
+            {
+                _errorMessage = "Your email address has not been verified. Please check your inbox.";
+                _showResendLink = true;
+            }
+            else
+            {
+                _errorMessage = "Invalid email or password.";
+            }
+
+            Logger.LogInformation("Login failed for {Email}: {Error}", _model.Email, error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
 
     private sealed class LoginModel

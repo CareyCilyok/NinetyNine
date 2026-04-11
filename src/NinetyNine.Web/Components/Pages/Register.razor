@@ -1,5 +1,9 @@
 @page "/register"
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject ILogger<Register> Logger
 @using System.ComponentModel.DataAnnotations
+@using NinetyNine.Services.Auth
 
 <PageTitle>Create account &mdash; NinetyNine</PageTitle>
 
@@ -15,87 +19,122 @@
         {
             <div class="alert alert-danger" role="alert">@_errorMessage</div>
         }
+
         @if (!string.IsNullOrEmpty(_successMessage))
         {
-            <div class="alert alert-success" role="alert">@_successMessage</div>
-        }
-
-        <EditForm Model="_model" OnValidSubmit="HandleSubmitAsync">
-            <DataAnnotationsValidator />
-
-            <div class="form-group">
-                <label class="form-label" for="email">Email address</label>
-                <InputText id="email" type="email"
-                           class="form-control"
-                           @bind-Value="_model.Email"
-                           autocomplete="email" required
-                           aria-describedby="email-hint" />
-                <ValidationMessage For="() => _model.Email" />
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="display-name">Display name</label>
-                <InputText id="display-name"
-                           class="form-control"
-                           @bind-Value="_model.DisplayName"
-                           autocomplete="username" required
-                           aria-describedby="display-name-hint" />
-                <div id="display-name-hint" class="form-text">2&ndash;32 characters. Letters, numbers, _ and - only.</div>
-                <ValidationMessage For="() => _model.DisplayName" />
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="password">Password</label>
-                <InputText id="password" type="password"
-                           class="form-control"
-                           @bind-Value="_model.Password"
-                           autocomplete="new-password" required
-                           aria-describedby="password-hint" />
-                <div id="password-hint" class="form-text">
-                    At least 10 characters with uppercase, lowercase, digit, and symbol.
+            <div class="alert alert-success" role="alert">
+                @_successMessage
+                <div class="mt-2">
+                    <a href="/login" class="alert-link">Back to sign in</a>
                 </div>
-                <ValidationMessage For="() => _model.Password" />
             </div>
+        }
+        else
+        {
+            <EditForm Model="_model" method="post" OnValidSubmit="HandleSubmitAsync" FormName="register">
+                <AntiforgeryToken />
+                <DataAnnotationsValidator />
 
-            <div class="form-group">
-                <label class="form-label" for="confirm-password">Confirm password</label>
-                <InputText id="confirm-password" type="password"
-                           class="form-control"
-                           @bind-Value="_model.ConfirmPassword"
-                           autocomplete="new-password" required />
-                <ValidationMessage For="() => _model.ConfirmPassword" />
-            </div>
+                <div class="form-group">
+                    <label class="form-label" for="email">Email address</label>
+                    <InputText id="email" type="email"
+                               class="form-control"
+                               @bind-Value="_model.Email"
+                               autocomplete="email" required
+                               aria-describedby="email-hint" />
+                    <ValidationMessage For="() => _model.Email" />
+                </div>
 
-            <button type="submit" class="btn btn-primary w-100" disabled="@_isSubmitting">
-                @if (_isSubmitting)
-                {
-                    <span>Creating account&hellip;</span>
-                }
-                else
-                {
-                    <span>Create account</span>
-                }
-            </button>
-        </EditForm>
+                <div class="form-group">
+                    <label class="form-label" for="display-name">Display name</label>
+                    <InputText id="display-name"
+                               class="form-control"
+                               @bind-Value="_model.DisplayName"
+                               autocomplete="username" required
+                               aria-describedby="display-name-hint" />
+                    <div id="display-name-hint" class="form-text">2&ndash;32 characters. Letters, numbers, _ and - only.</div>
+                    <ValidationMessage For="() => _model.DisplayName" />
+                </div>
 
-        <p class="nn-auth-card__aside">
-            Already have an account? <a href="/login">Sign in</a>.
-        </p>
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <InputText id="password" type="password"
+                               class="form-control"
+                               @bind-Value="_model.Password"
+                               autocomplete="new-password" required
+                               aria-describedby="password-hint" />
+                    <div id="password-hint" class="form-text">
+                        At least 10 characters with uppercase, lowercase, digit, and symbol.
+                    </div>
+                    <ValidationMessage For="() => _model.Password" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirm-password">Confirm password</label>
+                    <InputText id="confirm-password" type="password"
+                               class="form-control"
+                               @bind-Value="_model.ConfirmPassword"
+                               autocomplete="new-password" required />
+                    <ValidationMessage For="() => _model.ConfirmPassword" />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100" disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span>Creating account&hellip;</span>
+                    }
+                    else
+                    {
+                        <span>Create account</span>
+                    }
+                </button>
+            </EditForm>
+
+            <p class="nn-auth-card__aside">
+                Already have an account? <a href="/login">Sign in</a>.
+            </p>
+        }
     </div>
 </div>
 
 @code {
-    private RegisterModel _model = new();
+    [SupplyParameterFromForm(FormName = "register")]
+    private RegisterModel _model { get; set; } = new();
+
     private string _errorMessage = "";
     private string _successMessage = "";
     private bool _isSubmitting;
 
     private async Task HandleSubmitAsync()
     {
-        // TODO(WP-08): wire IAuthService.RegisterAsync(...) -- scaffolds only in WP-07.
         _isSubmitting = true;
-        await Task.CompletedTask;
-        _isSubmitting = false;
+        _errorMessage = "";
+
+        try
+        {
+            var verifyUrlBase = Navigation.BaseUri.TrimEnd('/');
+
+            var result = await AuthService.RegisterAsync(
+                _model.Email,
+                _model.DisplayName,
+                _model.Password,
+                _model.ConfirmPassword,
+                verifyUrlBase);
+
+            if (result.Success)
+            {
+                _successMessage = "Account created. Check your email to verify your account before signing in.";
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Registration failed. Please try again.";
+                Logger.LogInformation("Registration failed for {Email}: {Error}", _model.Email, result.ErrorMessage);
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
 
     private sealed class RegisterModel

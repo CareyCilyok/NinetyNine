@@ -1,5 +1,9 @@
 @page "/resend-verification"
 @using System.ComponentModel.DataAnnotations
+@using NinetyNine.Services.Auth
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject ILogger<ResendVerification> Logger
 
 <PageTitle>Resend verification email &mdash; NinetyNine</PageTitle>
 
@@ -18,7 +22,8 @@
 
         @if (!_submitted)
         {
-            <EditForm Model="_model" OnValidSubmit="HandleSubmitAsync">
+            <EditForm Model="_model" method="post" OnValidSubmit="HandleSubmitAsync" FormName="resend-verification">
+                <AntiforgeryToken />
                 <DataAnnotationsValidator />
 
                 <div class="form-group">
@@ -50,21 +55,33 @@
 </div>
 
 @code {
-    private ResendVerificationModel _model = new();
+    [SupplyParameterFromForm(FormName = "resend-verification")]
+    private ResendVerificationModel _model { get; set; } = new();
+
     private string _successMessage = "";
     private bool _isSubmitting;
     private bool _submitted;
 
     private async Task HandleSubmitAsync()
     {
-        // TODO(WP-08): wire IAuthService.ResendVerificationAsync(...) — scaffolds only in WP-07.
-        // Always show a generic success message regardless of whether the email exists,
-        // to prevent user enumeration.
         _isSubmitting = true;
-        await Task.CompletedTask;
-        _submitted = true;
-        _isSubmitting = false;
-        _successMessage = "If an unverified account with that email exists, a new verification link has been sent. Check your inbox.";
+
+        try
+        {
+            var verifyUrlBase = new Uri(Navigation.BaseUri).GetLeftPart(UriPartial.Authority);
+            await AuthService.ResendVerificationAsync(_model.Email, verifyUrlBase);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error during resend-verification request.");
+        }
+        finally
+        {
+            // Always show the generic message regardless of outcome — no enumeration.
+            _submitted = true;
+            _isSubmitting = false;
+            _successMessage = "If an unverified account with that email exists, a new verification link has been sent. Check your inbox.";
+        }
     }
 
     private sealed class ResendVerificationModel
