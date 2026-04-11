@@ -24,6 +24,83 @@ public sealed class DataSeeder(
     /// </summary>
     private const string DevPassword = "Test1234!a";
 
+    /// <summary>
+    /// Canonical list of seeded venues. Real Huntsville-area venues that
+    /// Carey, George, and friends play at, plus a private home-table entry
+    /// and a handful of nearby venues within about a 100-mile radius of
+    /// Huntsville, AL. The venue reconcile pass inserts any definition
+    /// from this list whose Name is missing from the database, so adding
+    /// a new venue here is a one-line change that takes effect on the
+    /// next app restart.
+    /// </summary>
+    private static readonly (string Name, string Address, string PhoneNumber, bool Private)[] SeededVenueDefinitions =
+    [
+        // Private home table — shared across seeded test players so their
+        // seeded games have a plausible private setting. Real address is
+        // deliberately omitted from dev data.
+        ("Carey's Home Table", "Huntsville, AL", "", true),
+
+        // ── Huntsville, AL — primary play venues ──────────────────────
+        ("Bumpers Billiards of Huntsville",
+         "4925 University Dr NW, Huntsville, AL 35816", "256-721-1495", false),
+
+        // "Steve's Lounge" in the user's ask is the colloquial name;
+        // Yelp/Facebook list it as "Steve's Cue and Grill" (formerly
+        // "Steve's Billiards & Lounge").
+        ("Steve's Cue and Grill",
+         "2322 Memorial Pkwy SW, Huntsville, AL 35801", "256-539-8919", false),
+
+        ("Chips & Salsa Sports Bar & Grill",
+         "10300 Bailey Cove Rd SE Ste 10, Huntsville, AL 35803", "256-880-1202", false),
+
+        ("Good Timez Billiards",
+         "6241 University Dr NW Ste D, Huntsville, AL 35806", "", false),
+
+        // ── Athens, AL (~20 mi from Huntsville) ───────────────────────
+        ("Limestone Legends Billiards",
+         "111 S Marion St, Athens, AL 35611", "256-258-9244", false),
+
+        // ── Decatur, AL (~25 mi) ──────────────────────────────────────
+        ("6 Pockets Billiards",
+         "1819 Bassett Ave SE, Decatur, AL 35601", "256-686-3171", false),
+
+        // ── Scottsboro, AL (~40 mi) ───────────────────────────────────
+        ("Ron's City Billiards",
+         "120 N Broad St, Scottsboro, AL 35768", "", false),
+
+        // ── Florence, AL (~65 mi) ─────────────────────────────────────
+        ("Tennessee Street Billiards & Grill",
+         "118 E Tennessee St, Florence, AL 35630", "", false),
+
+        // ── Birmingham, AL (~100 mi) ──────────────────────────────────
+        // Iron City Billiards is the largest pool hall in Birmingham;
+        // notable APA host venue.
+        ("Iron City Billiards",
+         "800 Gadsden Hwy, Birmingham, AL 35235", "", false),
+        ("All In One Billiards",
+         "4841 Avenue R, Birmingham, AL 35208", "", false),
+        ("The Break",
+         "1001 20th St S, Birmingham, AL 35205", "", false),
+
+        // ── Nashville, TN (~110 mi) ───────────────────────────────────
+        // Melrose Billiard Parlor: iconic Nashville pool hall, est. 1944.
+        ("Melrose Billiard Parlor",
+         "2600 8th Ave S Ste 108, Nashville, TN 37204", "", false),
+
+        // ── Montgomery, AL (~200 mi) ──────────────────────────────────
+        // 8 Ball Billiards: 20+ Diamond tables, across from Eastdale Mall.
+        ("8 Ball Billiards",
+         "163 Eastern Blvd, Montgomery, AL 36117", "334-649-1104", false),
+        ("The Breakroom",
+         "465 Eastern Blvd, Montgomery, AL 36117", "", false),
+
+        // ── Atlanta, GA (~200 mi) ─────────────────────────────────────
+        ("MrCues II Billiards",
+         "3541 Chamblee-Tucker Rd, Atlanta, GA 30341", "", false),
+        ("Yer Mom",
+         "931 Monroe Dr NE Ste 205, Atlanta, GA 30308", "", false),
+    ];
+
     public async Task SeedAsync(CancellationToken ct = default)
     {
         // Heal pass: existing test players whose password hash is empty get
@@ -32,16 +109,26 @@ public sealed class DataSeeder(
         // (their PasswordHash is still "").
         var healed = await HealExistingTestPlayersAsync(ct);
 
+        // Venue reconcile pass: insert any canonical seeded venue whose
+        // Name is missing from the database. Runs on every startup and is
+        // idempotent — existing venues (even with stale addresses from
+        // earlier seed generations) are left alone. This is how new
+        // venues added to SeededVenueDefinitions land in an already-
+        // populated dev database without a full reseed.
+        var addedVenues = await ReconcileSeededVenuesAsync(ct);
+
         // Idempotent creation: if the primary test player already exists,
         // we've already seeded at some point — skip the rest of the seed.
         var existing = await playerRepository.GetByDisplayNameAsync(
             IDataSeeder.TestPlayerDisplayNames[0], ct);
         if (existing is not null)
         {
-            if (healed > 0)
-                logger.LogInformation(
-                    "Seed skipped — test players already exist. Healed {Count} empty password hash(es).",
-                    healed);
+            var parts = new List<string>();
+            if (healed > 0) parts.Add($"healed {healed} test player(s)");
+            if (addedVenues > 0) parts.Add($"added {addedVenues} venue(s)");
+            if (parts.Count > 0)
+                logger.LogInformation("Seed skipped — test players already exist. {Parts}.",
+                    string.Join(", ", parts));
             else
                 logger.LogInformation("Seed skipped — test players already exist.");
             return;
@@ -61,36 +148,27 @@ public sealed class DataSeeder(
         await playerRepository.CreateAsync(george, ct);
         await playerRepository.CreateAsync(careyB, ct);
 
-        // ── Venues ───────────────────────────────────────────────────────────
-        var home = new Venue
-        {
-            Name = "Home Table",
-            Address = "42 Corner Pocket Ln",
-            Private = true
-        };
-        var hall = new Venue
-        {
-            Name = "Summerville Billiards",
-            Address = "123 Rail Ave, Summerville SC",
-            PhoneNumber = "843-555-0199",
-            Private = false
-        };
+        // ── Load the venues we just reconciled so seeded games can
+        //    reference them by name. ─────────────────────────────────────
+        var venuesByName = (await venueRepository.GetAllAsync(includePrivate: true, ct))
+            .ToDictionary(v => v.Name, StringComparer.OrdinalIgnoreCase);
+        var home = venuesByName["Carey's Home Table"];
+        var bumpers = venuesByName["Bumpers Billiards of Huntsville"];
+        var steves = venuesByName["Steve's Cue and Grill"];
+        var chips = venuesByName["Chips & Salsa Sports Bar & Grill"];
 
-        await venueRepository.CreateAsync(home, ct);
-        await venueRepository.CreateAsync(hall, ct);
-
-        // ── Completed games (realistic scatter) ─────────────────────────────
+        // ── Completed games (realistic scatter across real venues) ─────
         // Each int[9] is the frame score per frame (0–11). The seeder splits
         // each into BreakBonus + BallCount by giving break bonus when the
         // frame score is ≥ 3 (roughly matches the break-bonus awarded rate).
         var completedGames = new (Player player, Venue venue, int[] scores, int daysAgo)[]
         {
-            (carey,  hall, [6, 9, 4, 11, 7, 5, 8, 10, 6],  3),
-            (carey,  home, [5, 7, 11, 3, 9, 6, 8, 4, 10],  7),
-            (george, hall, [4, 8, 6, 7, 5, 9, 3, 11, 7],   3),
-            (george, home, [7, 5, 10, 4, 6, 8, 5, 7, 9],  12),
-            (careyB, hall, [3, 6, 8, 5, 7, 4, 9, 6, 5],    3),
-            (careyB, home, [8, 10, 6, 9, 7, 5, 11, 8, 4], 18)
+            (carey,  bumpers, [6, 9, 4, 11, 7, 5, 8, 10, 6],  3),
+            (carey,  home,    [5, 7, 11, 3, 9, 6, 8, 4, 10],  7),
+            (george, steves,  [4, 8, 6, 7, 5, 9, 3, 11, 7],   3),
+            (george, chips,   [7, 5, 10, 4, 6, 8, 5, 7, 9],  12),
+            (careyB, bumpers, [3, 6, 8, 5, 7, 4, 9, 6, 5],    3),
+            (careyB, home,    [8, 10, 6, 9, 7, 5, 11, 8, 4], 18),
         };
 
         foreach (var (player, venue, scores, daysAgo) in completedGames)
@@ -101,11 +179,44 @@ public sealed class DataSeeder(
 
         // ── One in-progress game for Carey (frames 1-3 complete) ────────────
         var inProgress = BuildInProgressGame(
-            carey, hall, completedScores: [7, 4, 9], hoursAgo: 1);
+            carey, bumpers, completedScores: [7, 4, 9], hoursAgo: 1);
         await gameRepository.CreateAsync(inProgress, ct);
 
         logger.LogInformation(
-            "Seed complete: 3 players, 2 venues, 6 completed games, 1 in-progress game.");
+            "Seed complete: 3 players, {VenueCount} venues, 6 completed games, 1 in-progress game.",
+            SeededVenueDefinitions.Length);
+    }
+
+    /// <summary>
+    /// Inserts any canonical seeded venue whose Name is missing from the
+    /// database. Idempotent — venues that already exist are left unchanged
+    /// even if their address or phone differs from the canonical definition
+    /// (so user edits in the UI are preserved). Returns the number of
+    /// venues added.
+    /// </summary>
+    private async Task<int> ReconcileSeededVenuesAsync(CancellationToken ct)
+    {
+        var existingNames = (await venueRepository.GetAllAsync(includePrivate: true, ct))
+            .Select(v => v.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        int added = 0;
+        foreach (var (name, address, phone, isPrivate) in SeededVenueDefinitions)
+        {
+            if (existingNames.Contains(name)) continue;
+
+            var venue = new Venue
+            {
+                Name = name,
+                Address = address,
+                PhoneNumber = phone,
+                Private = isPrivate,
+            };
+            await venueRepository.CreateAsync(venue, ct);
+            added++;
+            logger.LogInformation("Reconciled seeded venue: {Name}", name);
+        }
+        return added;
     }
 
     /// <summary>
