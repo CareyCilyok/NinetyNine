@@ -158,6 +158,23 @@
     flex-shrink: 0;
 }
 
+.nn-community-detail__member-actions {
+    display: flex;
+    gap: var(--nn-space-2);
+    flex-shrink: 0;
+}
+
+.nn-community-detail__invite-row {
+    display: flex;
+    gap: var(--nn-space-2);
+    align-items: stretch;
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-community-detail__invite-row .form-control {
+    flex: 1 1 auto;
+}
+
 @media (max-width: 575px) {
     .nn-community-detail__header {
         flex-direction: column;

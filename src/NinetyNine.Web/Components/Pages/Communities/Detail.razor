@@ -1,6 +1,7 @@
 @page "/communities/{CommunityId:guid}"
 @attribute [Authorize]
 @inject ICommunityService CommunityService
+@inject ICommunityJoinRequestRepository JoinRequestRepository
 @inject IPlayerRepository PlayerRepository
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
@@ -99,6 +100,49 @@
                 </div>
             </header>
 
+            @* ── Owner-only: pending join requests ────────────────── *@
+            @if (_isOwner && _pendingJoinRequests.Count > 0)
+            {
+                <section class="nn-community-detail__section"
+                         aria-label="Pending join requests">
+                    <h2 class="nn-community-detail__section-title">Pending join requests</h2>
+                    <ul class="nn-community-detail__members" role="list">
+                        @foreach (var req in _pendingJoinRequests)
+                        {
+                            var requester = _joinRequesters.GetValueOrDefault(req.PlayerId);
+                            <li class="nn-community-detail__member-row" role="listitem">
+                                <PlayerBadge PlayerId="@req.PlayerId"
+                                             DisplayName="@(requester?.DisplayName ?? "Unknown")"
+                                             AvatarUrl="@(requester?.Avatar is not null ? $"/api/avatars/{req.PlayerId}" : null)"
+                                             AvatarSizePx="40" />
+                                <div class="nn-community-detail__member-actions">
+                                    <EditForm Model="_requestIdModel" method="post"
+                                              OnValidSubmit="HandleApproveJoinAsync"
+                                              FormName="@($"approve-join-{req.RequestId}")">
+                                        <input type="hidden"
+                                               name="_requestIdModel.RequestId"
+                                               value="@req.RequestId" />
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            Approve
+                                        </button>
+                                    </EditForm>
+                                    <EditForm Model="_requestIdModel" method="post"
+                                              OnValidSubmit="HandleDenyJoinAsync"
+                                              FormName="@($"deny-join-{req.RequestId}")">
+                                        <input type="hidden"
+                                               name="_requestIdModel.RequestId"
+                                               value="@req.RequestId" />
+                                        <button type="submit" class="btn btn-ghost btn-sm">
+                                            Deny
+                                        </button>
+                                    </EditForm>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+
             @* ── Members section ──────────────────────────────────── *@
             <section class="nn-community-detail__section" aria-label="Members">
                 <h2 class="nn-community-detail__section-title">Members</h2>
@@ -128,6 +172,31 @@
                 }
             </section>
 
+            @* ── Owner-only: invite a player by display name ────── *@
+            @if (_isOwner)
+            {
+                <section class="nn-community-detail__section"
+                         aria-label="Invite a player">
+                    <h2 class="nn-community-detail__section-title">Invite a player</h2>
+                    <EditForm Model="_inviteModel" method="post"
+                              OnValidSubmit="HandleInviteAsync"
+                              FormName="invite-to-community">
+                        <div class="nn-community-detail__invite-row">
+                            <InputText id="invite-display-name"
+                                       class="form-control"
+                                       @bind-Value="_inviteModel.DisplayName"
+                                       placeholder="Display name"
+                                       autocomplete="off"
+                                       aria-label="Player display name" />
+                            <button type="submit" class="btn btn-primary">Send invite</button>
+                        </div>
+                        <p class="nn-community-detail__section-empty">
+                            Only display names are searched. The recipient will see the invitation in their /friends Requests tab.
+                        </p>
+                    </EditForm>
+                </section>
+            }
+
             @* ── Venues tab (empty placeholder — filled by Sprint 3) ── *@
             <section class="nn-community-detail__section" aria-label="Affiliated venues">
                 <h2 class="nn-community-detail__section-title">Venues</h2>
@@ -151,6 +220,12 @@
     [SupplyParameterFromForm]
     private EmptyModel _leaveModel { get; set; } = new();
 
+    [SupplyParameterFromForm(FormName = "invite-to-community")]
+    private InviteModel _inviteModel { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    private RequestIdModel _requestIdModel { get; set; } = new();
+
     private Guid? _viewerId;
     private Community? _community;
     private bool _notFound;
@@ -158,6 +233,8 @@
     private bool _isOwner;
     private List<CommunityMemberView> _members = [];
     private long _memberCount;
+    private List<CommunityJoinRequest> _pendingJoinRequests = [];
+    private Dictionary<Guid, Player> _joinRequesters = new();
     private string _flashSuccess = "";
     private string _flashError = "";
 
@@ -202,6 +279,89 @@
                 && _community.OwnerPlayerId == _viewerId;
         _members = (await CommunityService.ListMembersAsync(CommunityId, _viewerId)).ToList();
         _memberCount = _members.Count;
+
+        // Owner-only: load pending join requests + preload requester profiles.
+        if (_isOwner)
+        {
+            _pendingJoinRequests =
+                (await JoinRequestRepository.ListPendingByCommunityAsync(CommunityId)).ToList();
+            _joinRequesters = new Dictionary<Guid, Player>();
+            foreach (var req in _pendingJoinRequests)
+            {
+                var p = await PlayerRepository.GetByIdAsync(req.PlayerId);
+                if (p is not null) _joinRequesters[req.PlayerId] = p;
+            }
+        }
+    }
+
+    private async Task HandleInviteAsync()
+    {
+        if (_viewerId is null || string.IsNullOrWhiteSpace(_inviteModel.DisplayName))
+        {
+            _flashError = "Enter a display name to invite.";
+            return;
+        }
+
+        var target = await PlayerRepository.GetByDisplayNameAsync(_inviteModel.DisplayName.Trim());
+        if (target is null)
+        {
+            _flashError = "No player with that display name.";
+            await ReloadAsync();
+            return;
+        }
+
+        var result = await CommunityService.InviteAsync(
+            CommunityId, target.PlayerId, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not send the invitation.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=invited");
+    }
+
+    private async Task HandleApproveJoinAsync()
+    {
+        if (_viewerId is null || _requestIdModel.RequestId == Guid.Empty) return;
+
+        var result = await CommunityService.ApproveJoinRequestAsync(
+            _requestIdModel.RequestId, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not approve the request.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=approved");
+    }
+
+    private async Task HandleDenyJoinAsync()
+    {
+        if (_viewerId is null || _requestIdModel.RequestId == Guid.Empty) return;
+
+        var result = await CommunityService.DenyJoinRequestAsync(
+            _requestIdModel.RequestId, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not deny the request.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=denied");
+    }
+
+    private sealed class InviteModel
+    {
+        public string? DisplayName { get; set; }
+    }
+
+    private sealed class RequestIdModel
+    {
+        public Guid RequestId { get; set; }
     }
 
     private async Task HandleJoinAsync()

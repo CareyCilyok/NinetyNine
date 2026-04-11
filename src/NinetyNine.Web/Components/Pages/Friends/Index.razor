@@ -1,6 +1,9 @@
 @page "/friends"
 @attribute [Authorize]
 @inject IFriendService FriendService
+@inject ICommunityService CommunityService
+@inject ICommunityInvitationRepository InvitationRepository
+@inject ICommunityRepository CommunityRepository
 @inject IPlayerRepository PlayerRepository
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
@@ -102,8 +105,53 @@
         @* ── Tab: Requests ────────────────────────────────────────── *@
         else if (ActiveTab == "requests")
         {
+            @* Community invitations (Sprint 2 S2.4) appear above friend
+               requests so the recipient has one inbox. *@
+            @if (_communityInvitations.Count > 0)
+            {
+                <section class="nn-friends-page__section" aria-label="Community invitations">
+                    <h2 class="nn-friends-page__section-title">Community invitations</h2>
+                    <ul class="nn-friends-page__list" role="list">
+                        @foreach (var inv in _communityInvitations)
+                        {
+                            var community = _invitationCommunities.GetValueOrDefault(inv.CommunityId);
+                            <li class="nn-friends-page__row" role="listitem">
+                                <div class="nn-friends-page__row-who">
+                                    <div class="nn-friends-page__invite-meta">
+                                        <strong>@(community?.Name ?? "Unknown community")</strong>
+                                        <span class="nn-friends-page__invite-type">Community invitation</span>
+                                    </div>
+                                </div>
+                                <div class="nn-friends-page__row-actions">
+                                    <EditForm Model="_invitationIdModel" method="post"
+                                              OnValidSubmit="HandleAcceptInvitationAsync"
+                                              FormName="@($"accept-inv-{inv.InvitationId}")">
+                                        <input type="hidden"
+                                               name="_invitationIdModel.InvitationId"
+                                               value="@inv.InvitationId" />
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            Accept
+                                        </button>
+                                    </EditForm>
+                                    <EditForm Model="_invitationIdModel" method="post"
+                                              OnValidSubmit="HandleDeclineInvitationAsync"
+                                              FormName="@($"decline-inv-{inv.InvitationId}")">
+                                        <input type="hidden"
+                                               name="_invitationIdModel.InvitationId"
+                                               value="@inv.InvitationId" />
+                                        <button type="submit" class="btn btn-ghost btn-sm">
+                                            Decline
+                                        </button>
+                                    </EditForm>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+
             <section class="nn-friends-page__section" aria-label="Incoming requests">
-                <h2 class="nn-friends-page__section-title">Incoming</h2>
+                <h2 class="nn-friends-page__section-title">Incoming friend requests</h2>
 
                 @if (_incoming.Count == 0)
                 {
@@ -291,11 +339,16 @@
     [SupplyParameterFromForm]
     private TargetPlayerIdModel _removeModel { get; set; } = new();
 
+    [SupplyParameterFromForm]
+    private InvitationIdModel _invitationIdModel { get; set; } = new();
+
     private Guid? _viewerId;
     private List<Player> _friends = [];
     private List<FriendRequest> _incoming = [];
     private List<FriendRequest> _outgoing = [];
     private Dictionary<Guid, Player> _requestPartners = new();
+    private List<CommunityInvitation> _communityInvitations = [];
+    private Dictionary<Guid, Community> _invitationCommunities = new();
 
     private List<Player>? _searchResults;
     private Dictionary<Guid, RelationshipState> _searchRelationships = new();
@@ -356,6 +409,45 @@
             var p = await PlayerRepository.GetByIdAsync(id);
             if (p is not null) _requestPartners[id] = p;
         }
+
+        // Community invitations land in the same Requests tab so the
+        // recipient has one inbox for all incoming asks.
+        _communityInvitations = (await InvitationRepository.ListByInviteeAsync(
+            _viewerId.Value, CommunityInvitationStatus.Pending)).ToList();
+        _invitationCommunities = new Dictionary<Guid, Community>();
+        foreach (var inv in _communityInvitations)
+        {
+            var c = await CommunityRepository.GetByIdAsync(inv.CommunityId);
+            if (c is not null) _invitationCommunities[inv.CommunityId] = c;
+        }
+    }
+
+    private async Task HandleAcceptInvitationAsync()
+    {
+        if (_viewerId is null || _invitationIdModel.InvitationId == Guid.Empty) return;
+        var result = await CommunityService.RespondToInvitationAsync(
+            _invitationIdModel.InvitationId, _viewerId.Value, accept: true);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not accept the invitation.";
+            await ReloadAsync();
+            return;
+        }
+        Navigation.NavigateTo("/friends?tab=requests&flash=joined");
+    }
+
+    private async Task HandleDeclineInvitationAsync()
+    {
+        if (_viewerId is null || _invitationIdModel.InvitationId == Guid.Empty) return;
+        var result = await CommunityService.RespondToInvitationAsync(
+            _invitationIdModel.InvitationId, _viewerId.Value, accept: false);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not decline the invitation.";
+            await ReloadAsync();
+            return;
+        }
+        Navigation.NavigateTo("/friends?tab=requests&flash=declined");
     }
 
     // ── Form handlers ───────────────────────────────────────────────────
@@ -463,5 +555,10 @@
     public sealed class RequestIdModel
     {
         public Guid RequestId { get; set; }
+    }
+
+    public sealed class InvitationIdModel
+    {
+        public Guid InvitationId { get; set; }
     }
 }

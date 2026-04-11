@@ -158,6 +158,19 @@
     font-style: italic;
 }
 
+.nn-friends-page__invite-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.nn-friends-page__invite-type {
+    font-size: 0.75rem;
+    color: var(--nn-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
 /* ── Find friends tab ──────────────────────────────────────────────── */
 
 .nn-friends-page__find {
