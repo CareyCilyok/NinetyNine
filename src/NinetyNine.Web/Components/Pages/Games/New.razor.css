@@ -82,10 +82,106 @@
 }
 
 /* ── Table size radio group ──────────────────────────────────────────── */
-.nn-new-page__table-sizes {
-    display: flex;
+/* Segmented-button picker built from native <input type="radio"> inside
+   <label>. Styles duplicated here (scoped to this page) because the
+   original TableSizePicker.razor component relied on @onclick handlers
+   that never fire in static SSR — see docs/defects.md DEF-004. */
+.nn-new-page__table-sizes,
+.nn-picker {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.25rem;
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    box-shadow: var(--nn-shadow-sm);
+    max-width: 100%;
     flex-wrap: wrap;
-    gap: var(--nn-space-2);
+}
+
+.nn-picker__option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: var(--nn-text-primary);
+
+    padding: var(--nn-space-2) var(--nn-space-4);
+    min-height: var(--nn-touch-target);
+    min-width: var(--nn-touch-target);
+
+    font-family: var(--nn-font-sans);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+
+    border-radius: calc(var(--nn-radius-md) - 0.125rem);
+    cursor: pointer;
+    user-select: none;
+
+    transition:
+        background-color var(--nn-transition-fast),
+        color var(--nn-transition-fast),
+        border-color var(--nn-transition-fast),
+        box-shadow var(--nn-transition-fast);
+}
+
+.nn-picker__option:hover:not(.nn-picker__option--selected) {
+    background-color: var(--nn-bg-tertiary);
+}
+
+.nn-picker__option--selected {
+    background-color: var(--nn-accent-teal);
+    color: var(--nn-text-on-accent);
+    border-color: var(--nn-accent-teal-hover);
+    box-shadow: var(--nn-shadow-sm);
+}
+
+.nn-picker__option--selected:hover {
+    background-color: var(--nn-accent-teal-hover);
+    color: var(--nn-text-on-accent);
+}
+
+/* Hide the native radio visually but keep it focusable for keyboard
+   users and form submission. Focus styles move to the parent label. */
+.nn-picker__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.nn-picker__option:focus-within {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+    z-index: 1;
+}
+
+@media (max-width: 480px) {
+    .nn-new-page__table-sizes,
+    .nn-picker {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .nn-picker__option {
+        flex: 1 1 auto;
+        padding: var(--nn-space-2) var(--nn-space-2);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nn-picker__option {
+        transition: none;
+    }
 }
 
 /* ── Submit button ───────────────────────────────────────────────────── */

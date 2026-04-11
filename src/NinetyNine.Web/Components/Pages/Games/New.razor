@@ -62,11 +62,29 @@
 
                     <div class="nn-new-page__field">
                         <label class="form-label nn-new-page__label" id="table-size-label">Table Size</label>
-                        <div class="nn-new-page__table-sizes"
-                             role="group"
-                             aria-labelledby="table-size-label">
-                            <TableSizePicker @bind-Value="_model.TableSize" />
-                        </div>
+                        @* Native <input type="radio"> inside a label gives static SSR
+                           a working segmented picker: the browser handles visual selection
+                           and the form POST carries the chosen TableSize via name="_model.TableSize".
+                           The old <TableSizePicker> component relied on @onclick handlers
+                           which never fire in static SSR — see docs/defects.md DEF-004. *@
+                        <InputRadioGroup @bind-Value="_model.TableSize" Name="_model.TableSize">
+                            <div class="nn-picker nn-new-page__table-sizes"
+                                 role="radiogroup"
+                                 aria-labelledby="table-size-label">
+                                @foreach (var size in _tableSizes)
+                                {
+                                    var inputId = $"table-size-{size}";
+                                    var isSelected = _model.TableSize == size;
+                                    <label class="nn-picker__option @(isSelected ? "nn-picker__option--selected" : null)"
+                                           for="@inputId">
+                                        <InputRadio id="@inputId"
+                                                    Value="@size"
+                                                    class="nn-picker__input" />
+                                        <span>@TableSizeLabel(size)</span>
+                                    </label>
+                                }
+                            </div>
+                        </InputRadioGroup>
                     </div>
 
                     <button type="submit"
@@ -94,6 +112,19 @@
 @code {
     [SupplyParameterFromForm(FormName = "new-game")]
     private NewGameModel _model { get; set; } = new();
+
+    private static readonly TableSize[] _tableSizes = Enum.GetValues<TableSize>()
+        .Where(s => s != TableSize.Unknown)
+        .ToArray();
+
+    private static string TableSizeLabel(TableSize s) => s switch
+    {
+        TableSize.SixFoot   => "6 ft",
+        TableSize.SevenFoot => "7 ft",
+        TableSize.NineFoot  => "9 ft",
+        TableSize.TenFoot   => "10 ft",
+        _                   => s.ToString(),
+    };
 
     private List<Venue> _venues = [];
     private bool _venuesLoaded;
