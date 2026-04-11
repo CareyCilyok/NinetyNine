@@ -1,65 +1,125 @@
 @page "/venues"
-@attribute [Authorize]
 @inject IVenueService VenueService
 @inject IHttpContextAccessor HttpContextAccessor
-@inject NavigationManager Navigation
 @inject ILogger<List> Logger
+@using System.Security.Claims
 
 <PageTitle>Venues &mdash; NinetyNine</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0">Venues</h1>
-    <a href="/venues/new" class="btn btn-primary">Add Venue</a>
-</div>
-
-@if (_loading)
-{
-    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading venues"></span>Loading&hellip;</p>
-}
-else if (_venues.Count == 0)
-{
-    <div class="alert alert-info">
-        No venues yet. <a href="/venues/new">Add the first one.</a>
-    </div>
-}
-else
-{
-    <div class="row g-3">
-        @foreach (var venue in _venues)
+<div class="nn-page nn-venues-page">
+    <header class="nn-venues-page__header">
+        <h1 class="nn-venues-page__title">Venues</h1>
+        @if (_isAuthenticated)
         {
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title d-flex align-items-center gap-2">
-                            @venue.Name
+            <a href="/venues/new" class="btn btn-primary nn-venues-page__add-btn">
+                <img class="nn-icon nn-icon-sm"
+                     src="/icons/phosphor/regular/plus.svg"
+                     alt=""
+                     aria-hidden="true" />
+                Add venue
+            </a>
+        }
+    </header>
+
+    @if (_loading)
+    {
+        <div class="nn-venues-page__loading" role="status" aria-live="polite">
+            <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+            Loading venues&hellip;
+        </div>
+    }
+    else if (_venues.Count == 0)
+    {
+        <div class="nn-empty-state nn-venues-page__empty" role="status">
+            <img class="nn-icon nn-icon-xl nn-empty-state__icon"
+                 src="/icons/phosphor/regular/warehouse.svg"
+                 alt="" aria-hidden="true" />
+            <p class="nn-empty-state__title">No venues yet</p>
+            <p class="nn-empty-state__description">
+                No venues yet.
+                @if (_isAuthenticated)
+                {
+                    <a href="/venues/new">Add the first one.</a>
+                }
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="nn-venues-page__grid" role="list">
+            @foreach (var venue in _venues)
+            {
+                <article class="nn-venues-page__card" role="listitem">
+                    <div class="nn-venues-page__card-body">
+                        <div class="nn-venues-page__card-title-row">
+                            <h2 class="nn-venues-page__card-name">@venue.Name</h2>
                             @if (venue.Private)
                             {
-                                <span class="badge bg-secondary" title="Private venue">Private</span>
+                                <span class="nn-venues-page__private-pill" title="This venue is only visible to you">
+                                    Private
+                                </span>
                             }
-                        </h5>
-                        @if (!string.IsNullOrEmpty(venue.Address))
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(venue.Address))
                         {
-                            <p class="card-text text-muted small">@venue.Address</p>
+                            <p class="nn-venues-page__card-address">
+                                <img class="nn-icon nn-icon-sm"
+                                     src="/icons/phosphor/regular/map-pin.svg"
+                                     alt="Address:"
+                                     aria-label="Address" />
+                                <span>@venue.Address</span>
+                            </p>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(venue.PhoneNumber))
+                        {
+                            <p class="nn-venues-page__card-phone">
+                                <img class="nn-icon nn-icon-sm"
+                                     src="/icons/phosphor/regular/caret-right.svg"
+                                     alt=""
+                                     aria-hidden="true" />
+                                <span>@venue.PhoneNumber</span>
+                            </p>
                         }
                     </div>
-                    <div class="card-footer bg-transparent">
-                        <a href="/venues/@venue.VenueId/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-}
+
+                    @if (_isAuthenticated)
+                    {
+                        <div class="nn-venues-page__card-footer">
+                            <a href="/venues/@venue.VenueId/edit"
+                               class="btn btn-sm btn-ghost nn-venues-page__edit-link"
+                               aria-label="Edit @venue.Name">
+                                <img class="nn-icon nn-icon-sm"
+                                     src="/icons/phosphor/regular/pencil.svg"
+                                     alt=""
+                                     aria-hidden="true" />
+                                Edit
+                            </a>
+                        </div>
+                    }
+                </article>
+            }
+        </div>
+    }
+</div>
 
 @code {
     private List<Venue> _venues = [];
     private bool _loading = true;
+    private bool _isAuthenticated;
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        _isAuthenticated = user?.Identity?.IsAuthenticated == true;
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var venues = await VenueService.ListAsync(includePrivate: false);
+            var venues = await VenueService.ListAsync(includePrivate: _isAuthenticated);
             _venues = venues.ToList();
         }
         catch (Exception ex)

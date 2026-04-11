@@ -4,58 +4,161 @@
 
 <PageTitle>Leaderboard &mdash; NinetyNine</PageTitle>
 
-<h1 class="mb-4">Leaderboard</h1>
+<div class="nn-page nn-leaderboard">
 
-@if (_loading)
-{
-    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading leaderboard"></span>Loading&hellip;</p>
-}
-else if (_entries.Count == 0)
-{
-    <div class="alert alert-info">No games have been completed yet. Be the first!</div>
-}
-else
-{
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <caption>Top players by average score per completed game</caption>
-            <thead>
-                <tr>
-                    <th scope="col">Rank</th>
-                    <th scope="col">Player</th>
-                    <th scope="col">Games</th>
-                    <th scope="col">Avg Score</th>
-                    <th scope="col">Best Game</th>
-                </tr>
-            </thead>
-            <tbody>
-                @{
-                    int rank = 1;
-                }
-                @foreach (var entry in _entries)
-                {
-                    var currentRank = rank++;
-                    <tr class="@(currentRank <= 3 ? "table-warning" : "")">
-                        <td>
-                            <span class="@(currentRank == 1 ? "text-warning fw-bold" : currentRank == 2 ? "text-secondary fw-bold" : currentRank == 3 ? "text-danger fw-bold" : "")">
-                                #@currentRank
-                            </span>
-                        </td>
-                        <td>
-                            <PlayerBadge PlayerId="entry.PlayerId"
-                                         DisplayName="entry.DisplayName"
-                                         AvatarUrl="entry.AvatarUrl"
-                                         AvatarSizePx="28" />
-                        </td>
-                        <td>@entry.GamesPlayed</td>
-                        <td class="font-monospace">@entry.AverageScore.ToString("F1")</td>
-                        <td class="font-monospace">@entry.BestScore</td>
+    <header class="nn-leaderboard__header">
+        <div>
+            <h1 class="nn-leaderboard__title">Leaderboard</h1>
+            <p class="nn-leaderboard__subtitle">Top players by average score</p>
+        </div>
+    </header>
+
+    @if (_loading)
+    {
+        <div class="nn-leaderboard__loading" aria-live="polite" aria-busy="true">
+            <span class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"></span>
+            Loading&hellip;
+        </div>
+    }
+    else if (_entries.Count == 0)
+    {
+        <div class="nn-empty-state nn-leaderboard__empty">
+            <img src="/icons/phosphor/regular/ranking.svg"
+                 alt=""
+                 class="nn-leaderboard__empty-icon"
+                 aria-hidden="true"
+                 width="64"
+                 height="64" />
+            <h2 class="nn-empty-state__heading">No games played yet</h2>
+            <p class="nn-empty-state__body">Be the first on the leaderboard.</p>
+        </div>
+    }
+    else
+    {
+        @* Desktop table *@
+        <div class="table-responsive nn-leaderboard__table-wrapper">
+            <table class="table table-hover nn-leaderboard__table"
+                   aria-label="Global leaderboard, top players by average score">
+                <caption class="visually-hidden">
+                    Top @_entries.Count players ranked by average score per completed game.
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col" class="nn-leaderboard__col-rank">#</th>
+                        <th scope="col" class="nn-leaderboard__col-player">Player</th>
+                        <th scope="col" class="nn-leaderboard__col-games">Games</th>
+                        <th scope="col" class="nn-leaderboard__col-avg">Avg Score</th>
+                        <th scope="col" class="nn-leaderboard__col-best">Best Score</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
+                </thead>
+                <tbody>
+                    @{
+                        int rank = 1;
+                    }
+                    @foreach (var entry in _entries)
+                    {
+                        var currentRank = rank++;
+                        var rowClass = currentRank switch
+                        {
+                            1 => "nn-leaderboard__row nn-leaderboard__row--gold",
+                            2 => "nn-leaderboard__row nn-leaderboard__row--silver",
+                            3 => "nn-leaderboard__row nn-leaderboard__row--bronze",
+                            _ => "nn-leaderboard__row"
+                        };
+                        var rankClass = currentRank switch
+                        {
+                            1 => "nn-leaderboard__rank nn-leaderboard__rank--gold",
+                            2 => "nn-leaderboard__rank nn-leaderboard__rank--silver",
+                            3 => "nn-leaderboard__rank nn-leaderboard__rank--bronze",
+                            _ => "nn-leaderboard__rank"
+                        };
+
+                        <tr class="@rowClass">
+                            <td class="@rankClass" aria-label="Rank @currentRank">
+                                @if (currentRank == 1)
+                                {
+                                    <img src="/icons/phosphor/fill/trophy-fill.svg"
+                                         alt=""
+                                         aria-hidden="true"
+                                         class="nn-leaderboard__rank-icon"
+                                         width="16"
+                                         height="16" />
+                                }
+                                @currentRank
+                            </td>
+                            <td class="nn-leaderboard__cell-player">
+                                <PlayerBadge PlayerId="entry.PlayerId"
+                                             DisplayName="entry.DisplayName"
+                                             AvatarUrl="entry.AvatarUrl"
+                                             AvatarSizePx="24" />
+                            </td>
+                            <td class="nn-leaderboard__cell-games">@entry.GamesPlayed</td>
+                            <td class="nn-leaderboard__cell-avg font-monospace">
+                                @entry.AverageScore.ToString("F1")
+                            </td>
+                            <td class="nn-leaderboard__cell-best font-monospace">
+                                @entry.BestScore<span class="nn-leaderboard__score-denom">/99</span>
+                                @if (entry.BestScore == 99)
+                                {
+                                    <span class="nn-leaderboard__perfect-badge ms-1"
+                                          title="Perfect game!">99!</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @* Mobile stacked cards *@
+        <div class="nn-leaderboard__cards" aria-label="Global leaderboard" role="list">
+            @{
+                int cardRank = 1;
+            }
+            @foreach (var entry in _entries)
+            {
+                var currentRank = cardRank++;
+                var cardClass = currentRank switch
+                {
+                    1 => "nn-leaderboard__card nn-leaderboard__card--gold",
+                    2 => "nn-leaderboard__card nn-leaderboard__card--silver",
+                    3 => "nn-leaderboard__card nn-leaderboard__card--bronze",
+                    _ => "nn-leaderboard__card"
+                };
+
+                <a href="/players/@entry.PlayerId"
+                   class="@cardClass"
+                   role="listitem"
+                   aria-label="Rank @currentRank: @entry.DisplayName — @entry.AverageScore.ToString("F1") average, best @entry.BestScore">
+                    <div class="nn-leaderboard__card-header">
+                        <span class="nn-leaderboard__card-rank">#@currentRank</span>
+                        <AvatarImage AvatarUrl="@entry.AvatarUrl"
+                                     DisplayName="@entry.DisplayName"
+                                     SizePx="32" />
+                        <span class="nn-leaderboard__card-name">@entry.DisplayName</span>
+                    </div>
+                    <div class="nn-leaderboard__card-stats">
+                        <div class="nn-leaderboard__card-stat">
+                            <span class="nn-leaderboard__card-stat-value font-monospace">@entry.GamesPlayed</span>
+                            <span class="nn-leaderboard__card-stat-label">Games</span>
+                        </div>
+                        <div class="nn-leaderboard__card-stat">
+                            <span class="nn-leaderboard__card-stat-value font-monospace">@entry.AverageScore.ToString("F1")</span>
+                            <span class="nn-leaderboard__card-stat-label">Avg</span>
+                        </div>
+                        <div class="nn-leaderboard__card-stat">
+                            <span class="nn-leaderboard__card-stat-value font-monospace">@entry.BestScore</span>
+                            <span class="nn-leaderboard__card-stat-label">Best</span>
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+
+</div>
 
 @code {
     private List<LeaderboardEntry> _entries = [];
@@ -65,7 +168,8 @@ else
     {
         try
         {
-            var result = await StatisticsService.GetLeaderboardAsync(50);
+            var result = await StatisticsService.GetLeaderboardAsync(limit: 20);
+            // Service should return sorted descending by average score; preserve that order
             _entries = result.ToList();
         }
         catch (Exception ex)

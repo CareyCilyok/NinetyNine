@@ -1,0 +1,155 @@
+/* =====================================================================
+   Venues/Edit.razor.css — scoped styles for the Add / Edit Venue page.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   ===================================================================== */
+
+/* ── Page centering ──────────────────────────────────────────────────── */
+.nn-venue-edit {
+    display: flex;
+    justify-content: center;
+    padding-bottom: var(--nn-space-9);
+}
+
+.nn-venue-edit__inner {
+    width: 100%;
+    max-width: 36rem;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.nn-venue-edit__header {
+    margin-bottom: var(--nn-space-6);
+}
+
+.nn-venue-edit__title {
+    color: var(--nn-text-primary);
+    margin-bottom: 0;
+}
+
+/* ── Loading state ───────────────────────────────────────────────────── */
+.nn-venue-edit__loading {
+    padding: var(--nn-space-8) var(--nn-space-4);
+    color: var(--nn-text-secondary);
+    text-align: center;
+}
+
+/* ── Form card ───────────────────────────────────────────────────────── */
+.nn-venue-edit__form-card {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-6);
+    box-shadow: var(--nn-shadow-md);
+}
+
+/* ── Form fields ─────────────────────────────────────────────────────── */
+.nn-venue-edit__field {
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-venue-edit__field:last-child {
+    margin-bottom: 0;
+}
+
+.nn-venue-edit__field--check {
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-venue-edit__label {
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-venue-edit__hint {
+    color: var(--nn-text-tertiary);
+    font-size: 0.875rem;
+    margin-top: var(--nn-space-2);
+}
+
+/* ── Action buttons ──────────────────────────────────────────────────── */
+.nn-venue-edit__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+    margin-top: var(--nn-space-6);
+    padding-top: var(--nn-space-5);
+    border-top: 1px solid var(--nn-border-subtle);
+}
+
+.nn-venue-edit__submit {
+    min-height: var(--nn-touch-target);
+    font-weight: 600;
+    transition: background-color var(--nn-transition-fast),
+                box-shadow var(--nn-transition-fast);
+}
+
+.nn-venue-edit__submit:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    box-shadow: var(--nn-shadow-glow-teal);
+}
+
+/* ── Delete section ──────────────────────────────────────────────────── */
+.nn-venue-edit__delete-section {
+    margin-top: var(--nn-space-8);
+    padding: var(--nn-space-5);
+    background: var(--nn-danger-bg);
+    border: 1px solid var(--nn-danger-border);
+    border-radius: var(--nn-radius-lg);
+}
+
+.nn-venue-edit__delete-heading {
+    color: var(--nn-danger);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-venue-edit__delete-warning {
+    color: var(--nn-text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-venue-edit__delete-btn {
+    min-height: var(--nn-touch-target);
+    transition: background-color var(--nn-transition-fast),
+                border-color var(--nn-transition-fast),
+                box-shadow var(--nn-transition-fast);
+}
+
+.nn-venue-edit__delete-btn:hover:not(:disabled),
+.nn-venue-edit__delete-btn:focus-visible:not(:disabled) {
+    background-color: var(--nn-danger-bg);
+    color: var(--nn-danger);
+    box-shadow: 0 0 0 0.2rem rgba(248, 113, 113, 0.35);
+}
+
+.nn-venue-edit__delete-btn:focus-visible {
+    outline: 2px solid var(--nn-danger);
+    outline-offset: 2px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .nn-venue-edit__form-card {
+        padding: var(--nn-space-4);
+    }
+
+    .nn-venue-edit__actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nn-venue-edit__submit {
+        width: 100%;
+    }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .nn-venue-edit__submit,
+    .nn-venue-edit__delete-btn {
+        transition: none;
+    }
+}

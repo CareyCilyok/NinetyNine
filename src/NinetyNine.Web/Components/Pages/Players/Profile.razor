@@ -1,104 +1,342 @@
 @page "/players/{PlayerId:guid}"
 @inject IPlayerRepository PlayerRepository
 @inject IStatisticsService StatisticsService
+@inject IGameRepository GameRepository
+@inject IVenueService VenueService
+@inject IHttpContextAccessor HttpContextAccessor
 @inject ILogger<Profile> Logger
+@using System.ComponentModel.DataAnnotations
 
-<PageTitle>Player Profile &mdash; NinetyNine</PageTitle>
+<PageTitle>
+    @(_player is not null ? $"{_player.DisplayName} \u2014 NinetyNine" : "Player Profile \u2014 NinetyNine")
+</PageTitle>
 
-@if (_loading)
-{
-    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading profile"></span>Loading&hellip;</p>
-}
-else if (_player is null)
-{
-    <div class="alert alert-warning">Player not found.</div>
-}
-else
-{
-    <div class="row">
-        <div class="col-md-4 text-center mb-4">
-            @if (_player.Visibility.Avatar)
+<div class="nn-page nn-profile-page">
+
+    @if (_loading)
+    {
+        <div class="nn-profile-page__loading" aria-live="polite" aria-busy="true">
+            <span class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"></span>
+            Loading&hellip;
+        </div>
+    }
+    else if (_player is null)
+    {
+        <div class="nn-profile-page__not-found">
+            <h1 class="nn-profile-page__not-found-title">Player not found</h1>
+            <p class="nn-profile-page__not-found-body">
+                This player does not exist or their profile is unavailable.
+            </p>
+            <a href="/stats" class="btn btn-outline-secondary">Back to leaderboard</a>
+        </div>
+    }
+    else
+    {
+        @* ── 1. Profile header card ────────────────────────────────────── *@
+        <section class="nn-profile-page__card nn-profile-page__header-card"
+                 aria-label="Player profile">
+            <div class="nn-profile-page__header-avatar">
+                @if (_player.Visibility.Avatar)
+                {
+                    <AvatarImage AvatarUrl="@_avatarUrl"
+                                 DisplayName="@_player.DisplayName"
+                                 SizePx="96" />
+                }
+                else
+                {
+                    <InitialsAvatar DisplayName="@_player.DisplayName" SizePx="96" />
+                }
+            </div>
+
+            <div class="nn-profile-page__header-info">
+                <h1 class="nn-profile-page__display-name">@_player.DisplayName</h1>
+
+                @if (_player.Visibility.RealName
+                    && (!string.IsNullOrWhiteSpace(_player.FirstName)
+                        || !string.IsNullOrWhiteSpace(_player.LastName)))
+                {
+                    <p class="nn-profile-page__real-name">
+                        @string.Join(" ", new[]
+                        {
+                            _player.FirstName,
+                            _player.MiddleName,
+                            _player.LastName
+                        }.Where(s => !string.IsNullOrWhiteSpace(s)))
+                    </p>
+                }
+
+                <p class="nn-profile-page__member-since">
+                    Member since
+                    <time datetime="@_player.CreatedAt.ToString("O")">
+                        @_player.CreatedAt.ToString("MMM yyyy")
+                    </time>
+                </p>
+
+                @if (_isOwnProfile)
+                {
+                    <a href="/players/me/edit"
+                       class="btn btn-outline-primary btn-sm nn-profile-page__edit-btn">
+                        Edit profile
+                    </a>
+                }
+            </div>
+        </section>
+
+        @* ── 2. Contact info card (public fields only, hide from owner) ── *@
+        @if (!_isOwnProfile && (_player.Visibility.EmailAddress || _player.Visibility.PhoneNumber))
+        {
+            <section class="nn-profile-page__card nn-profile-page__contact-card"
+                     aria-label="Contact information">
+                <h2 class="nn-profile-page__card-title">Contact</h2>
+
+                <dl class="nn-profile-page__contact-list">
+                    @if (_player.Visibility.EmailAddress && !string.IsNullOrWhiteSpace(_player.EmailAddress))
+                    {
+                        <div class="nn-profile-page__contact-row">
+                            <dt class="nn-profile-page__contact-label">Email</dt>
+                            <dd class="nn-profile-page__contact-value">
+                                <a href="mailto:@_player.EmailAddress">@_player.EmailAddress</a>
+                            </dd>
+                        </div>
+                    }
+                    @if (_player.Visibility.PhoneNumber && !string.IsNullOrWhiteSpace(_player.PhoneNumber))
+                    {
+                        <div class="nn-profile-page__contact-row">
+                            <dt class="nn-profile-page__contact-label">Phone</dt>
+                            <dd class="nn-profile-page__contact-value">
+                                <a href="tel:@_player.PhoneNumber">@_player.PhoneNumber</a>
+                            </dd>
+                        </div>
+                    }
+                </dl>
+            </section>
+        }
+
+        @* ── 3. Stats summary card ─────────────────────────────────────── *@
+        <section class="nn-profile-page__card nn-profile-page__stats-card"
+                 aria-label="Player statistics">
+            <h2 class="nn-profile-page__card-title">Statistics</h2>
+
+            @if (_stats is null)
             {
-                <AvatarImage AvatarUrl="@_avatarUrl" DisplayName="@_player.DisplayName" SizePx="128" />
+                <p class="nn-profile-page__stats-empty">No statistics available.</p>
             }
             else
             {
-                <InitialsAvatar DisplayName="@_player.DisplayName" SizePx="128" />
-            }
-            <h1 class="h3 mt-3">@_player.DisplayName</h1>
-
-            @if (_player.Visibility.RealName && (_player.FirstName is not null || _player.LastName is not null))
-            {
-                <p class="text-muted">@_player.FirstName @_player.LastName</p>
-            }
-
-            <p class="text-muted small">
-                Member since @_player.CreatedAt.ToString("MMMM yyyy")
-            </p>
-        </div>
-
-        <div class="col-md-8">
-            @if (_stats is not null)
-            {
-                <h2 class="h5">Statistics</h2>
-                <dl class="row">
-                    <dt class="col-6">Games Played</dt>
-                    <dd class="col-6">@_stats.GamesPlayed</dd>
-
-                    <dt class="col-6">Games Completed</dt>
-                    <dd class="col-6">@_stats.GamesCompleted</dd>
-
-                    <dt class="col-6">Average Score</dt>
-                    <dd class="col-6">@_stats.AverageScore.ToString("F1")</dd>
-
-                    <dt class="col-6">Best Score</dt>
-                    <dd class="col-6">@_stats.BestScore</dd>
-
-                    <dt class="col-6">Perfect Games</dt>
-                    <dd class="col-6">@_stats.PerfectGames</dd>
-
-                    <dt class="col-6">Perfect Frames</dt>
-                    <dd class="col-6">@_stats.PerfectFrames</dd>
-
+                <div class="nn-profile-page__stats-grid">
+                    <div class="nn-profile-page__stat">
+                        <span class="nn-profile-page__stat-value">@_stats.GamesPlayed</span>
+                        <span class="nn-profile-page__stat-label">Games played</span>
+                    </div>
+                    <div class="nn-profile-page__stat">
+                        <span class="nn-profile-page__stat-value">@_stats.GamesCompleted</span>
+                        <span class="nn-profile-page__stat-label">Completed</span>
+                    </div>
+                    <div class="nn-profile-page__stat">
+                        <span class="nn-profile-page__stat-value font-monospace @(_stats.BestScore == 99 ? "nn-profile-page__stat-value--perfect" : "")">
+                            @_stats.BestScore
+                        </span>
+                        <span class="nn-profile-page__stat-label">Best score</span>
+                    </div>
+                    <div class="nn-profile-page__stat">
+                        <span class="nn-profile-page__stat-value font-monospace">@_stats.AverageScore.ToString("F1")</span>
+                        <span class="nn-profile-page__stat-label">Avg score</span>
+                    </div>
+                    <div class="nn-profile-page__stat">
+                        <span class="nn-profile-page__stat-value">@_stats.PerfectGames</span>
+                        <span class="nn-profile-page__stat-label">Perfect games</span>
+                    </div>
+                    <div class="nn-profile-page__stat">
+                        <span class="nn-profile-page__stat-value">@_stats.PerfectFrames</span>
+                        <span class="nn-profile-page__stat-label">Perfect frames</span>
+                    </div>
                     @if (_stats.LastPlayed.HasValue)
                     {
-                        <dt class="col-6">Last Played</dt>
-                        <dd class="col-6">@_stats.LastPlayed.Value.ToString("MMM d, yyyy")</dd>
+                        <div class="nn-profile-page__stat nn-profile-page__stat--wide">
+                            <span class="nn-profile-page__stat-value">@RelativeTime(_stats.LastPlayed.Value)</span>
+                            <span class="nn-profile-page__stat-label">Last played</span>
+                        </div>
                     }
-                </dl>
+                </div>
             }
-        </div>
-    </div>
-}
+        </section>
+
+        @* ── 4. Recent games card ──────────────────────────────────────── *@
+        <section class="nn-profile-page__card nn-profile-page__games-card"
+                 aria-label="Recent games">
+            <h2 class="nn-profile-page__card-title">Recent games</h2>
+
+            @if (_recentGames.Count == 0)
+            {
+                <p class="nn-profile-page__games-empty">No games yet.</p>
+            }
+            else
+            {
+                <ul class="nn-profile-page__games-list" role="list">
+                    @foreach (var game in _recentGames)
+                    {
+                        var href = game.IsInProgress && _isOwnProfile
+                            ? $"/games/{game.GameId}/play"
+                            : $"/games/{game.GameId}";
+
+                        <li class="nn-profile-page__game-row" role="listitem">
+                            <a href="@href"
+                               class="nn-profile-page__game-link"
+                               aria-label="@GameRowAriaLabel(game)">
+
+                                <time class="nn-profile-page__game-date"
+                                      datetime="@game.WhenPlayed.ToString("O")"
+                                      title="@game.WhenPlayed.ToLocalTime().ToString("f")">
+                                    @game.WhenPlayed.ToLocalTime().ToString("MMM d, yyyy")
+                                </time>
+
+                                <span class="nn-profile-page__game-venue">
+                                    @(_venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "\u2014")
+                                </span>
+
+                                <span class="nn-profile-page__game-score font-monospace">
+                                    @game.TotalScore<span class="nn-profile-page__game-score-max">/99</span>
+                                    @if (game.IsPerfectGame)
+                                    {
+                                        <span class="nn-profile-page__perfect-badge ms-1"
+                                              aria-label="Perfect game">99!</span>
+                                    }
+                                </span>
+
+                                <span class="nn-status-pill @StatusPillClass(game.GameState)">
+                                    @StatusLabel(game.GameState)
+                                </span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    }
+
+</div>
 
 @code {
     [Parameter] public Guid PlayerId { get; set; }
 
-    private NinetyNine.Model.Player? _player;
+    private Player? _player;
     private PlayerStats? _stats;
     private string? _avatarUrl;
+    private List<Game> _recentGames = [];
+    private Dictionary<Guid, string> _venueNames = new();
     private bool _loading = true;
+    private bool _isOwnProfile;
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var viewerId))
+            _isOwnProfile = viewerId == PlayerId;
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             _player = await PlayerRepository.GetByIdAsync(PlayerId);
-            if (_player is not null)
-            {
-                if (_player.Avatar is not null && _player.Visibility.Avatar)
-                    _avatarUrl = $"/api/avatars/{_player.PlayerId}";
 
+            if (_player is null)
+            {
+                _loading = false;
+                return;
+            }
+
+            // Avatar URL only when visibility flag is set
+            if (_player.Avatar is not null && _player.Visibility.Avatar)
+                _avatarUrl = $"/api/avatars/{_player.PlayerId}";
+
+            // Load stats — best-effort; page still renders without them
+            try
+            {
                 _stats = await StatisticsService.GetPlayerStatsAsync(PlayerId);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to load stats for player {PlayerId}.", PlayerId);
+            }
+
+            // Load recent games
+            try
+            {
+                var games = await GameRepository.GetByPlayerAsync(PlayerId, skip: 0, limit: 5);
+                _recentGames = games.OrderByDescending(g => g.WhenPlayed).ToList();
+
+                // Best-effort venue name resolution
+                var uniqueVenueIds = _recentGames.Select(g => g.VenueId).Distinct();
+                foreach (var venueId in uniqueVenueIds)
+                {
+                    try
+                    {
+                        var venue = await VenueService.GetAsync(venueId);
+                        if (venue is not null)
+                            _venueNames[venueId] = venue.Name;
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogWarning(ex, "Could not resolve venue {VenueId}.", venueId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to load recent games for player {PlayerId}.", PlayerId);
             }
         }
         catch (Exception ex)
         {
             Logger.LogWarning(ex, "Failed to load public profile for player {PlayerId}.", PlayerId);
+            _player = null;
         }
         finally
         {
             _loading = false;
         }
+    }
+
+    // ── Display helpers ─────────────────────────────────────────────────
+
+    private static string RelativeTime(DateTime utc)
+    {
+        var diff = DateTime.UtcNow - utc;
+
+        return diff.TotalSeconds < 60      ? "Just now"
+             : diff.TotalMinutes < 60      ? $"{(int)diff.TotalMinutes}m ago"
+             : diff.TotalHours < 24        ? $"{(int)diff.TotalHours}h ago"
+             : diff.TotalDays < 2          ? "Yesterday"
+             : diff.TotalDays < 7          ? $"{(int)diff.TotalDays} days ago"
+             : diff.TotalDays < 30         ? $"{(int)(diff.TotalDays / 7)} weeks ago"
+             : diff.TotalDays < 365        ? $"{(int)(diff.TotalDays / 30)} months ago"
+             : $"{(int)(diff.TotalDays / 365)} years ago";
+    }
+
+    private static string StatusLabel(GameState state) => state switch
+    {
+        GameState.Completed  => "Completed",
+        GameState.InProgress => "In progress",
+        GameState.Paused     => "Paused",
+        _                    => "Not started"
+    };
+
+    private static string StatusPillClass(GameState state) => state switch
+    {
+        GameState.Completed  => "nn-status-pill--completed",
+        GameState.InProgress => "nn-status-pill--inprogress",
+        GameState.Paused     => "nn-status-pill--paused",
+        _                    => "nn-status-pill--muted"
+    };
+
+    private string GameRowAriaLabel(Game game)
+    {
+        var venueName = _venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "unknown venue";
+        return $"{StatusLabel(game.GameState)} game at {venueName} on "
+             + $"{game.WhenPlayed.ToLocalTime():MMM d, yyyy}, score {game.TotalScore} out of 99";
     }
 }

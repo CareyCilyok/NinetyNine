@@ -1,283 +1,395 @@
-@page "/players/me"
+@page "/players/me/edit"
 @attribute [Authorize]
 @inject IPlayerService PlayerService
-@inject IHttpContextAccessor HttpContextAccessor
 @inject IPlayerRepository PlayerRepository
+@inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<EditProfile> Logger
+@using System.ComponentModel.DataAnnotations
+@using System.Text.RegularExpressions
 
 <PageTitle>Edit Profile &mdash; NinetyNine</PageTitle>
 
-<div class="row justify-content-center">
-    <div class="col-md-7">
-        <h1 class="mb-4">Edit Profile</h1>
+<div class="nn-page nn-edit-profile-page">
+    <div class="nn-edit-profile-page__inner">
 
-        @if (_loading)
-        {
-            <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading"></span>Loading&hellip;</p>
-        }
-        else if (_player is null)
-        {
-            <div class="alert alert-danger">Profile not found.</div>
-        }
-        else
-        {
-            @if (!string.IsNullOrEmpty(_successMessage))
+        <header class="nn-edit-profile-page__header">
+            <h1 class="nn-edit-profile-page__title">Edit Profile</h1>
+            @if (_player is not null)
             {
-                <div class="alert alert-success" role="status">@_successMessage</div>
+                <a href="/players/@_playerId"
+                   class="btn btn-outline-secondary btn-sm nn-edit-profile-page__view-btn">
+                    View profile
+                </a>
             }
-            @if (!string.IsNullOrEmpty(_errorMessage))
-            {
-                <div class="alert alert-danger" role="alert">@_errorMessage</div>
-            }
+        </header>
 
-            <EditForm Model="_model" OnValidSubmit="HandleSave">
+        @if (_loadError)
+        {
+            <div class="alert alert-danger" role="alert">
+                Profile not found. You may have been signed out.
+                <a href="/login" class="alert-link">Sign in again</a>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+
+        @* ── Avatar section (separate multipart form, SSR-compatible) ──── *@
+        <section class="nn-edit-profile-page__card nn-edit-profile-page__avatar-section"
+                 aria-label="Avatar">
+            <h2 class="nn-edit-profile-page__card-title">Avatar</h2>
+
+            <div class="nn-edit-profile-page__avatar-row">
+                <div class="nn-edit-profile-page__avatar-preview">
+                    @if (_player is not null)
+                    {
+                        <AvatarImage AvatarUrl="@_avatarUrl"
+                                     DisplayName="@(_player.DisplayName)"
+                                     SizePx="80" />
+                    }
+                </div>
+
+                <div class="nn-edit-profile-page__avatar-controls">
+                    @* Avatar upload uses a separate multipart form that posts directly to
+                       the upload API endpoint. Static-SSR forms cannot handle
+                       multipart/form-data through [SupplyParameterFromForm], so the file
+                       upload lives in its own HTML form with enctype="multipart/form-data".
+                       The endpoint reads the IFormFile, calls IPlayerService.SetAvatarAsync,
+                       and redirects back to this page. *@
+                    <form method="post"
+                          action="/api/avatars/upload"
+                          enctype="multipart/form-data"
+                          class="nn-edit-profile-page__upload-form">
+                        @* Antiforgery token injected via the AntiforgeryToken tag helper;
+                           for a plain HTML form outside EditForm we use the IAntiforgery
+                           service — but the simplest approach for SSR is to include the
+                           token via hidden input rendered from the Antiforgery service.
+                           The endpoint validates it via [ValidateAntiForgeryToken] or
+                           the UseAntiforgery middleware already applied globally. *@
+                        <input type="hidden" name="__RequestVerificationToken"
+                               value="@_antiforgeryToken" />
+
+                        <label class="form-label visually-hidden" for="avatar-file">
+                            Upload new avatar (PNG, JPEG, or WebP, max 2 MB)
+                        </label>
+                        <input type="file"
+                               id="avatar-file"
+                               name="file"
+                               accept="image/png,image/jpeg,image/webp"
+                               class="form-control nn-edit-profile-page__file-input"
+                               aria-describedby="avatar-hint" />
+                        <div id="avatar-hint" class="form-text nn-edit-profile-page__file-hint">
+                            PNG, JPEG, or WebP &mdash; max 2 MB
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-outline-primary btn-sm mt-2"
+                                aria-label="Upload new avatar">
+                            Upload avatar
+                        </button>
+                    </form>
+
+                    @if (_player?.Avatar is not null)
+                    {
+                        <form method="post"
+                              action="/api/avatars/remove"
+                              class="nn-edit-profile-page__remove-form">
+                            <input type="hidden" name="__RequestVerificationToken"
+                                   value="@_antiforgeryToken" />
+                            <button type="submit"
+                                    class="btn btn-outline-danger btn-sm"
+                                    aria-label="Remove current avatar">
+                                Remove avatar
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </section>
+
+        @* ── Main profile form ─────────────────────────────────────────── *@
+        <section class="nn-edit-profile-page__card nn-edit-profile-page__form-section">
+            <EditForm Model="_model"
+                      method="post"
+                      OnValidSubmit="HandleSubmitAsync"
+                      FormName="edit-profile">
+                <AntiforgeryToken />
                 <DataAnnotationsValidator />
 
-                <h2 class="h5 mb-3">Display Name</h2>
-                <div class="mb-4">
-                    <label class="form-label" for="display-name">Display Name</label>
-                    <InputText id="display-name"
-                               class="form-control"
-                               @bind-Value="_model.DisplayName"
-                               autocomplete="username" />
-                    <ValidationMessage For="() => _model.DisplayName" />
+                @* Display name *@
+                <div class="nn-edit-profile-page__field-group">
+                    <h2 class="nn-edit-profile-page__card-title">Display Name</h2>
+
+                    <div class="nn-edit-profile-page__field">
+                        <label class="form-label" for="display-name">
+                            Display name
+                            <span class="nn-edit-profile-page__required" aria-hidden="true">*</span>
+                        </label>
+                        <InputText id="display-name"
+                                   class="form-control"
+                                   @bind-Value="_model.DisplayName"
+                                   autocomplete="username"
+                                   aria-required="true"
+                                   aria-describedby="display-name-hint" />
+                        <div id="display-name-hint" class="form-text">
+                            2&ndash;32 characters; letters, digits, underscores, and hyphens only.
+                        </div>
+                        <ValidationMessage For="() => _model.DisplayName" />
+                    </div>
                 </div>
 
-                <h2 class="h5 mb-3">Avatar</h2>
-                <div class="mb-4">
-                    <div class="d-flex align-items-center gap-3 mb-2">
-                        <AvatarImage AvatarUrl="@_avatarUrl" DisplayName="@_player.DisplayName" SizePx="64" />
-                        <div>
-                            <label class="form-label" for="avatar-upload">
-                                Upload new avatar
-                                <small class="text-muted d-block">PNG, JPEG, or WebP. Max 2 MB.</small>
-                            </label>
-                            <InputFile id="avatar-upload"
+                @* Email address — read-only *@
+                <div class="nn-edit-profile-page__field-group">
+                    <h2 class="nn-edit-profile-page__card-title">Email Address</h2>
+
+                    <div class="nn-edit-profile-page__field">
+                        <p class="nn-edit-profile-page__readonly-label">Email</p>
+                        <p class="nn-edit-profile-page__readonly-value"
+                           aria-label="Email address: @(_player?.EmailAddress ?? string.Empty)">
+                            @(_player?.EmailAddress ?? string.Empty)
+                        </p>
+                        <p class="form-text nn-edit-profile-page__email-note">
+                            Email changes are not yet supported. Contact support if you need to
+                            update your email address.
+                        </p>
+                    </div>
+                </div>
+
+                @* Personal information *@
+                <div class="nn-edit-profile-page__field-group">
+                    <h2 class="nn-edit-profile-page__card-title">Personal Information</h2>
+                    <p class="nn-edit-profile-page__section-hint">
+                        All fields are optional. Use the visibility toggles to control what
+                        other players can see on your public profile.
+                    </p>
+
+                    <div class="nn-edit-profile-page__name-row">
+                        <div class="nn-edit-profile-page__field">
+                            <label class="form-label" for="first-name">First name</label>
+                            <InputText id="first-name"
                                        class="form-control"
-                                       OnChange="HandleAvatarUpload"
-                                       accept="image/png,image/jpeg,image/webp"
-                                       aria-describedby="avatar-upload-help" />
+                                       @bind-Value="_model.FirstName"
+                                       autocomplete="given-name" />
+                        </div>
+                        <div class="nn-edit-profile-page__field">
+                            <label class="form-label" for="middle-name">Middle name</label>
+                            <InputText id="middle-name"
+                                       class="form-control"
+                                       @bind-Value="_model.MiddleName"
+                                       autocomplete="additional-name" />
+                        </div>
+                        <div class="nn-edit-profile-page__field">
+                            <label class="form-label" for="last-name">Last name</label>
+                            <InputText id="last-name"
+                                       class="form-control"
+                                       @bind-Value="_model.LastName"
+                                       autocomplete="family-name" />
                         </div>
                     </div>
-                    @if (!string.IsNullOrEmpty(_avatarError))
-                    {
-                        <div class="text-danger small" role="alert">@_avatarError</div>
-                    }
-                    @if (_player.Avatar is not null)
-                    {
-                        <button type="button" class="btn btn-sm btn-outline-danger mt-2"
-                                @onclick="RemoveAvatar">
-                            Remove avatar
-                        </button>
-                    }
-                </div>
 
-                <h2 class="h5 mb-3">Personal Information</h2>
-                <p class="text-muted small mb-3">All fields are optional. Use the toggles to control visibility.</p>
-
-                <div class="row g-3 mb-3">
-                    <div class="col-sm-6">
-                        <label class="form-label" for="first-name">First Name</label>
-                        <InputText id="first-name" class="form-control"
-                                   @bind-Value="_model.FirstName"
-                                   autocomplete="given-name" />
-                    </div>
-                    <div class="col-sm-6">
-                        <label class="form-label" for="last-name">Last Name</label>
-                        <InputText id="last-name" class="form-control"
-                                   @bind-Value="_model.LastName"
-                                   autocomplete="family-name" />
+                    <div class="nn-edit-profile-page__field">
+                        <label class="form-label" for="phone-number">Phone number</label>
+                        <InputText id="phone-number"
+                                   class="form-control"
+                                   @bind-Value="_model.PhoneNumber"
+                                   autocomplete="tel"
+                                   inputmode="tel" />
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label" for="email">Email</label>
-                    <InputText id="email" class="form-control"
-                               @bind-Value="_model.Email"
-                               autocomplete="email"
-                               inputmode="email" />
+                @* Visibility toggles *@
+                <div class="nn-edit-profile-page__field-group">
+                    <h2 class="nn-edit-profile-page__card-title">Privacy</h2>
+
+                    <div class="nn-edit-profile-page__toggles">
+                        <div class="nn-edit-profile-page__toggle-row">
+                            <VisibilityToggle Label="Show real name publicly"
+                                              @bind-Value="_model.ShowRealName" />
+                        </div>
+                        <div class="nn-edit-profile-page__toggle-row">
+                            <VisibilityToggle Label="Show email publicly"
+                                              @bind-Value="_model.ShowEmail" />
+                        </div>
+                        <div class="nn-edit-profile-page__toggle-row">
+                            <VisibilityToggle Label="Show phone number publicly"
+                                              @bind-Value="_model.ShowPhone" />
+                        </div>
+                        <div class="nn-edit-profile-page__toggle-row">
+                            <VisibilityToggle Label="Show avatar publicly"
+                                              @bind-Value="_model.ShowAvatar" />
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label" for="phone">Phone Number</label>
-                    <InputText id="phone" class="form-control"
-                               @bind-Value="_model.PhoneNumber"
-                               autocomplete="tel"
-                               inputmode="tel" />
+                @* Submit *@
+                <div class="nn-edit-profile-page__actions">
+                    <button type="submit"
+                            class="btn btn-primary nn-edit-profile-page__submit-btn"
+                            disabled="@_isSaving"
+                            aria-busy="@_isSaving.ToString().ToLowerInvariant()">
+                        @if (_isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"
+                                  role="status"
+                                  aria-hidden="true"></span>
+                            <span>Saving&hellip;</span>
+                        }
+                        else
+                        {
+                            <span>Save Changes</span>
+                        }
+                    </button>
+                    <a href="/players/@_playerId"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
                 </div>
-
-                <h2 class="h5 mb-3">Visibility</h2>
-                <div class="mb-4 d-flex flex-column gap-2">
-                    <VisibilityToggle Label="Show real name publicly"
-                                      @bind-Value="_model.ShowRealName" />
-                    <VisibilityToggle Label="Show email publicly"
-                                      @bind-Value="_model.ShowEmail" />
-                    <VisibilityToggle Label="Show phone number publicly"
-                                      @bind-Value="_model.ShowPhone" />
-                    <VisibilityToggle Label="Show avatar publicly"
-                                      @bind-Value="_model.ShowAvatar" />
-                </div>
-
-                <button type="submit" class="btn btn-primary" disabled="@_isSaving">
-                    @if (_isSaving)
-                    {
-                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        <span>Saving&hellip;</span>
-                    }
-                    else
-                    {
-                        <span>Save Changes</span>
-                    }
-                </button>
             </EditForm>
-        }
+        </section>
+
     </div>
 </div>
 
 @code {
-    private NinetyNine.Model.Player? _player;
-    private EditProfileModel _model = new();
+    [SupplyParameterFromForm(FormName = "edit-profile")]
+    private EditProfileModel _model { get; set; } = new();
+
+    private Player? _player;
     private string? _avatarUrl;
     private string _errorMessage = "";
-    private string _successMessage = "";
-    private string _avatarError = "";
-    private bool _loading = true;
+    private bool _loadError;
     private bool _isSaving;
-    private Guid _playerId;
+    private Guid? _playerId;
+    private string _antiforgeryToken = "";
+
+    protected override void OnInitialized()
+    {
+        // Extract PlayerId from the auth cookie claim. Must run synchronously
+        // so the value is available when the form binding runs on POST.
+        var claim = HttpContextAccessor.HttpContext?.User.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _playerId = id;
+
+        // Extract the antiforgery token for the plain-HTML avatar forms.
+        // The token is already validated globally by UseAntiforgery(); we just
+        // need its string value to embed in the hidden input.
+        var antiforgery = HttpContextAccessor.HttpContext?.RequestServices
+            .GetService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>();
+        if (antiforgery is not null && HttpContextAccessor.HttpContext is not null)
+        {
+            var tokens = antiforgery.GetAndStoreTokens(HttpContextAccessor.HttpContext);
+            _antiforgeryToken = tokens.RequestToken ?? "";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        var context = HttpContextAccessor.HttpContext;
-        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
-
-        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        if (_playerId is null)
         {
             Navigation.NavigateTo("/login", forceLoad: true);
             return;
         }
 
-        _player = await PlayerRepository.GetByIdAsync(_playerId);
-        if (_player is not null)
+        _player = await PlayerRepository.GetByIdAsync(_playerId.Value);
+
+        if (_player is null)
         {
-            _model = EditProfileModel.From(_player);
-            if (_player.Avatar is not null)
-                _avatarUrl = $"/api/avatars/{_player.PlayerId}";
+            _loadError = true;
+            return;
         }
 
-        _loading = false;
+        // Populate the form model from the player (only on GET, not on POST
+        // where [SupplyParameterFromForm] will have already populated _model).
+        var isPost = HttpContextAccessor.HttpContext?.Request.Method
+            .Equals("POST", StringComparison.OrdinalIgnoreCase) == true;
+
+        if (!isPost)
+            _model = EditProfileModel.From(_player);
+
+        if (_player.Avatar is not null)
+            _avatarUrl = $"/api/avatars/{_player.PlayerId}";
     }
 
-    private async Task HandleSave()
+    private async Task HandleSubmitAsync()
     {
+        if (_playerId is null)
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
         _isSaving = true;
         _errorMessage = "";
-        _successMessage = "";
 
         try
         {
             var update = new PlayerProfileUpdate(
                 DisplayName: _model.DisplayName,
-                EmailAddress: _model.Email,
+                EmailAddress: null,          // email changes not supported in v1
                 PhoneNumber: _model.PhoneNumber,
                 FirstName: _model.FirstName,
-                MiddleName: null,
+                MiddleName: _model.MiddleName,
                 LastName: _model.LastName,
                 Visibility: new ProfileVisibility
                 {
-                    RealName = _model.ShowRealName,
+                    RealName    = _model.ShowRealName,
                     EmailAddress = _model.ShowEmail,
                     PhoneNumber = _model.ShowPhone,
-                    Avatar = _model.ShowAvatar
+                    Avatar      = _model.ShowAvatar
                 });
 
-            _player = await PlayerService.UpdateProfileAsync(_playerId, update);
-            _successMessage = "Profile saved.";
+            await PlayerService.UpdateProfileAsync(_playerId.Value, update);
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message;
+            _errorMessage = "Failed to save profile. Please try again.";
             Logger.LogWarning(ex, "Failed to update profile for player {PlayerId}.", _playerId);
-        }
-        finally
-        {
             _isSaving = false;
-        }
-    }
-
-    private async Task HandleAvatarUpload(InputFileChangeEventArgs e)
-    {
-        _avatarError = "";
-        var file = e.File;
-
-        var allowed = new[] { "image/png", "image/jpeg", "image/webp" };
-        if (!allowed.Contains(file.ContentType))
-        {
-            _avatarError = "Please upload a PNG, JPEG, or WebP image.";
             return;
         }
 
-        const long maxBytes = 2 * 1024 * 1024;
-        if (file.Size > maxBytes)
-        {
-            _avatarError = "Avatar must be under 2 MB.";
-            return;
-        }
-
-        try
-        {
-            await using var stream = file.OpenReadStream(maxBytes);
-            await PlayerService.SetAvatarAsync(_playerId, stream, file.ContentType);
-            _avatarUrl = $"/api/avatars/{_playerId}?t={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
-            _player = await PlayerRepository.GetByIdAsync(_playerId);
-        }
-        catch (Exception ex)
-        {
-            _avatarError = ex.Message;
-            Logger.LogWarning(ex, "Avatar upload failed for player {PlayerId}.", _playerId);
-        }
+        // NavigateTo from a static-SSR form handler throws NavigationException as the
+        // signal-to-redirect mechanism. It MUST escape this method uncaught so Blazor's
+        // infrastructure can convert it into a 302 redirect. Calling it AFTER the catch
+        // block (not inside a try/catch) ensures that happens correctly.
+        // See: DEF-001 pattern — never wrap NavigateTo in a catch (Exception) block.
+        Navigation.NavigateTo($"/players/{_playerId.Value}");
     }
 
-    private async Task RemoveAvatar()
-    {
-        try
-        {
-            await PlayerService.RemoveAvatarAsync(_playerId);
-            _avatarUrl = null;
-            _player = await PlayerRepository.GetByIdAsync(_playerId);
-        }
-        catch (Exception ex)
-        {
-            _errorMessage = ex.Message;
-            Logger.LogWarning(ex, "Failed to remove avatar for player {PlayerId}.", _playerId);
-        }
-    }
+    // ── Form model ───────────────────────────────────────────────────────────
 
     private sealed class EditProfileModel
     {
-        [System.ComponentModel.DataAnnotations.Required]
-        [System.ComponentModel.DataAnnotations.StringLength(32, MinimumLength = 2)]
+        [Required(ErrorMessage = "Display name is required.")]
+        [StringLength(32, MinimumLength = 2,
+            ErrorMessage = "Display name must be between 2 and 32 characters.")]
+        [RegularExpression(@"^[a-zA-Z0-9_\-]+$",
+            ErrorMessage = "Display name may only contain letters, digits, underscores, and hyphens.")]
         public string DisplayName { get; set; } = "";
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-        public string? Email { get; set; }
-        public string? PhoneNumber { get; set; }
-        public bool ShowRealName { get; set; }
-        public bool ShowEmail { get; set; }
-        public bool ShowPhone { get; set; }
-        public bool ShowAvatar { get; set; } = true;
 
-        public static EditProfileModel From(NinetyNine.Model.Player p) => new()
+        [StringLength(50)] public string? FirstName   { get; set; }
+        [StringLength(50)] public string? MiddleName  { get; set; }
+        [StringLength(50)] public string? LastName    { get; set; }
+        [StringLength(30)] public string? PhoneNumber { get; set; }
+
+        public bool ShowRealName { get; set; }
+        public bool ShowEmail    { get; set; }
+        public bool ShowPhone    { get; set; }
+        public bool ShowAvatar   { get; set; } = true;
+
+        public static EditProfileModel From(Player p) => new()
         {
             DisplayName = p.DisplayName,
-            FirstName = p.FirstName,
-            LastName = p.LastName,
-            Email = p.EmailAddress,
+            FirstName   = p.FirstName,
+            MiddleName  = p.MiddleName,
+            LastName    = p.LastName,
             PhoneNumber = p.PhoneNumber,
             ShowRealName = p.Visibility.RealName,
-            ShowEmail = p.Visibility.EmailAddress,
-            ShowPhone = p.Visibility.PhoneNumber,
-            ShowAvatar = p.Visibility.Avatar
+            ShowEmail    = p.Visibility.EmailAddress,
+            ShowPhone    = p.Visibility.PhoneNumber,
+            ShowAvatar   = p.Visibility.Avatar
         };
     }
 }

@@ -1,62 +1,204 @@
 @page "/"
-@inject NavigationManager Navigation
+
+@*
+    Home.razor — public landing page.
+    -----------------------------------------------------------------
+    Renders the same hero for everyone and branches below it:
+
+      - Authenticated  → quick-links grid + feature highlights + rules snapshot
+      - Anonymous      → sign-in / create-account CTAs + feature highlights + rules snapshot
+
+    This page is intentionally NOT decorated with [Authorize]; it's the
+    public landing surface. The <AuthorizeView> handles the branching.
+
+    No forms, no bound handlers, no NavigationManager.NavigateTo calls.
+    This is a pure presentation page.
+*@
 
 <PageTitle>NinetyNine &mdash; Pool Scorekeeper</PageTitle>
 
-<div class="hero-section text-center py-5">
-    <h1 class="display-4 fw-bold">NinetyNine</h1>
-    <p class="lead">Track your P&amp;B pool game scores, compete on the leaderboard, and improve your game.</p>
+<div class="nn-home">
 
+    @*
+        1. HERO — full-bleed background with atmospheric billiards photo.
+        Negative margins cancel the .nn-layout__content padding so the
+        image runs edge-to-edge of the main pane. The background-image
+        is set via scoped CSS (see Home.razor.css).
+    *@
+    <section class="nn-home__hero" aria-labelledby="nn-home-hero-title">
+        <img class="nn-home__hero-img"
+             src="img/billiards/dim-pool-table.jpg"
+             alt=""
+             role="presentation"
+             loading="eager"
+             fetchpriority="high" />
+        <div class="nn-home__hero-overlay" aria-hidden="true"></div>
+        <div class="nn-home__hero-inner">
+            <p class="nn-home__eyebrow">Pool scorekeeper</p>
+            <h1 id="nn-home-hero-title" class="nn-home__wordmark">NinetyNine</h1>
+            <p class="nn-home__tagline">
+                Score the classic P&amp;B pool game. Every frame, every perfect 99.
+            </p>
+
+            <AuthorizeView>
+                <Authorized>
+                    <div class="nn-home__cta-row">
+                        <a href="/games/new" class="btn btn-primary btn-lg nn-home__cta">
+                            <img class="nn-icon" src="icons/phosphor/regular/game-controller.svg" alt="" role="presentation" />
+                            Start new game
+                        </a>
+                        <a href="/games" class="btn btn-outline-primary btn-lg nn-home__cta">
+                            <img class="nn-icon" src="icons/phosphor/regular/list.svg" alt="" role="presentation" />
+                            View history
+                        </a>
+                    </div>
+                    <p class="nn-home__hero-hello">
+                        Welcome back@(string.IsNullOrWhiteSpace(context.User.Identity?.Name) ? "" : $", {context.User.Identity!.Name}").
+                    </p>
+                </Authorized>
+                <NotAuthorized>
+                    <div class="nn-home__cta-row">
+                        <a href="/login" class="btn btn-primary btn-lg nn-home__cta">
+                            <img class="nn-icon" src="icons/phosphor/regular/sign-in.svg" alt="" role="presentation" />
+                            Sign in
+                        </a>
+                        <a href="/register" class="btn btn-outline-primary btn-lg nn-home__cta">
+                            <img class="nn-icon" src="icons/phosphor/regular/user.svg" alt="" role="presentation" />
+                            Create account
+                        </a>
+                    </div>
+                    <p class="nn-home__hero-hello">
+                        Free to use. No spreadsheets, no ads.
+                    </p>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </section>
+
+    @*
+        2. QUICK LINKS — authenticated users only.
+        Four tiles: New game, History, My stats, Leaderboard.
+    *@
     <AuthorizeView>
         <Authorized>
-            <div class="d-flex gap-3 justify-content-center flex-wrap mt-4">
-                <a href="/games/new" class="btn btn-primary btn-lg">Start New Game</a>
-                <a href="/games" class="btn btn-outline-secondary btn-lg">View History</a>
-                <a href="/stats/me" class="btn btn-outline-secondary btn-lg">My Stats</a>
-            </div>
-        </Authorized>
-        <NotAuthorized>
-            <div class="mt-4">
-                <a href="/login" class="btn btn-primary btn-lg">Sign in with Google</a>
-            </div>
-            <p class="mt-3 text-muted">Free to use. No password required.</p>
-        </NotAuthorized>
-    </AuthorizeView>
-</div>
+            <section class="nn-home__section" aria-labelledby="nn-home-quick-title">
+                <header class="nn-home__section-header">
+                    <h2 id="nn-home-quick-title" class="nn-home__section-title">Jump back in</h2>
+                    <p class="nn-home__section-sub">Quick links to the stuff you do most.</p>
+                </header>
 
-<div class="row mt-5 g-4">
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Official P&amp;B Scoring</h5>
-                <p class="card-text">
-                    9 frames, up to 11 points each. Break bonus + ball count — the same card
-                    you fill out at the table, now in your pocket.
+                <div class="nn-home__quick-grid">
+                    <a href="/games/new" class="nn-home__quick-card">
+                        <span class="nn-home__quick-icon" aria-hidden="true">
+                            <img src="icons/phosphor/regular/game-controller.svg" alt="" />
+                        </span>
+                        <span class="nn-home__quick-label">Start new game</span>
+                        <span class="nn-home__quick-helper">Pick a venue and start scoring.</span>
+                    </a>
+                    <a href="/games" class="nn-home__quick-card">
+                        <span class="nn-home__quick-icon" aria-hidden="true">
+                            <img src="icons/phosphor/regular/list.svg" alt="" />
+                        </span>
+                        <span class="nn-home__quick-label">View history</span>
+                        <span class="nn-home__quick-helper">Every frame you've ever played.</span>
+                    </a>
+                    <a href="/stats/me" class="nn-home__quick-card">
+                        <span class="nn-home__quick-icon" aria-hidden="true">
+                            <img src="icons/phosphor/regular/chart-line-up.svg" alt="" />
+                        </span>
+                        <span class="nn-home__quick-label">My stats</span>
+                        <span class="nn-home__quick-helper">Averages, bests, perfect frames.</span>
+                    </a>
+                    <a href="/stats" class="nn-home__quick-card">
+                        <span class="nn-home__quick-icon" aria-hidden="true">
+                            <img src="icons/phosphor/fill/trophy-fill.svg" alt="" />
+                        </span>
+                        <span class="nn-home__quick-label">Leaderboard</span>
+                        <span class="nn-home__quick-helper">See how you stack up.</span>
+                    </a>
+                </div>
+            </section>
+        </Authorized>
+    </AuthorizeView>
+
+    @*
+        3. FEATURE HIGHLIGHTS — rendered for both auth states.
+        Three columns of what the app is about.
+    *@
+    <section class="nn-home__section" aria-labelledby="nn-home-features-title">
+        <header class="nn-home__section-header">
+            <h2 id="nn-home-features-title" class="nn-home__section-title">Built for the table</h2>
+            <p class="nn-home__section-sub">What you get when you open NinetyNine.</p>
+        </header>
+
+        <div class="nn-home__feature-grid">
+            <article class="nn-home__feature">
+                <span class="nn-home__feature-icon" aria-hidden="true">
+                    <img src="icons/phosphor/regular/target.svg" alt="" />
+                </span>
+                <h3 class="nn-home__feature-title">Track your 99 runs</h3>
+                <p class="nn-home__feature-body">
+                    Record each frame, break bonus, ball count, and running total on a
+                    card that mirrors the paper original.
                 </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Game History</h5>
-                <p class="card-text">
-                    Every game stored. Review past scores, track improvement over time,
-                    and see your best frames.
+            </article>
+            <article class="nn-home__feature">
+                <span class="nn-home__feature-icon" aria-hidden="true">
+                    <img src="icons/phosphor/regular/users-three.svg" alt="" />
+                </span>
+                <h3 class="nn-home__feature-title">Play with friends</h3>
+                <p class="nn-home__feature-body">
+                    Share venues, compare averages, and climb the leaderboard with your
+                    regular crew.
                 </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Leaderboard</h5>
-                <p class="card-text">
-                    See how you stack up. Global leaderboard ranked by average score
-                    across completed games.
+            </article>
+            <article class="nn-home__feature">
+                <span class="nn-home__feature-icon" aria-hidden="true">
+                    <img src="icons/phosphor/fill/star-fill.svg" alt="" />
+                </span>
+                <h3 class="nn-home__feature-title">Dark, distraction-free</h3>
+                <p class="nn-home__feature-body">
+                    Designed for dim pool halls, not bright spreadsheets. Big touch
+                    targets, quiet palette, zero clutter.
                 </p>
-                <a href="/stats" class="btn btn-outline-primary btn-sm">View Leaderboard</a>
-            </div>
+            </article>
         </div>
-    </div>
+    </section>
+
+    @*
+        4. RULES SNAPSHOT — collapsible <details> so it stays out of the way
+        unless the visitor wants a refresher. Same on both auth states.
+    *@
+    <section class="nn-home__section nn-home__section--narrow" aria-labelledby="nn-home-rules-title">
+        <details class="nn-home__rules">
+            <summary class="nn-home__rules-summary">
+                <span class="nn-home__rules-summary-text">
+                    <img class="nn-icon" src="icons/phosphor/regular/crosshair.svg" alt="" role="presentation" />
+                    <span id="nn-home-rules-title">How NinetyNine scoring works</span>
+                </span>
+                <span class="nn-home__rules-caret" aria-hidden="true">
+                    <img src="icons/phosphor/regular/caret-down.svg" alt="" />
+                </span>
+            </summary>
+            <ul class="nn-home__rules-list">
+                <li>9 frames per game, maximum 11 points per frame, 99 points for a perfect game.</li>
+                <li>Break bonus: +1 if you legally pocket at least one ball on the break.</li>
+                <li>Ball count: 1 point per ball pocketed; the 9-ball counts as 2.</li>
+                <li>A foul ends the frame &mdash; scratching on the break is the one exception.</li>
+                <li>A perfect frame is 11 points; string nine of them together for a perfect 99.</li>
+            </ul>
+            <p class="nn-home__rules-foot">
+                Full rules live in the project README.
+            </p>
+        </details>
+    </section>
+
+    @*
+        5. FOOTNOTE — small muted signoff. The main layout already
+        renders a site footer; this is just a page-level tagline.
+    *@
+    <p class="nn-home__signoff">
+        Built for the love of the game.
+    </p>
+
 </div>

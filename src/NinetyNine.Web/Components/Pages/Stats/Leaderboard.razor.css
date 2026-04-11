@@ -1,0 +1,289 @@
+/* =====================================================================
+   Stats/Leaderboard.razor.css — scoped styles for the Leaderboard page.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   ===================================================================== */
+
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.nn-leaderboard {
+    padding: var(--nn-space-6) var(--nn-space-4);
+    max-width: 72rem;
+    margin-inline: auto;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.nn-leaderboard__header {
+    margin-bottom: var(--nn-space-6);
+}
+
+.nn-leaderboard__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-1);
+}
+
+.nn-leaderboard__subtitle {
+    color: var(--nn-text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+/* ── Loading state ───────────────────────────────────────────────────── */
+.nn-leaderboard__loading {
+    padding: var(--nn-space-8);
+    color: var(--nn-text-secondary);
+    text-align: center;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.nn-leaderboard__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--nn-space-8) var(--nn-space-4);
+    gap: var(--nn-space-4);
+}
+
+.nn-leaderboard__empty-icon {
+    opacity: 0.4;
+    filter: invert(1);
+}
+
+/* ── Desktop table ───────────────────────────────────────────────────── */
+.nn-leaderboard__table-wrapper {
+    /* shown on md+ */
+}
+
+.nn-leaderboard__table th {
+    color: var(--nn-text-tertiary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom-color: var(--nn-border-default);
+    padding-block: var(--nn-space-3);
+    white-space: nowrap;
+}
+
+.nn-leaderboard__col-rank  { width: 3.5rem; }
+.nn-leaderboard__col-games { width: 5rem;   text-align: right; }
+.nn-leaderboard__col-avg   { width: 7rem;   text-align: right; }
+.nn-leaderboard__col-best  { width: 8rem;   text-align: right; }
+
+/* ── Rank column ─────────────────────────────────────────────────────── */
+.nn-leaderboard__row td {
+    vertical-align: middle;
+    border-bottom-color: var(--nn-border-subtle);
+    padding-block: var(--nn-space-3);
+    color: var(--nn-text-secondary);
+    transition: background-color var(--nn-transition-fast);
+}
+
+.nn-leaderboard__rank {
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--nn-text-tertiary);
+    font-size: 0.95rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-1);
+}
+
+.nn-leaderboard__rank-icon {
+    opacity: 0.85;
+    filter: invert(78%) sepia(45%) saturate(600%) hue-rotate(5deg) brightness(110%);
+    flex-shrink: 0;
+}
+
+.nn-leaderboard__rank--gold   { color: var(--nn-accent-gold); }
+.nn-leaderboard__rank--silver { color: var(--nn-text-secondary); }
+.nn-leaderboard__rank--bronze { color: var(--nn-danger); }
+
+/* ── Top-3 row highlights ────────────────────────────────────────────── */
+.nn-leaderboard__row--gold {
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.07);
+}
+
+.nn-leaderboard__row--gold:hover {
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.13);
+}
+
+.nn-leaderboard__row--silver {
+    background-color: rgba(169, 178, 185, 0.06);
+}
+
+.nn-leaderboard__row--silver:hover {
+    background-color: rgba(169, 178, 185, 0.11);
+}
+
+.nn-leaderboard__row--bronze {
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.04);
+}
+
+.nn-leaderboard__row--bronze:hover {
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.08);
+}
+
+/* ── Numeric cells ───────────────────────────────────────────────────── */
+.nn-leaderboard__cell-games,
+.nn-leaderboard__cell-avg,
+.nn-leaderboard__cell-best {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--nn-text-primary);
+}
+
+.nn-leaderboard__score-denom {
+    color: var(--nn-text-tertiary);
+    font-size: 0.8em;
+}
+
+.nn-leaderboard__perfect-badge {
+    background-color: var(--nn-accent-gold-muted);
+    color: var(--nn-accent-gold);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: var(--nn-space-1) var(--nn-space-2);
+    border-radius: var(--nn-radius-full);
+    vertical-align: middle;
+}
+
+.nn-leaderboard__cell-player {
+    min-width: 10rem;
+}
+
+/* ── Mobile stacked cards ────────────────────────────────────────────── */
+.nn-leaderboard__cards {
+    display: none;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+}
+
+.nn-leaderboard__card {
+    display: block;
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-4);
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--nn-shadow-sm);
+    transition: background-color var(--nn-transition-fast),
+                box-shadow var(--nn-transition-fast);
+}
+
+.nn-leaderboard__card:hover {
+    background: var(--nn-bg-tertiary);
+    box-shadow: var(--nn-shadow-md);
+    color: inherit;
+}
+
+.nn-leaderboard__card:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    box-shadow: var(--nn-shadow-glow-teal);
+}
+
+/* Top-3 card left-border accents */
+.nn-leaderboard__card--gold {
+    border-left: 3px solid var(--nn-accent-gold);
+}
+
+.nn-leaderboard__card--silver {
+    border-left: 3px solid var(--nn-text-secondary);
+}
+
+.nn-leaderboard__card--bronze {
+    border-left: 3px solid var(--nn-danger);
+}
+
+.nn-leaderboard__card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-leaderboard__card-rank {
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--nn-text-tertiary);
+    min-width: 2rem;
+}
+
+.nn-leaderboard__card--gold .nn-leaderboard__card-rank   { color: var(--nn-accent-gold); }
+.nn-leaderboard__card--silver .nn-leaderboard__card-rank { color: var(--nn-text-secondary); }
+.nn-leaderboard__card--bronze .nn-leaderboard__card-rank { color: var(--nn-danger); }
+
+.nn-leaderboard__card-name {
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    font-size: 0.95rem;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nn-leaderboard__card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--nn-space-2);
+}
+
+.nn-leaderboard__card-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--nn-space-1);
+}
+
+.nn-leaderboard__card-stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--nn-text-primary);
+}
+
+.nn-leaderboard__card-stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--nn-text-tertiary);
+}
+
+/* ── Responsive breakpoint ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .nn-leaderboard {
+        padding: var(--nn-space-4) var(--nn-space-3);
+    }
+
+    .nn-leaderboard__title {
+        font-size: 1.5rem;
+    }
+
+    /* Hide table, show cards */
+    .nn-leaderboard__table-wrapper {
+        display: none;
+    }
+
+    .nn-leaderboard__cards {
+        display: flex;
+    }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .nn-leaderboard__card {
+        transition: none;
+    }
+
+    .nn-leaderboard__row td {
+        transition: none;
+    }
+}

@@ -1,0 +1,234 @@
+/* ==========================================================================
+   Edit Profile page — scoped styles
+   BEM block: nn-edit-profile-page
+   All colors via --nn-* tokens; no hardcoded hex or rgb values.
+   ========================================================================== */
+
+/* ── Page container ─────────────────────────────────────────────────────── */
+.nn-edit-profile-page {
+    padding: var(--nn-space-6) var(--nn-space-4);
+}
+
+.nn-edit-profile-page__inner {
+    max-width: 44rem;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-5);
+}
+
+/* ── Page header ─────────────────────────────────────────────────────────── */
+.nn-edit-profile-page__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--nn-space-4);
+    flex-wrap: wrap;
+}
+
+.nn-edit-profile-page__title {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin: 0;
+}
+
+.nn-edit-profile-page__view-btn {
+    min-height: var(--nn-touch-target);
+    flex-shrink: 0;
+}
+
+/* ── Card base ───────────────────────────────────────────────────────────── */
+.nn-edit-profile-page__card {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+    padding: var(--nn-space-5) var(--nn-space-6);
+}
+
+.nn-edit-profile-page__card-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--nn-text-tertiary);
+    margin-bottom: var(--nn-space-4);
+}
+
+/* ── Avatar section ──────────────────────────────────────────────────────── */
+.nn-edit-profile-page__avatar-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--nn-space-5);
+    flex-wrap: wrap;
+}
+
+.nn-edit-profile-page__avatar-preview {
+    flex-shrink: 0;
+}
+
+.nn-edit-profile-page__avatar-controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+    flex: 1;
+    min-width: 0;
+}
+
+.nn-edit-profile-page__upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-1);
+}
+
+.nn-edit-profile-page__remove-form {
+    display: inline-flex;
+}
+
+.nn-edit-profile-page__file-input {
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+    background: var(--nn-bg-tertiary);
+    border-color: var(--nn-border-default);
+    cursor: pointer;
+}
+
+.nn-edit-profile-page__file-input:hover {
+    border-color: var(--nn-border-strong);
+}
+
+.nn-edit-profile-page__file-input:focus {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+    border-color: var(--nn-accent-teal);
+}
+
+.nn-edit-profile-page__file-hint {
+    font-size: 0.8125rem;
+    color: var(--nn-text-tertiary);
+}
+
+/* ── Form section ────────────────────────────────────────────────────────── */
+.nn-edit-profile-page__field-group {
+    padding-bottom: var(--nn-space-5);
+    margin-bottom: var(--nn-space-5);
+    border-bottom: 1px solid var(--nn-border-subtle);
+}
+
+.nn-edit-profile-page__field-group:last-of-type {
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.nn-edit-profile-page__section-hint {
+    font-size: 0.875rem;
+    color: var(--nn-text-tertiary);
+    margin-top: calc(-1 * var(--nn-space-2));
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-edit-profile-page__field {
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-edit-profile-page__field:last-child {
+    margin-bottom: 0;
+}
+
+.nn-edit-profile-page__required {
+    color: var(--nn-danger);
+    margin-left: var(--nn-space-1);
+}
+
+/* Three-column name row */
+.nn-edit-profile-page__name-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--nn-space-4);
+    margin-bottom: var(--nn-space-4);
+}
+
+@media (max-width: 575px) {
+    .nn-edit-profile-page__name-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Read-only email ─────────────────────────────────────────────────────── */
+.nn-edit-profile-page__readonly-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--nn-text-secondary);
+    margin-bottom: var(--nn-space-1);
+}
+
+.nn-edit-profile-page__readonly-value {
+    font-size: 0.9375rem;
+    color: var(--nn-text-primary);
+    background: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+    padding: var(--nn-space-2) var(--nn-space-3);
+    margin-bottom: var(--nn-space-2);
+    word-break: break-all;
+}
+
+.nn-edit-profile-page__email-note {
+    font-size: 0.8125rem;
+    color: var(--nn-text-tertiary);
+}
+
+/* ── Visibility toggles ──────────────────────────────────────────────────── */
+.nn-edit-profile-page__toggles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+}
+
+.nn-edit-profile-page__toggle-row {
+    padding: var(--nn-space-3) var(--nn-space-4);
+    background: var(--nn-bg-tertiary);
+    border-radius: var(--nn-radius-md);
+    border: 1px solid var(--nn-border-subtle);
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────────── */
+.nn-edit-profile-page__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+    padding-top: var(--nn-space-5);
+    flex-wrap: wrap;
+}
+
+.nn-edit-profile-page__submit-btn {
+    min-height: var(--nn-touch-target);
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 575px) {
+    .nn-edit-profile-page__card {
+        padding: var(--nn-space-4);
+    }
+
+    .nn-edit-profile-page__actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nn-edit-profile-page__submit-btn,
+    .nn-edit-profile-page__actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .nn-edit-profile-page__file-input,
+    .nn-edit-profile-page__submit-btn {
+        transition: none;
+    }
+}

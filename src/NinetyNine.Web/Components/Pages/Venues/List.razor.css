@@ -1,0 +1,167 @@
+/* =====================================================================
+   Venues/List.razor.css — scoped styles for the Venue List page.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   ===================================================================== */
+
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.nn-venues-page {
+    padding-bottom: var(--nn-space-9);
+}
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.nn-venues-page__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--nn-space-3);
+    margin-bottom: var(--nn-space-6);
+    padding-bottom: var(--nn-space-4);
+    border-bottom: 1px solid var(--nn-border-default);
+}
+
+.nn-venues-page__title {
+    color: var(--nn-text-primary);
+    margin-bottom: 0;
+}
+
+.nn-venues-page__add-btn:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    box-shadow: var(--nn-shadow-glow-teal);
+}
+
+/* ── Loading state ───────────────────────────────────────────────────── */
+.nn-venues-page__loading {
+    padding: var(--nn-space-8) var(--nn-space-4);
+    color: var(--nn-text-secondary);
+    text-align: center;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.nn-venues-page__empty {
+    margin-top: var(--nn-space-6);
+}
+
+/* ── Responsive grid ─────────────────────────────────────────────────── */
+.nn-venues-page__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--nn-space-4);
+}
+
+/* ── Venue card ──────────────────────────────────────────────────────── */
+.nn-venues-page__card {
+    display: flex;
+    flex-direction: column;
+    background: var(--nn-surface-raised);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+    overflow: hidden;
+    transition: box-shadow var(--nn-transition-base),
+                border-color var(--nn-transition-base),
+                transform var(--nn-transition-base);
+}
+
+.nn-venues-page__card:hover {
+    box-shadow: var(--nn-shadow-lg);
+    border-color: var(--nn-border-strong);
+    transform: translateY(-2px);
+}
+
+/* ── Card body ───────────────────────────────────────────────────────── */
+.nn-venues-page__card-body {
+    padding: var(--nn-space-5);
+    flex: 1 1 auto;
+}
+
+/* ── Card title row (name + private pill) ────────────────────────────── */
+.nn-venues-page__card-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--nn-space-2);
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-venues-page__card-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin: 0;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+/* ── Private pill ────────────────────────────────────────────────────── */
+.nn-venues-page__private-pill {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--nn-accent-gold);
+    background-color: var(--nn-accent-gold-muted);
+    border: 1px solid var(--nn-accent-gold-muted);
+    border-radius: var(--nn-radius-full);
+    white-space: nowrap;
+}
+
+/* ── Card address and phone lines ────────────────────────────────────── */
+.nn-venues-page__card-address,
+.nn-venues-page__card-phone {
+    display: flex;
+    align-items: baseline;
+    gap: var(--nn-space-2);
+    margin: 0 0 var(--nn-space-2);
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+}
+
+.nn-venues-page__card-address:last-child,
+.nn-venues-page__card-phone:last-child {
+    margin-bottom: 0;
+}
+
+/* ── Card footer (edit link) ─────────────────────────────────────────── */
+.nn-venues-page__card-footer {
+    padding: var(--nn-space-3) var(--nn-space-5);
+    border-top: 1px solid var(--nn-border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.nn-venues-page__edit-link {
+    color: var(--nn-text-secondary);
+    gap: var(--nn-space-1);
+}
+
+.nn-venues-page__edit-link:hover,
+.nn-venues-page__edit-link:focus-visible {
+    color: var(--nn-accent-teal);
+    background-color: var(--nn-accent-teal-muted);
+}
+
+.nn-venues-page__edit-link:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .nn-venues-page__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .nn-venues-page__card {
+        transition: none;
+    }
+}

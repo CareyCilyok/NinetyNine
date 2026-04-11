@@ -1,0 +1,377 @@
+/* =====================================================================
+   Stats/MyStats.razor.css — scoped styles for the My Stats page.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   ===================================================================== */
+
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.nn-mystats {
+    padding: var(--nn-space-6) var(--nn-space-4);
+    max-width: 72rem;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-6);
+}
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.nn-mystats__header {
+    /* no extra margin needed — gap on .nn-mystats handles spacing */
+}
+
+.nn-mystats__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-1);
+}
+
+.nn-mystats__subtitle {
+    color: var(--nn-text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+/* ── Loading state ───────────────────────────────────────────────────── */
+.nn-mystats__loading {
+    padding: var(--nn-space-8);
+    color: var(--nn-text-secondary);
+    text-align: center;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.nn-mystats__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--nn-space-8) var(--nn-space-4);
+    gap: var(--nn-space-4);
+}
+
+.nn-mystats__empty-icon {
+    opacity: 0.4;
+    filter: invert(1);
+}
+
+/* ── Section wrapper ─────────────────────────────────────────────────── */
+.nn-mystats__section {
+    /* visual separation handled by parent gap */
+}
+
+/* ── Summary grid ────────────────────────────────────────────────────── */
+.nn-mystats__summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--nn-space-4);
+}
+
+.nn-mystats__summary-card {
+    background: var(--nn-surface-raised);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+    padding: var(--nn-space-5) var(--nn-space-4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--nn-space-2);
+    text-align: center;
+    transition: box-shadow var(--nn-transition-fast);
+}
+
+.nn-mystats__summary-card:hover {
+    box-shadow: var(--nn-shadow-lg);
+}
+
+/* Perfect game card gets a subtle gold glow */
+.nn-mystats__summary-card--perfect {
+    box-shadow: var(--nn-shadow-md), var(--nn-shadow-glow-gold);
+    border-color: rgba(var(--nn-accent-gold-rgb), 0.3);
+}
+
+/* ── Card icon ───────────────────────────────────────────────────────── */
+.nn-mystats__card-icon {
+    opacity: 0.55;
+    filter: invert(1);
+}
+
+.nn-mystats__card-icon--teal {
+    opacity: 0.85;
+    filter: invert(62%) sepia(55%) saturate(400%) hue-rotate(130deg) brightness(105%);
+}
+
+.nn-mystats__card-icon--success {
+    opacity: 0.85;
+    filter: invert(68%) sepia(42%) saturate(450%) hue-rotate(90deg) brightness(110%);
+}
+
+.nn-mystats__card-icon--gold {
+    opacity: 0.9;
+    filter: invert(78%) sepia(45%) saturate(600%) hue-rotate(5deg) brightness(110%);
+}
+
+/* ── Card value / label ──────────────────────────────────────────────── */
+.nn-mystats__card-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--nn-text-primary);
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.nn-mystats__card-value--mono {
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.nn-mystats__card-denom {
+    font-size: 0.55em;
+    color: var(--nn-text-tertiary);
+    font-weight: 400;
+}
+
+.nn-mystats__card-label {
+    font-size: 0.775rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--nn-text-tertiary);
+    font-weight: 600;
+}
+
+/* ── Panel (Best games / Recent games) ───────────────────────────────── */
+.nn-mystats__panel {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-sm);
+    overflow: hidden;
+}
+
+.nn-mystats__panel-title {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-2);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin: 0;
+    padding: var(--nn-space-4) var(--nn-space-5);
+    border-bottom: 1px solid var(--nn-border-subtle);
+}
+
+.nn-mystats__panel-icon {
+    opacity: 0.7;
+    filter: invert(1);
+    flex-shrink: 0;
+}
+
+.nn-mystats__panel-footer {
+    padding: var(--nn-space-3) var(--nn-space-5);
+    border-top: 1px solid var(--nn-border-subtle);
+    text-align: right;
+}
+
+/* ── Game tables ─────────────────────────────────────────────────────── */
+.nn-mystats__table-wrapper {
+    padding: 0 var(--nn-space-5);
+}
+
+.nn-mystats__table th {
+    color: var(--nn-text-tertiary);
+    font-size: 0.775rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom-color: var(--nn-border-default);
+    padding-block: var(--nn-space-2);
+    white-space: nowrap;
+}
+
+.nn-mystats__table td {
+    vertical-align: middle;
+    border-bottom-color: var(--nn-border-subtle);
+    padding-block: var(--nn-space-3);
+    color: var(--nn-text-secondary);
+}
+
+.nn-mystats__game-row:last-child td {
+    border-bottom: none;
+}
+
+.nn-mystats__cell-date time {
+    color: var(--nn-text-primary);
+    font-weight: 500;
+}
+
+.nn-mystats__cell-venue {
+    max-width: 12rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nn-mystats__cell-score {
+    font-variant-numeric: tabular-nums;
+    color: var(--nn-text-primary);
+}
+
+.nn-mystats__score-denom {
+    color: var(--nn-text-tertiary);
+    font-size: 0.8em;
+}
+
+.nn-mystats__score-empty {
+    color: var(--nn-text-tertiary);
+}
+
+.nn-mystats__perfect-badge {
+    background-color: var(--nn-accent-gold-muted);
+    color: var(--nn-accent-gold);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: var(--nn-space-1) var(--nn-space-2);
+    border-radius: var(--nn-radius-full);
+    vertical-align: middle;
+    display: inline-block;
+}
+
+.nn-mystats__view-btn {
+    min-height: var(--nn-touch-target);
+    display: inline-flex;
+    align-items: center;
+}
+
+/* ── Mobile game cards ───────────────────────────────────────────────── */
+.nn-mystats__game-cards {
+    display: none;
+    flex-direction: column;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-3) var(--nn-space-4);
+}
+
+.nn-mystats__game-card {
+    display: block;
+    background: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+    padding: var(--nn-space-3) var(--nn-space-4);
+    text-decoration: none;
+    color: inherit;
+    transition: background-color var(--nn-transition-fast);
+}
+
+.nn-mystats__game-card:hover {
+    background: var(--nn-surface-raised);
+    color: inherit;
+}
+
+.nn-mystats__game-card:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+}
+
+.nn-mystats__game-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--nn-space-1);
+    gap: var(--nn-space-2);
+}
+
+.nn-mystats__game-card-date {
+    color: var(--nn-text-primary);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.nn-mystats__game-card-score {
+    color: var(--nn-text-primary);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.nn-mystats__game-card-venue {
+    color: var(--nn-text-secondary);
+    font-size: 0.825rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Status pills (shared shape, referenced from List.razor tokens) ───── */
+.nn-status-pill {
+    display: inline-block;
+    padding: var(--nn-space-1) var(--nn-space-3);
+    border-radius: var(--nn-radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.nn-status-pill--completed {
+    background-color: var(--nn-success-bg);
+    color: var(--nn-success);
+    border: 1px solid var(--nn-success-border);
+}
+
+.nn-status-pill--inprogress {
+    background-color: var(--nn-accent-gold-muted);
+    color: var(--nn-accent-gold);
+    border: 1px solid var(--nn-accent-gold-muted);
+}
+
+.nn-status-pill--paused {
+    background-color: var(--nn-warning-bg);
+    color: var(--nn-warning);
+    border: 1px solid var(--nn-warning-border);
+}
+
+.nn-status-pill--muted {
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-tertiary);
+    border: 1px solid var(--nn-border-default);
+}
+
+/* ── Responsive breakpoints ──────────────────────────────────────────── */
+@media (min-width: 768px) {
+    .nn-mystats__summary-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .nn-mystats {
+        padding: var(--nn-space-4) var(--nn-space-3);
+        gap: var(--nn-space-4);
+    }
+
+    .nn-mystats__title {
+        font-size: 1.5rem;
+    }
+
+    .nn-mystats__card-value {
+        font-size: 1.75rem;
+    }
+
+    /* Hide tables, show cards on mobile */
+    .nn-mystats__table-wrapper {
+        display: none;
+    }
+
+    .nn-mystats__game-cards {
+        display: flex;
+    }
+
+    .nn-mystats__panel-footer {
+        padding: var(--nn-space-3) var(--nn-space-4);
+    }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .nn-mystats__summary-card,
+    .nn-mystats__game-card {
+        transition: none;
+    }
+}

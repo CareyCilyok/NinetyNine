@@ -4,12 +4,16 @@
 @inject IVenueService VenueService
 @inject NavigationManager Navigation
 @inject ILogger<Edit> Logger
+@using System.ComponentModel.DataAnnotations
 
 <PageTitle>@(_isNew ? "Add Venue" : "Edit Venue") &mdash; NinetyNine</PageTitle>
 
-<div class="row justify-content-center">
-    <div class="col-md-7 col-lg-5">
-        <h1 class="mb-4">@(_isNew ? "Add Venue" : "Edit Venue")</h1>
+<div class="nn-page nn-venue-edit">
+    <div class="nn-venue-edit__inner">
+
+        <header class="nn-venue-edit__header">
+            <h1 class="nn-venue-edit__title">@(_isNew ? "Add Venue" : "Edit Venue")</h1>
+        </header>
 
         @if (!string.IsNullOrEmpty(_errorMessage))
         {
@@ -18,58 +22,150 @@
 
         @if (_loading)
         {
-            <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading"></span>Loading&hellip;</p>
+            <div class="nn-venue-edit__loading" role="status" aria-live="polite">
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                Loading&hellip;
+            </div>
+        }
+        else if (_notFound)
+        {
+            <div class="nn-empty-state" role="status">
+                <p class="nn-empty-state__title">Venue not found</p>
+                <p class="nn-empty-state__description">
+                    The venue you are looking for does not exist or has been deleted.
+                </p>
+                <a href="/venues" class="btn btn-primary">Back to venues</a>
+            </div>
         }
         else
         {
-            <EditForm Model="_model" OnValidSubmit="HandleSave">
-                <DataAnnotationsValidator />
+            <div class="nn-venue-edit__form-card">
+                <EditForm Model="_saveModel"
+                          method="post"
+                          FormName="save-venue"
+                          OnValidSubmit="HandleSaveAsync">
+                    <AntiforgeryToken />
+                    <DataAnnotationsValidator />
 
-                <div class="mb-3">
-                    <label class="form-label fw-semibold" for="venue-name">Name <span class="text-danger" aria-hidden="true">*</span></label>
-                    <InputText id="venue-name" class="form-control"
-                               @bind-Value="_model.Name"
-                               placeholder="e.g. Corner Pocket" />
-                    <ValidationMessage For="() => _model.Name" />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label" for="venue-address">Address</label>
-                    <InputText id="venue-address" class="form-control"
-                               @bind-Value="_model.Address"
-                               placeholder="123 Main St, City, State"
-                               autocomplete="street-address" />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label" for="venue-phone">Phone Number</label>
-                    <InputText id="venue-phone" class="form-control"
-                               @bind-Value="_model.PhoneNumber"
-                               autocomplete="tel"
-                               inputmode="tel" />
-                </div>
-
-                <div class="mb-4">
-                    <div class="form-check">
-                        <InputCheckbox id="venue-private" class="form-check-input"
-                                       @bind-Value="_model.Private" />
-                        <label class="form-check-label" for="venue-private">
-                            Private venue (only visible to you)
+                    <div class="nn-venue-edit__field">
+                        <label class="form-label nn-venue-edit__label" for="venue-name">
+                            Name
+                            <span class="text-danger" aria-hidden="true">*</span>
                         </label>
+                        <InputText id="venue-name"
+                                   class="form-control"
+                                   @bind-Value="_saveModel.Name"
+                                   placeholder="e.g. Corner Pocket"
+                                   autocomplete="organization"
+                                   aria-required="true" />
+                        <ValidationMessage For="() => _saveModel.Name" />
                     </div>
-                </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary" disabled="@_isSaving">
-                        @if (_isSaving)
-                        {
-                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        }
-                        @(_isNew ? "Add Venue" : "Save Changes")
-                    </button>
-                    <a href="/venues" class="btn btn-outline-secondary">Cancel</a>
+                    <div class="nn-venue-edit__field">
+                        <label class="form-label nn-venue-edit__label" for="venue-address">
+                            Address
+                        </label>
+                        <InputText id="venue-address"
+                                   class="form-control"
+                                   @bind-Value="_saveModel.Address"
+                                   placeholder="123 Main St, City, State"
+                                   autocomplete="street-address" />
+                        <ValidationMessage For="() => _saveModel.Address" />
+                    </div>
+
+                    <div class="nn-venue-edit__field">
+                        <label class="form-label nn-venue-edit__label" for="venue-phone">
+                            Phone number
+                        </label>
+                        <InputText id="venue-phone"
+                                   class="form-control"
+                                   @bind-Value="_saveModel.PhoneNumber"
+                                   autocomplete="tel"
+                                   inputmode="tel" />
+                        <ValidationMessage For="() => _saveModel.PhoneNumber" />
+                    </div>
+
+                    <div class="nn-venue-edit__field nn-venue-edit__field--check">
+                        <div class="form-check form-switch">
+                            <InputCheckbox id="venue-private"
+                                           class="form-check-input"
+                                           @bind-Value="_saveModel.Private"
+                                           role="switch"
+                                           aria-describedby="venue-private-hint" />
+                            <label class="form-check-label" for="venue-private">
+                                Private venue
+                            </label>
+                        </div>
+                        <div id="venue-private-hint" class="form-text nn-venue-edit__hint">
+                            Private venues only appear in your own venue list and as options when starting a new game.
+                        </div>
+                    </div>
+
+                    <div class="nn-venue-edit__actions">
+                        <button type="submit"
+                                class="btn btn-primary nn-venue-edit__submit"
+                                disabled="@_isSaving"
+                                aria-busy="@_isSaving.ToString().ToLowerInvariant()">
+                            @if (_isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm"
+                                      role="status"
+                                      aria-hidden="true"></span>
+                                <span>Saving&hellip;</span>
+                            }
+                            else
+                            {
+                                <span>@(_isNew ? "Add venue" : "Save changes")</span>
+                            }
+                        </button>
+                        <a href="/venues" class="btn btn-ghost">Cancel</a>
+                    </div>
+                </EditForm>
+            </div>
+
+            @if (!_isNew)
+            {
+                <div class="nn-venue-edit__delete-section">
+                    <h2 class="nn-venue-edit__delete-heading">Delete venue</h2>
+                    <p class="nn-venue-edit__delete-warning">
+                        Deleting this venue is permanent and cannot be undone. Any games
+                        recorded at this venue will retain the venue reference but the venue
+                        will no longer be selectable for new games.
+                    </p>
+
+                    <EditForm Model="_deleteModel"
+                              method="post"
+                              FormName="delete-venue"
+                              OnValidSubmit="HandleDeleteAsync">
+                        <AntiforgeryToken />
+                        <DataAnnotationsValidator />
+
+                        @* Hidden VenueId carried through the delete form *@
+                        <InputText type="hidden" @bind-Value="_deleteModel.VenueId" />
+
+                        <button type="submit"
+                                class="btn btn-outline-danger nn-venue-edit__delete-btn"
+                                disabled="@_isDeleting"
+                                aria-busy="@_isDeleting.ToString().ToLowerInvariant()">
+                            @if (_isDeleting)
+                            {
+                                <span class="spinner-border spinner-border-sm"
+                                      role="status"
+                                      aria-hidden="true"></span>
+                                <span>Deleting&hellip;</span>
+                            }
+                            else
+                            {
+                                <img class="nn-icon nn-icon-sm"
+                                     src="/icons/phosphor/regular/trash.svg"
+                                     alt=""
+                                     aria-hidden="true" />
+                                <span>Delete venue</span>
+                            }
+                        </button>
+                    </EditForm>
                 </div>
-            </EditForm>
+            }
         }
     </div>
 </div>
@@ -77,11 +173,21 @@
 @code {
     [Parameter] public Guid? VenueId { get; set; }
 
-    private VenueModel _model = new();
+    // ── Save form model ─────────────────────────────────────────────────
+    [SupplyParameterFromForm(FormName = "save-venue")]
+    private SaveVenueModel _saveModel { get; set; } = new();
+
+    // ── Delete form model ───────────────────────────────────────────────
+    [SupplyParameterFromForm(FormName = "delete-venue")]
+    private DeleteVenueModel _deleteModel { get; set; } = new();
+
+    // ── Page state ──────────────────────────────────────────────────────
     private bool _isNew;
-    private string _errorMessage = "";
     private bool _loading = true;
+    private bool _notFound;
     private bool _isSaving;
+    private bool _isDeleting;
+    private string _errorMessage = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,21 +195,33 @@
 
         if (!_isNew)
         {
+            // Pre-populate delete form VenueId
+            _deleteModel.VenueId = VenueId!.Value.ToString();
+
             try
             {
                 var venue = await VenueService.GetAsync(VenueId!.Value);
-                if (venue is not null)
+                if (venue is null)
                 {
-                    _model = VenueModel.From(venue);
+                    _notFound = true;
                 }
                 else
                 {
-                    _errorMessage = "Venue not found.";
+                    // Only pre-populate the save form if it wasn't already
+                    // filled in by a POST round-trip (SupplyParameterFromForm
+                    // will have populated it already in that case).
+                    if (string.IsNullOrEmpty(_saveModel.Name))
+                    {
+                        _saveModel.Name        = venue.Name;
+                        _saveModel.Address     = venue.Address;
+                        _saveModel.PhoneNumber = venue.PhoneNumber;
+                        _saveModel.Private     = venue.Private;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _errorMessage = ex.Message;
+                _errorMessage = "Failed to load venue. Please try again.";
                 Logger.LogWarning(ex, "Failed to load venue {VenueId}.", VenueId);
             }
         }
@@ -111,59 +229,91 @@
         _loading = false;
     }
 
-    private async Task HandleSave()
+    // ── Save handler ────────────────────────────────────────────────────
+    private async Task HandleSaveAsync()
     {
         _isSaving = true;
         _errorMessage = "";
 
         try
         {
-            var venue = _model.ToVenue(VenueId ?? Guid.NewGuid());
+            var venue = _saveModel.ToVenue(VenueId ?? Guid.NewGuid());
 
             if (_isNew)
-            {
                 await VenueService.CreateAsync(venue);
-            }
             else
-            {
                 await VenueService.UpdateAsync(venue);
-            }
-
-            Navigation.NavigateTo("/venues");
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message;
+            _errorMessage = "Failed to save the venue. Please try again.";
             Logger.LogWarning(ex, "Failed to save venue.");
             _isSaving = false;
+            return;
         }
+
+        // NavigationException must escape uncaught — do NOT wrap in try/catch.
+        // Blazor static-SSR converts it into the 302 redirect response.
+        Navigation.NavigateTo("/venues");
     }
 
-    private sealed class VenueModel
+    // ── Delete handler ──────────────────────────────────────────────────
+    private async Task HandleDeleteAsync()
     {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Venue name is required.")]
-        [System.ComponentModel.DataAnnotations.StringLength(200, MinimumLength = 1)]
+        if (!Guid.TryParse(_deleteModel.VenueId, out var idToDelete))
+        {
+            _errorMessage = "Invalid venue identifier. Cannot delete.";
+            return;
+        }
+
+        _isDeleting = true;
+        _errorMessage = "";
+
+        try
+        {
+            await VenueService.DeleteAsync(idToDelete);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Failed to delete the venue. Please try again.";
+            Logger.LogWarning(ex, "Failed to delete venue {VenueId}.", idToDelete);
+            _isDeleting = false;
+            return;
+        }
+
+        // NavigationException must escape uncaught.
+        Navigation.NavigateTo("/venues");
+    }
+
+    // ── Form models ─────────────────────────────────────────────────────
+
+    private sealed class SaveVenueModel
+    {
+        [Required(ErrorMessage = "Venue name is required.")]
+        [StringLength(80, MinimumLength = 2,
+            ErrorMessage = "Name must be between 2 and 80 characters.")]
         public string Name { get; set; } = "";
 
+        [StringLength(200, ErrorMessage = "Address must be 200 characters or fewer.")]
         public string Address { get; set; } = "";
+
+        [StringLength(30, ErrorMessage = "Phone number must be 30 characters or fewer.")]
         public string PhoneNumber { get; set; } = "";
+
         public bool Private { get; set; }
 
         public Venue ToVenue(Guid id) => new()
         {
-            VenueId = id,
-            Name = Name,
-            Address = Address,
+            VenueId     = id,
+            Name        = Name,
+            Address     = Address,
             PhoneNumber = PhoneNumber,
-            Private = Private
+            Private     = Private
         };
+    }
 
-        public static VenueModel From(Venue v) => new()
-        {
-            Name = v.Name,
-            Address = v.Address,
-            PhoneNumber = v.PhoneNumber,
-            Private = v.Private
-        };
+    private sealed class DeleteVenueModel
+    {
+        public string VenueId { get; set; } = "";
     }
 }

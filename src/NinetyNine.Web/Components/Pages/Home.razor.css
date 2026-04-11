@@ -1,0 +1,481 @@
+/* =====================================================================
+   Home.razor.css  (Blazor scoped)
+   ---------------------------------------------------------------------
+   Dark-first landing page. Colors are tokens only (var(--nn-*)); no
+   hardcoded palette values. Uses a full-bleed hero with a background
+   image from wwwroot/img/billiards/ plus a gradient overlay that fades
+   into --nn-bg-primary at the bottom so the hero blends into the page.
+
+   Layout notes:
+     - This page renders inside MainLayout's .nn-layout__content, which
+       applies padding of 16 / 24 / 32 px at three breakpoints. To make
+       the hero run edge-to-edge of the main pane we use negative
+       horizontal/top margins matching that padding, and we restore
+       inner content constraints with padding on .nn-home__hero-inner.
+     - Sections below the hero sit inside a centered max-width wrapper
+       so long-form content stays readable.
+
+   Accessibility:
+     - Reduced-motion queries disable hover lifts and the entrance
+       transitions.
+     - The hero background image is decorative (rendered via CSS
+       background-image with an aria-hidden-equivalent role), and the
+       real content (wordmark, tagline, CTAs) is live DOM text.
+   ===================================================================== */
+
+:host,
+.nn-home {
+    display: block;
+}
+
+/* -------------------------------------------------------------------
+   1. Hero — full-bleed background photo with overlay gradient.
+   ------------------------------------------------------------------- */
+
+.nn-home__hero {
+    position: relative;
+    isolation: isolate;
+
+    /* Cancel the padding applied by .nn-layout__content (app shell)
+       so the hero runs edge-to-edge of the main pane. These values
+       must match MainLayout.razor.css: 16 / 20 / 24 / 32 across
+       breakpoints. */
+    margin: calc(var(--nn-space-4) * -1) calc(var(--nn-space-4) * -1) var(--nn-space-8);
+
+    min-height: 48vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--nn-bg-primary);
+    border-bottom: 1px solid var(--nn-border-subtle);
+    overflow: hidden;
+}
+
+/* Billiards photo: dim pool table with balls on felt. Committed at
+   wwwroot/img/billiards/dim-pool-table.jpg. Rendered as an <img>
+   element so we can hint loading=eager and fetchpriority=high. It's
+   absolutely positioned below the overlay/content and decoratively
+   presented (alt="", role="presentation"). */
+.nn-home__hero-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 40%;
+    z-index: 0;
+    /* Slight desaturation keeps the photo from fighting the teal
+       accent in the CTAs. */
+    filter: saturate(0.85);
+}
+
+/* Overlay gradient that darkens the image and fades the bottom edge
+   into --nn-bg-primary so the hero dissolves into the page. */
+.nn-home__hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.20) 0%,
+        rgba(0, 0, 0, 0.60) 60%,
+        var(--nn-bg-primary) 100%
+    );
+    pointer-events: none;
+}
+
+@media (min-width: 768px) {
+    .nn-home__hero {
+        margin: calc(var(--nn-space-5) * -1) calc(var(--nn-space-5) * -1) var(--nn-space-9);
+        min-height: 58vh;
+    }
+}
+
+@media (min-width: 1200px) {
+    .nn-home__hero {
+        margin: calc(var(--nn-space-6) * -1) calc(var(--nn-space-6) * -1) var(--nn-space-10);
+        min-height: 62vh;
+    }
+}
+
+.nn-home__hero-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 760px;
+    margin-inline: auto;
+    padding: var(--nn-space-9) var(--nn-space-5);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--nn-space-4);
+}
+
+@media (min-width: 768px) {
+    .nn-home__hero-inner {
+        padding: var(--nn-space-10) var(--nn-space-6);
+    }
+}
+
+.nn-home__eyebrow {
+    margin: 0;
+    font-family: var(--nn-font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--nn-accent-teal);
+    padding: var(--nn-space-1) var(--nn-space-3);
+    border: 1px solid rgba(var(--nn-accent-teal-rgb), 0.4);
+    border-radius: var(--nn-radius-full);
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.08);
+}
+
+.nn-home__wordmark {
+    margin: 0;
+    font-family: var(--nn-font-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.02;
+    /* Fluid display size: 2.75rem → 5.5rem across viewports. */
+    font-size: clamp(2.75rem, 2rem + 4vw, 5.5rem);
+    color: var(--nn-text-primary);
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.7);
+}
+
+.nn-home__tagline {
+    margin: 0;
+    max-width: 44ch;
+    color: var(--nn-text-secondary);
+    font-size: clamp(1rem, 0.9rem + 0.5vw, 1.25rem);
+    line-height: 1.55;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+}
+
+.nn-home__cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--nn-space-3);
+    margin-top: var(--nn-space-3);
+    width: 100%;
+}
+
+.nn-home__cta {
+    /* Ensure the buttons always hit the 44px touch target and have
+       enough horizontal breathing room on the hero. */
+    min-height: var(--nn-touch-target);
+    padding-inline: var(--nn-space-5);
+    gap: var(--nn-space-2);
+}
+
+@media (max-width: 479px) {
+    .nn-home__cta-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nn-home__cta {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+.nn-home__hero-hello {
+    margin: var(--nn-space-3) 0 0;
+    font-size: 0.9rem;
+    color: var(--nn-text-tertiary);
+}
+
+/* -------------------------------------------------------------------
+   2. Section scaffolding — max-width wrapper, consistent rhythm.
+   ------------------------------------------------------------------- */
+
+.nn-home__section {
+    width: 100%;
+    max-width: 1100px;
+    margin-inline: auto;
+    margin-block-end: var(--nn-space-9);
+}
+
+.nn-home__section--narrow {
+    max-width: 780px;
+}
+
+.nn-home__section-header {
+    text-align: center;
+    margin-bottom: var(--nn-space-6);
+}
+
+.nn-home__section-title {
+    margin: 0 0 var(--nn-space-2);
+    font-size: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    letter-spacing: -0.01em;
+}
+
+.nn-home__section-sub {
+    margin: 0;
+    color: var(--nn-text-secondary);
+    font-size: 1rem;
+}
+
+/* -------------------------------------------------------------------
+   3. Quick-links grid (authenticated).
+   ------------------------------------------------------------------- */
+
+.nn-home__quick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--nn-space-5);
+}
+
+.nn-home__quick-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--nn-space-2);
+    min-height: calc(var(--nn-touch-target) * 3);
+    padding: var(--nn-space-5);
+    background-color: var(--nn-surface-raised);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-sm);
+    text-decoration: none;
+    color: var(--nn-text-primary);
+    transition:
+        transform var(--nn-transition-base),
+        box-shadow var(--nn-transition-base),
+        border-color var(--nn-transition-base),
+        background-color var(--nn-transition-base);
+}
+
+.nn-home__quick-card:hover,
+.nn-home__quick-card:focus-visible {
+    transform: translateY(-3px);
+    box-shadow: var(--nn-shadow-md);
+    border-color: rgba(var(--nn-accent-teal-rgb), 0.55);
+    background-color: var(--nn-bg-tertiary);
+    text-decoration: none;
+    color: var(--nn-text-primary);
+}
+
+.nn-home__quick-card:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+}
+
+.nn-home__quick-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--nn-radius-md);
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.12);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-home__quick-icon img {
+    width: 1.75rem;
+    height: 1.75rem;
+    /* Tint the black Phosphor SVG to teal. */
+    filter: invert(63%) sepia(81%) saturate(344%) hue-rotate(118deg) brightness(91%) contrast(87%);
+}
+
+.nn-home__quick-label {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+}
+
+.nn-home__quick-helper {
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+    line-height: 1.45;
+}
+
+/* -------------------------------------------------------------------
+   4. Feature highlights — 1 / 2 / 3 column grid.
+   ------------------------------------------------------------------- */
+
+.nn-home__feature-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--nn-space-5);
+}
+
+@media (min-width: 600px) {
+    .nn-home__feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 960px) {
+    .nn-home__feature-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.nn-home__feature {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-5);
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-lg);
+}
+
+.nn-home__feature-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--nn-radius-md);
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.12);
+    border: 1px solid rgba(var(--nn-accent-gold-rgb), 0.35);
+}
+
+.nn-home__feature-icon img {
+    width: 1.375rem;
+    height: 1.375rem;
+    /* Tint to accent gold so it pops against the dark card. */
+    filter: invert(78%) sepia(38%) saturate(468%) hue-rotate(357deg) brightness(94%) contrast(92%);
+}
+
+.nn-home__feature-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+}
+
+.nn-home__feature-body {
+    margin: 0;
+    color: var(--nn-text-secondary);
+    line-height: 1.55;
+}
+
+/* -------------------------------------------------------------------
+   5. Rules snapshot — collapsible <details>.
+   ------------------------------------------------------------------- */
+
+.nn-home__rules {
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    overflow: hidden;
+}
+
+.nn-home__rules-summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-4) var(--nn-space-5);
+    min-height: var(--nn-touch-target);
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    transition: background-color var(--nn-transition-fast);
+}
+
+.nn-home__rules-summary::-webkit-details-marker {
+    display: none;
+}
+
+.nn-home__rules-summary:hover,
+.nn-home__rules-summary:focus-visible {
+    background-color: var(--nn-bg-tertiary);
+    outline: none;
+}
+
+.nn-home__rules-summary:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--nn-focus-ring);
+}
+
+.nn-home__rules-summary-text {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+}
+
+.nn-home__rules-caret {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    transition: transform var(--nn-transition-base);
+}
+
+.nn-home__rules-caret img {
+    width: 1.25rem;
+    height: 1.25rem;
+    filter: invert(87%) sepia(6%) saturate(120%) hue-rotate(173deg) brightness(92%) contrast(88%);
+}
+
+.nn-home__rules[open] .nn-home__rules-caret {
+    transform: rotate(180deg);
+}
+
+.nn-home__rules-list {
+    margin: 0;
+    padding: 0 var(--nn-space-6) var(--nn-space-4) var(--nn-space-7);
+    color: var(--nn-text-secondary);
+    line-height: 1.6;
+}
+
+.nn-home__rules-list li {
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-home__rules-list li:last-child {
+    margin-bottom: 0;
+}
+
+.nn-home__rules-foot {
+    margin: 0;
+    padding: 0 var(--nn-space-6) var(--nn-space-5) var(--nn-space-7);
+    font-size: 0.8125rem;
+    color: var(--nn-text-tertiary);
+    font-style: italic;
+}
+
+/* -------------------------------------------------------------------
+   6. Footer signoff.
+   ------------------------------------------------------------------- */
+
+.nn-home__signoff {
+    margin: var(--nn-space-6) 0 var(--nn-space-4);
+    text-align: center;
+    font-size: 0.875rem;
+    font-style: italic;
+    color: var(--nn-text-tertiary);
+}
+
+/* -------------------------------------------------------------------
+   7. Reduced motion — kill lifts, rotations, and hover transitions.
+   ------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .nn-home__quick-card,
+    .nn-home__rules-caret,
+    .nn-home__rules-summary {
+        transition: none;
+    }
+
+    .nn-home__quick-card:hover,
+    .nn-home__quick-card:focus-visible {
+        transform: none;
+    }
+
+    .nn-home__rules[open] .nn-home__rules-caret {
+        transform: none;
+    }
+}

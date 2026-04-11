@@ -2,122 +2,361 @@
 @attribute [Authorize]
 @inject IStatisticsService StatisticsService
 @inject IGameRepository GameRepository
+@inject IVenueService VenueService
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<MyStats> Logger
 
 <PageTitle>My Stats &mdash; NinetyNine</PageTitle>
 
-<h1 class="mb-4">My Statistics</h1>
+<div class="nn-page nn-mystats">
 
-@if (_loading)
-{
-    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading stats"></span>Loading&hellip;</p>
-}
-else if (_stats is null)
-{
-    <div class="alert alert-info">No game data yet. <a href="/games/new">Start a game!</a></div>
-}
-else
-{
-    <div class="row g-3 mb-5">
-        <div class="col-6 col-md-3">
-            <div class="card text-center py-3">
-                <div class="display-6 fw-bold">@_stats.GamesPlayed</div>
-                <div class="text-muted small">Games Played</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card text-center py-3">
-                <div class="display-6 fw-bold">@_stats.GamesCompleted</div>
-                <div class="text-muted small">Completed</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card text-center py-3">
-                <div class="display-6 fw-bold font-monospace">@_stats.AverageScore.ToString("F1")</div>
-                <div class="text-muted small">Avg Score</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card text-center py-3">
-                <div class="display-6 fw-bold font-monospace @(_stats.BestScore == 99 ? "text-warning" : "")">
-                    @_stats.BestScore
-                </div>
-                <div class="text-muted small">Best Score</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card text-center py-3">
-                <div class="display-6 fw-bold">@_stats.PerfectGames</div>
-                <div class="text-muted small">Perfect Games</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card text-center py-3">
-                <div class="display-6 fw-bold">@_stats.PerfectFrames</div>
-                <div class="text-muted small">Perfect Frames</div>
-            </div>
-        </div>
-        @if (_stats.LastPlayed.HasValue)
-        {
-            <div class="col-12 col-md-6">
-                <div class="card text-center py-3">
-                    <div class="h5 fw-bold">@_stats.LastPlayed.Value.ToString("MMMM d, yyyy")</div>
-                    <div class="text-muted small">Last Played</div>
-                </div>
-            </div>
-        }
-    </div>
-
-    @if (_bestGames.Count > 0)
+    @if (_loading)
     {
-        <h2 class="h4 mb-3">Best Games</h2>
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <caption class="visually-hidden">Top scoring games</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Date</th>
-                        <th scope="col">Score</th>
-                        <th scope="col">Avg / Frame</th>
-                        <th scope="col"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var game in _bestGames)
-                    {
-                        <tr>
-                            <td>@game.WhenPlayed.ToLocalTime().ToString("MMM d, yyyy")</td>
-                            <td class="font-monospace fw-bold">
-                                @game.TotalScore
-                                @if (game.IsPerfectGame)
-                                {
-                                    <span class="badge bg-warning text-dark ms-1">99!</span>
-                                }
-                            </td>
-                            <td>@game.AverageScore.ToString("F1")</td>
-                            <td><a href="/games/@game.GameId" class="btn btn-sm btn-outline-secondary">View</a></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+        <div class="nn-mystats__loading" aria-live="polite" aria-busy="true">
+            <span class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"></span>
+            Loading&hellip;
         </div>
     }
-}
+    else if (_stats is null || _stats.GamesPlayed == 0)
+    {
+        <header class="nn-mystats__header">
+            <h1 class="nn-mystats__title">My Stats</h1>
+        </header>
+
+        <div class="nn-empty-state nn-mystats__empty">
+            <img src="/icons/phosphor/regular/game-controller.svg"
+                 alt=""
+                 class="nn-mystats__empty-icon"
+                 aria-hidden="true"
+                 width="64"
+                 height="64" />
+            <h2 class="nn-empty-state__heading">No games yet</h2>
+            <p class="nn-empty-state__body">You haven't played a game yet. Start one.</p>
+            <a href="/games/new" class="btn btn-primary">Start a game</a>
+        </div>
+    }
+    else
+    {
+        <header class="nn-mystats__header">
+            <div>
+                <h1 class="nn-mystats__title">My Stats</h1>
+                @if (_stats.LastPlayed.HasValue)
+                {
+                    <p class="nn-mystats__subtitle">
+                        Last played <time datetime="@_stats.LastPlayed.Value.ToString("O")"
+                                          title="@_stats.LastPlayed.Value.ToLocalTime().ToString("f")">
+                            @RelativeTime(_stats.LastPlayed.Value)
+                        </time>
+                    </p>
+                }
+            </div>
+        </header>
+
+        @* ── Summary cards grid ─────────────────────────────────────────── *@
+        <section class="nn-mystats__section" aria-label="Statistics summary">
+            <div class="nn-mystats__summary-grid">
+
+                <div class="nn-mystats__summary-card">
+                    <img src="/icons/phosphor/regular/game-controller.svg"
+                         alt=""
+                         aria-hidden="true"
+                         class="nn-mystats__card-icon"
+                         width="24"
+                         height="24" />
+                    <span class="nn-mystats__card-value">@_stats.GamesPlayed</span>
+                    <span class="nn-mystats__card-label">Total Games</span>
+                </div>
+
+                <div class="nn-mystats__summary-card">
+                    <img src="/icons/phosphor/fill/check-fill.svg"
+                         alt=""
+                         aria-hidden="true"
+                         class="nn-mystats__card-icon nn-mystats__card-icon--success"
+                         width="24"
+                         height="24" />
+                    <span class="nn-mystats__card-value">@_stats.GamesCompleted</span>
+                    <span class="nn-mystats__card-label">Completed</span>
+                </div>
+
+                <div class="nn-mystats__summary-card">
+                    <img src="/icons/phosphor/regular/chart-line-up.svg"
+                         alt=""
+                         aria-hidden="true"
+                         class="nn-mystats__card-icon nn-mystats__card-icon--teal"
+                         width="24"
+                         height="24" />
+                    <span class="nn-mystats__card-value nn-mystats__card-value--mono">@_stats.AverageScore.ToString("F1")</span>
+                    <span class="nn-mystats__card-label">Avg Score</span>
+                </div>
+
+                <div class="nn-mystats__summary-card @(_stats.BestScore == 99 ? "nn-mystats__summary-card--perfect" : "")">
+                    <img src="/icons/phosphor/fill/trophy-fill.svg"
+                         alt=""
+                         aria-hidden="true"
+                         class="nn-mystats__card-icon nn-mystats__card-icon--gold"
+                         width="24"
+                         height="24" />
+                    <span class="nn-mystats__card-value nn-mystats__card-value--mono">
+                        @_stats.BestScore<span class="nn-mystats__card-denom">/99</span>
+                    </span>
+                    <span class="nn-mystats__card-label">Best Score</span>
+                </div>
+
+                <div class="nn-mystats__summary-card">
+                    <img src="/icons/phosphor/fill/star-fill.svg"
+                         alt=""
+                         aria-hidden="true"
+                         class="nn-mystats__card-icon nn-mystats__card-icon--gold"
+                         width="24"
+                         height="24" />
+                    <span class="nn-mystats__card-value">@_stats.PerfectGames</span>
+                    <span class="nn-mystats__card-label">Perfect Games</span>
+                </div>
+
+                <div class="nn-mystats__summary-card">
+                    <img src="/icons/phosphor/fill/target-fill.svg"
+                         alt=""
+                         aria-hidden="true"
+                         class="nn-mystats__card-icon nn-mystats__card-icon--teal"
+                         width="24"
+                         height="24" />
+                    <span class="nn-mystats__card-value">@_stats.PerfectFrames</span>
+                    <span class="nn-mystats__card-label">Perfect Frames</span>
+                </div>
+
+            </div>
+        </section>
+
+        @* ── Best games ─────────────────────────────────────────────────── *@
+        @if (_bestGames.Count > 0)
+        {
+            <section class="nn-mystats__section" aria-label="Best games">
+                <div class="nn-mystats__panel">
+                    <h2 class="nn-mystats__panel-title">
+                        <img src="/icons/phosphor/fill/trophy-fill.svg"
+                             alt=""
+                             aria-hidden="true"
+                             class="nn-mystats__panel-icon"
+                             width="18"
+                             height="18" />
+                        Best Games
+                    </h2>
+
+                    @* Desktop table *@
+                    <div class="table-responsive nn-mystats__table-wrapper">
+                        <table class="table table-sm nn-mystats__table"
+                               aria-label="Top scoring games">
+                            <caption class="visually-hidden">Your highest-scoring games</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Venue</th>
+                                    <th scope="col" class="text-end">Score</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var game in _bestGames)
+                                {
+                                    <tr class="nn-mystats__game-row">
+                                        <td class="nn-mystats__cell-date">
+                                            <time datetime="@game.WhenPlayed.ToString("O")"
+                                                  title="@game.WhenPlayed.ToLocalTime().ToString("f")">
+                                                @game.WhenPlayed.ToLocalTime().ToString("MMM d, yyyy")
+                                            </time>
+                                        </td>
+                                        <td class="nn-mystats__cell-venue">
+                                            @(_venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "\u2014")
+                                        </td>
+                                        <td class="nn-mystats__cell-score text-end font-monospace">
+                                            <strong>@game.TotalScore</strong><span class="nn-mystats__score-denom">/99</span>
+                                            @if (game.IsPerfectGame)
+                                            {
+                                                <span class="nn-mystats__perfect-badge ms-1">99!</span>
+                                            }
+                                        </td>
+                                        <td class="nn-mystats__cell-action">
+                                            <a href="/games/@game.GameId"
+                                               class="btn btn-sm btn-outline-secondary nn-mystats__view-btn">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @* Mobile cards *@
+                    <div class="nn-mystats__game-cards" role="list" aria-label="Best games">
+                        @foreach (var game in _bestGames)
+                        {
+                            <a href="/games/@game.GameId"
+                               class="nn-mystats__game-card"
+                               role="listitem">
+                                <div class="nn-mystats__game-card-row">
+                                    <time class="nn-mystats__game-card-date"
+                                          datetime="@game.WhenPlayed.ToString("O")">
+                                        @game.WhenPlayed.ToLocalTime().ToString("MMM d, yyyy")
+                                    </time>
+                                    <span class="nn-mystats__game-card-score font-monospace">
+                                        @game.TotalScore<span class="nn-mystats__score-denom">/99</span>
+                                        @if (game.IsPerfectGame)
+                                        {
+                                            <span class="nn-mystats__perfect-badge ms-1">99!</span>
+                                        }
+                                    </span>
+                                </div>
+                                <div class="nn-mystats__game-card-venue">
+                                    @(_venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "Unknown venue")
+                                </div>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </section>
+        }
+
+        @* ── Recent games ────────────────────────────────────────────────── *@
+        @if (_recentGames.Count > 0)
+        {
+            <section class="nn-mystats__section" aria-label="Recent games">
+                <div class="nn-mystats__panel">
+                    <h2 class="nn-mystats__panel-title">
+                        <img src="/icons/phosphor/regular/list.svg"
+                             alt=""
+                             aria-hidden="true"
+                             class="nn-mystats__panel-icon"
+                             width="18"
+                             height="18" />
+                        Recent Games
+                    </h2>
+
+                    @* Desktop table *@
+                    <div class="table-responsive nn-mystats__table-wrapper">
+                        <table class="table table-sm nn-mystats__table"
+                               aria-label="Recent games">
+                            <caption class="visually-hidden">Your most recently played games</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">When</th>
+                                    <th scope="col">Venue</th>
+                                    <th scope="col" class="text-end">Score</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var game in _recentGames)
+                                {
+                                    var href = game.IsInProgress
+                                        ? $"/games/{game.GameId}/play"
+                                        : $"/games/{game.GameId}";
+
+                                    <tr class="nn-mystats__game-row">
+                                        <td class="nn-mystats__cell-date">
+                                            <time datetime="@game.WhenPlayed.ToString("O")"
+                                                  title="@game.WhenPlayed.ToLocalTime().ToString("f")">
+                                                @RelativeTime(game.WhenPlayed)
+                                            </time>
+                                        </td>
+                                        <td class="nn-mystats__cell-venue">
+                                            @(_venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "\u2014")
+                                        </td>
+                                        <td class="nn-mystats__cell-score text-end font-monospace">
+                                            @if (game.IsCompleted || game.TotalScore > 0)
+                                            {
+                                                <strong>@game.TotalScore</strong><span class="nn-mystats__score-denom">/99</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="nn-mystats__score-empty">&mdash;</span>
+                                            }
+                                        </td>
+                                        <td class="nn-mystats__cell-status">
+                                            <span class="nn-status-pill @StatusPillClass(game.GameState)">
+                                                @StatusLabel(game.GameState)
+                                            </span>
+                                        </td>
+                                        <td class="nn-mystats__cell-action">
+                                            <a href="@href"
+                                               class="btn btn-sm btn-outline-secondary nn-mystats__view-btn">
+                                                @(game.IsInProgress ? "Continue" : "View")
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @* Mobile cards *@
+                    <div class="nn-mystats__game-cards" role="list" aria-label="Recent games">
+                        @foreach (var game in _recentGames)
+                        {
+                            var href = game.IsInProgress
+                                ? $"/games/{game.GameId}/play"
+                                : $"/games/{game.GameId}";
+
+                            <a href="@href"
+                               class="nn-mystats__game-card"
+                               role="listitem">
+                                <div class="nn-mystats__game-card-row">
+                                    <time class="nn-mystats__game-card-date"
+                                          datetime="@game.WhenPlayed.ToString("O")">
+                                        @RelativeTime(game.WhenPlayed)
+                                    </time>
+                                    <span class="nn-status-pill @StatusPillClass(game.GameState)">
+                                        @StatusLabel(game.GameState)
+                                    </span>
+                                </div>
+                                <div class="nn-mystats__game-card-venue">
+                                    @(_venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "Unknown venue")
+                                </div>
+                                <div class="nn-mystats__game-card-score font-monospace">
+                                    @if (game.IsCompleted || game.TotalScore > 0)
+                                    {
+                                        @game.TotalScore<span class="nn-mystats__score-denom">/99</span>
+                                    }
+                                </div>
+                            </a>
+                        }
+                    </div>
+
+                    <div class="nn-mystats__panel-footer">
+                        <a href="/games" class="btn btn-outline-secondary btn-sm">
+                            View all games
+                        </a>
+                    </div>
+                </div>
+            </section>
+        }
+    }
+
+</div>
 
 @code {
     private PlayerStats? _stats;
     private List<Game> _bestGames = [];
+    private List<Game> _recentGames = [];
+    private Dictionary<Guid, string> _venueNames = new();
     private bool _loading = true;
-    private Guid _playerId;
+    private Guid? _playerId;
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _playerId = id;
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        var context = HttpContextAccessor.HttpContext;
-        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
-
-        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        if (_playerId is null)
         {
             Navigation.NavigateTo("/login", forceLoad: true);
             return;
@@ -125,9 +364,41 @@ else
 
         try
         {
-            _stats = await StatisticsService.GetPlayerStatsAsync(_playerId);
-            var best = await StatisticsService.GetBestGamesAsync(_playerId, 10);
-            _bestGames = best.ToList();
+            // Fetch all three data sets concurrently
+            var statsTask      = StatisticsService.GetPlayerStatsAsync(_playerId.Value);
+            var bestGamesTask  = StatisticsService.GetBestGamesAsync(_playerId.Value, limit: 5);
+            var recentTask     = GameRepository.GetByPlayerAsync(_playerId.Value, skip: 0, limit: 5);
+
+            await Task.WhenAll(statsTask, bestGamesTask, recentTask);
+
+            _stats       = await statsTask;
+            _bestGames   = (await bestGamesTask).ToList();
+
+            // Sort recent games descending by WhenPlayed (repository may not guarantee order)
+            _recentGames = (await recentTask)
+                .OrderByDescending(g => g.WhenPlayed)
+                .ToList();
+
+            // Batch venue lookups — collect unique IDs from both lists, resolve once each
+            var uniqueVenueIds = _bestGames
+                .Select(g => g.VenueId)
+                .Concat(_recentGames.Select(g => g.VenueId))
+                .Distinct()
+                .ToList();
+
+            foreach (var venueId in uniqueVenueIds)
+            {
+                try
+                {
+                    var venue = await VenueService.GetAsync(venueId);
+                    if (venue is not null)
+                        _venueNames[venueId] = venue.Name;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "Could not resolve venue {VenueId}.", venueId);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -138,4 +409,36 @@ else
             _loading = false;
         }
     }
+
+    // ── Display helpers ───────────────────────────────────────────────
+
+    private static string RelativeTime(DateTime utc)
+    {
+        var diff = DateTime.UtcNow - utc;
+
+        return diff.TotalSeconds < 60   ? "Just now"
+             : diff.TotalMinutes < 60   ? $"{(int)diff.TotalMinutes}m ago"
+             : diff.TotalHours < 24     ? $"{(int)diff.TotalHours}h ago"
+             : diff.TotalDays < 2       ? "Yesterday"
+             : diff.TotalDays < 7       ? $"{(int)diff.TotalDays} days ago"
+             : diff.TotalDays < 30      ? $"{(int)(diff.TotalDays / 7)} weeks ago"
+             : diff.TotalDays < 365     ? $"{(int)(diff.TotalDays / 30)} months ago"
+             : $"{(int)(diff.TotalDays / 365)} years ago";
+    }
+
+    private static string StatusLabel(GameState state) => state switch
+    {
+        GameState.Completed  => "Completed",
+        GameState.InProgress => "In progress",
+        GameState.Paused     => "Paused",
+        _                    => "Not started"
+    };
+
+    private static string StatusPillClass(GameState state) => state switch
+    {
+        GameState.Completed  => "nn-status-pill--completed",
+        GameState.InProgress => "nn-status-pill--inprogress",
+        GameState.Paused     => "nn-status-pill--paused",
+        _                    => "nn-status-pill--muted"
+    };
 }

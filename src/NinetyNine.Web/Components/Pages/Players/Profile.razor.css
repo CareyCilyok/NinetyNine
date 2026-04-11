@@ -1,0 +1,317 @@
+/* ==========================================================================
+   Profile page — scoped styles
+   BEM block: nn-profile-page
+   All colors via --nn-* tokens; no hardcoded hex or rgb values.
+   ========================================================================== */
+
+/* ── Page container ─────────────────────────────────────────────────────── */
+.nn-profile-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-5);
+    max-width: 56rem;
+    margin-inline: auto;
+    padding: var(--nn-space-6) var(--nn-space-4);
+}
+
+/* ── Loading / not-found states ─────────────────────────────────────────── */
+.nn-profile-page__loading {
+    color: var(--nn-text-secondary);
+    padding: var(--nn-space-8) 0;
+    text-align: center;
+}
+
+.nn-profile-page__not-found {
+    text-align: center;
+    padding: var(--nn-space-10) var(--nn-space-4);
+}
+
+.nn-profile-page__not-found-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-profile-page__not-found-body {
+    color: var(--nn-text-secondary);
+    margin-bottom: var(--nn-space-5);
+}
+
+/* ── Card base ───────────────────────────────────────────────────────────── */
+.nn-profile-page__card {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+    padding: var(--nn-space-5) var(--nn-space-6);
+}
+
+.nn-profile-page__card-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--nn-text-tertiary);
+    margin-bottom: var(--nn-space-4);
+}
+
+/* ── Header card ─────────────────────────────────────────────────────────── */
+.nn-profile-page__header-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--nn-space-5);
+}
+
+.nn-profile-page__header-avatar {
+    flex-shrink: 0;
+}
+
+.nn-profile-page__header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.nn-profile-page__display-name {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-1);
+    word-break: break-word;
+}
+
+.nn-profile-page__real-name {
+    font-size: 1rem;
+    color: var(--nn-text-secondary);
+    margin-bottom: var(--nn-space-1);
+}
+
+.nn-profile-page__member-since {
+    font-size: 0.875rem;
+    color: var(--nn-text-tertiary);
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-profile-page__edit-btn {
+    min-height: var(--nn-touch-target);
+}
+
+/* ── Contact card ────────────────────────────────────────────────────────── */
+.nn-profile-page__contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+    margin: 0;
+}
+
+.nn-profile-page__contact-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--nn-space-3);
+}
+
+.nn-profile-page__contact-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--nn-text-tertiary);
+    min-width: 4.5rem;
+    flex-shrink: 0;
+}
+
+.nn-profile-page__contact-value {
+    color: var(--nn-text-secondary);
+    font-size: 0.9375rem;
+    margin: 0;
+    word-break: break-all;
+}
+
+.nn-profile-page__contact-value a {
+    color: var(--nn-accent-teal);
+    text-decoration: none;
+}
+
+.nn-profile-page__contact-value a:hover {
+    color: var(--nn-accent-teal-hover);
+    text-decoration: underline;
+}
+
+/* ── Stats card / grid ───────────────────────────────────────────────────── */
+.nn-profile-page__stats-empty {
+    color: var(--nn-text-tertiary);
+    font-size: 0.9375rem;
+    margin: 0;
+}
+
+.nn-profile-page__stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--nn-space-4);
+}
+
+@media (min-width: 640px) {
+    .nn-profile-page__stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.nn-profile-page__stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-1);
+    background: var(--nn-bg-tertiary);
+    border-radius: var(--nn-radius-md);
+    padding: var(--nn-space-4);
+    text-align: center;
+}
+
+.nn-profile-page__stat--wide {
+    grid-column: span 2;
+}
+
+@media (min-width: 640px) {
+    .nn-profile-page__stat--wide {
+        grid-column: span 2;
+    }
+}
+
+.nn-profile-page__stat-value {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    line-height: 1;
+}
+
+.nn-profile-page__stat-value--perfect {
+    color: var(--nn-accent-gold);
+}
+
+.nn-profile-page__stat-label {
+    font-size: 0.75rem;
+    color: var(--nn-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+}
+
+/* ── Recent games card ───────────────────────────────────────────────────── */
+.nn-profile-page__games-empty {
+    color: var(--nn-text-tertiary);
+    font-size: 0.9375rem;
+    margin: 0;
+}
+
+.nn-profile-page__games-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-2);
+}
+
+.nn-profile-page__game-row {
+    border-radius: var(--nn-radius-md);
+    overflow: hidden;
+    border: 1px solid var(--nn-border-subtle);
+    transition: border-color var(--nn-transition-fast),
+                background var(--nn-transition-fast);
+}
+
+.nn-profile-page__game-row:hover {
+    border-color: var(--nn-border-default);
+    background: var(--nn-bg-tertiary);
+}
+
+.nn-profile-page__game-link {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto auto;
+    align-items: center;
+    gap: var(--nn-space-3) var(--nn-space-4);
+    padding: var(--nn-space-3) var(--nn-space-4);
+    color: inherit;
+    text-decoration: none;
+    min-height: var(--nn-touch-target);
+}
+
+.nn-profile-page__game-link:hover {
+    color: var(--nn-text-primary);
+}
+
+.nn-profile-page__game-link:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+}
+
+.nn-profile-page__game-date {
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+}
+
+.nn-profile-page__game-venue {
+    font-size: 0.875rem;
+    color: var(--nn-text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nn-profile-page__game-score {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    white-space: nowrap;
+}
+
+.nn-profile-page__game-score-max {
+    font-size: 0.75rem;
+    color: var(--nn-text-tertiary);
+    font-weight: 400;
+}
+
+.nn-profile-page__perfect-badge {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--nn-text-inverse);
+    background: var(--nn-accent-gold);
+    border-radius: var(--nn-radius-full);
+    padding: 0 var(--nn-space-2);
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+/* ── Mobile: collapse game rows ─────────────────────────────────────────── */
+@media (max-width: 575px) {
+    .nn-profile-page__header-card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .nn-profile-page__card {
+        padding: var(--nn-space-4);
+    }
+
+    .nn-profile-page__game-link {
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+    }
+
+    .nn-profile-page__game-venue {
+        grid-column: 1;
+    }
+
+    .nn-profile-page__game-score {
+        grid-row: 2;
+        grid-column: 1;
+        font-size: 0.875rem;
+    }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .nn-profile-page__game-row,
+    .nn-profile-page__game-link {
+        transition: none;
+    }
+}
