@@ -12,8 +12,10 @@ public static class AuthEndpoints
     public static void Map(WebApplication app)
     {
         // Challenge the specified OAuth provider.
-        // Example: GET /login?provider=Google&returnUrl=/games
-        app.MapGet("/login", async (HttpContext context, string? provider, string? returnUrl) =>
+        // Example: GET /auth/challenge?provider=Google&returnUrl=/games
+        // Note: route is /auth/challenge (not /login) to avoid conflicting with
+        // the Blazor Login.razor page which owns @page "/login".
+        app.MapGet("/auth/challenge", async (HttpContext context, string? provider, string? returnUrl) =>
         {
             provider ??= "Google";
             var redirectUri = returnUrl ?? "/";
