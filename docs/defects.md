@@ -256,6 +256,17 @@ The rendered HTML itself is well-formed — two seeded venues render correctly a
 
 Attach a screenshot of the "corrupted" dropdown to this defect before attempting a fix. Without a visual, the diagnosis above is a best guess.
 
+### Investigation summary (2026-04-11, while fixing DEF-002/003/004/006)
+
+Checked the following and found nothing that a speculative fix would clearly improve:
+
+- `color-scheme: dark` **is** declared on `:root` in [wwwroot/css/app.css:42](src/NinetyNine.Web/wwwroot/css/app.css#L42) and [wwwroot/css/theme.css:197](src/NinetyNine.Web/wwwroot/css/theme.css#L197), so hypothesis 1 (native popup contrast inversion from missing `color-scheme`) is ruled out — browsers should already render the popup in dark mode.
+- The seeded venue documents are clean (`Home Table`, `Summerville Billiards`, valid addresses), so it isn't a data defect.
+- Rendered `<option>` HTML is well-formed; no stray attributes that would break the control.
+- No CSS rule anywhere in `wwwroot/css/` or `Components/` explicitly targets `option {…}` — there's no custom style hiding or corrupting the option elements.
+
+**Deferred pending screenshot.** This defect is not blocking any smoke-test step because the venue is still selectable via keyboard (Tab to the select, arrow keys to pick, Enter to confirm) and the underlying form submission works (verified end-to-end during DEF-003 and DEF-004 fixes). Reopen with the screenshot when available, or dismiss as "not reproducible" if the tester can no longer see the original symptom after the DEF-003/004 rebuilds.
+
 ---
 
 ## DEF-006 — Leaderboard renders literal `entry.DisplayName` / `entry.PlayerId` / `entry.AvatarUrl` strings in the desktop table
