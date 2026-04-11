@@ -1,0 +1,38 @@
+.nn-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.125rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: 999px;
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-secondary);
+    border: 1px solid var(--nn-border-default);
+}
+
+.nn-chip--friends {
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--nn-accent-teal);
+    border-color: var(--nn-accent-teal);
+}
+
+.nn-chip--pending {
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-tertiary);
+    border-color: var(--nn-border-default);
+}
+
+.nn-chip--action {
+    background-color: var(--nn-warning, #b07d00);
+    color: var(--nn-text-on-accent);
+    border-color: transparent;
+}
+
+.nn-chip--self {
+    background-color: var(--nn-bg-secondary);
+    color: var(--nn-text-tertiary);
+    border-color: var(--nn-border-default);
+    font-style: italic;
+}

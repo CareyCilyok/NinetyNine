@@ -1,0 +1,30 @@
+@* Small colored chip labeling the caller's relationship to another player.
+   Used on the /friends search results and (later sprints) on profile pages.
+   See docs/plans/friends-communities-v1.md Sprint 1 S1.2. *@
+
+@if (State != RelationshipState.None)
+{
+    <span class="@CssClass" role="status">@Label</span>
+}
+
+@code {
+    [Parameter] public RelationshipState State { get; set; } = RelationshipState.None;
+
+    private string CssClass => State switch
+    {
+        RelationshipState.Friends => "nn-chip nn-chip--friends",
+        RelationshipState.RequestSent => "nn-chip nn-chip--pending",
+        RelationshipState.RequestReceived => "nn-chip nn-chip--action",
+        RelationshipState.Self => "nn-chip nn-chip--self",
+        _ => "nn-chip",
+    };
+
+    private string Label => State switch
+    {
+        RelationshipState.Friends => "Friends",
+        RelationshipState.RequestSent => "Pending",
+        RelationshipState.RequestReceived => "Respond",
+        RelationshipState.Self => "You",
+        _ => "",
+    };
+}

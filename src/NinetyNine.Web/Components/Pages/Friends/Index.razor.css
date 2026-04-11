@@ -1,0 +1,225 @@
+/* =====================================================================
+   Friends/Index.razor.css — scoped styles for the /friends page.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   ===================================================================== */
+
+.nn-friends-page {
+    display: flex;
+    justify-content: center;
+    padding: var(--nn-space-6) var(--nn-space-4);
+    min-height: calc(100vh - var(--nn-navbar-height));
+}
+
+.nn-friends-page__inner {
+    width: 100%;
+    max-width: 42rem;
+}
+
+.nn-friends-page__header {
+    margin-bottom: var(--nn-space-6);
+}
+
+.nn-friends-page__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-friends-page__subtitle {
+    color: var(--nn-text-secondary);
+    margin-bottom: 0;
+}
+
+/* ── Tab strip ─────────────────────────────────────────────────────── */
+
+.nn-friends-page__tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--nn-border-default);
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-friends-page__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-3) var(--nn-space-4);
+    color: var(--nn-text-secondary);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color var(--nn-transition-fast),
+                border-color var(--nn-transition-fast);
+}
+
+.nn-friends-page__tab:hover {
+    color: var(--nn-text-primary);
+}
+
+.nn-friends-page__tab--active {
+    color: var(--nn-text-primary);
+    border-bottom-color: var(--nn-accent-teal);
+    font-weight: 600;
+}
+
+.nn-friends-page__tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.25rem;
+    padding: 0 var(--nn-space-2);
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 999px;
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-secondary);
+}
+
+.nn-friends-page__tab-badge--accent {
+    background-color: var(--nn-accent-teal);
+    color: var(--nn-text-on-accent);
+}
+
+/* ── Flash banners ─────────────────────────────────────────────────── */
+
+.nn-friends-page__flash {
+    margin-bottom: var(--nn-space-4);
+}
+
+/* ── Sections (requests tab has two) ───────────────────────────────── */
+
+.nn-friends-page__section {
+    margin-bottom: var(--nn-space-6);
+}
+
+.nn-friends-page__section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--nn-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-friends-page__section-empty {
+    color: var(--nn-text-tertiary);
+    font-style: italic;
+}
+
+/* ── Friend / request rows ─────────────────────────────────────────── */
+
+.nn-friends-page__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nn-friends-page__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-3) 0;
+    border-bottom: 1px solid var(--nn-border-default);
+}
+
+.nn-friends-page__row:last-child {
+    border-bottom: none;
+}
+
+.nn-friends-page__row-who {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--nn-space-3);
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.nn-friends-page__row-message {
+    flex-basis: 100%;
+    color: var(--nn-text-secondary);
+    font-size: 0.875rem;
+    font-style: italic;
+    margin: 0;
+    padding-left: calc(40px + var(--nn-space-3));
+}
+
+.nn-friends-page__row-actions {
+    display: flex;
+    gap: var(--nn-space-2);
+    flex-shrink: 0;
+}
+
+.nn-friends-page__status-label {
+    color: var(--nn-text-tertiary);
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+/* ── Find friends tab ──────────────────────────────────────────────── */
+
+.nn-friends-page__find {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-5);
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-friends-page__label {
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-friends-page__search-row {
+    display: flex;
+    gap: var(--nn-space-2);
+    align-items: stretch;
+}
+
+.nn-friends-page__search-row .form-control {
+    flex: 1 1 auto;
+}
+
+.nn-friends-page__hint {
+    color: var(--nn-text-tertiary);
+    font-size: 0.8125rem;
+    margin-top: var(--nn-space-2);
+    margin-bottom: var(--nn-space-4);
+}
+
+/* ── Empty state ───────────────────────────────────────────────────── */
+
+.nn-friends-page__empty {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-8) var(--nn-space-6);
+    text-align: center;
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-friends-page__remove-btn {
+    color: var(--nn-text-tertiary);
+}
+
+.nn-friends-page__remove-btn:hover {
+    color: var(--nn-danger);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────── */
+
+@media (max-width: 575px) {
+    .nn-friends-page__row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .nn-friends-page__row-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

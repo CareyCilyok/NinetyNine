@@ -1,0 +1,467 @@
+@page "/friends"
+@attribute [Authorize]
+@inject IFriendService FriendService
+@inject IPlayerRepository PlayerRepository
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<Index> Logger
+@using System.ComponentModel.DataAnnotations
+@using NinetyNine.Services
+
+<PageTitle>Friends &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-friends-page">
+    <div class="nn-friends-page__inner">
+        <header class="nn-friends-page__header">
+            <h1 class="nn-friends-page__title">Friends</h1>
+            <p class="nn-friends-page__subtitle">
+                Carey, George, and the regulars you play with.
+            </p>
+        </header>
+
+        @* ── Tab strip ─────────────────────────────────────────────── *@
+        <nav class="nn-friends-page__tabs" aria-label="Friends sections">
+            <a href="/friends?tab=friends"
+               class="nn-friends-page__tab @(ActiveTab == "friends" ? "nn-friends-page__tab--active" : null)"
+               aria-current="@(ActiveTab == "friends" ? "page" : null)">
+                Friends
+                @if (_friends.Count > 0)
+                {
+                    <span class="nn-friends-page__tab-badge">@_friends.Count</span>
+                }
+            </a>
+            <a href="/friends?tab=requests"
+               class="nn-friends-page__tab @(ActiveTab == "requests" ? "nn-friends-page__tab--active" : null)"
+               aria-current="@(ActiveTab == "requests" ? "page" : null)">
+                Requests
+                @if (_incoming.Count > 0)
+                {
+                    <span class="nn-friends-page__tab-badge nn-friends-page__tab-badge--accent">@_incoming.Count</span>
+                }
+            </a>
+            <a href="/friends?tab=find"
+               class="nn-friends-page__tab @(ActiveTab == "find" ? "nn-friends-page__tab--active" : null)"
+               aria-current="@(ActiveTab == "find" ? "page" : null)">
+                Find friends
+            </a>
+        </nav>
+
+        @if (!string.IsNullOrEmpty(_flashError))
+        {
+            <div class="alert alert-danger nn-friends-page__flash" role="alert">@_flashError</div>
+        }
+        else if (!string.IsNullOrEmpty(_flashSuccess))
+        {
+            <div class="alert alert-success nn-friends-page__flash" role="status">@_flashSuccess</div>
+        }
+
+        @* ── Tab: Friends list ────────────────────────────────────── *@
+        @if (ActiveTab == "friends")
+        {
+            @if (_friends.Count == 0)
+            {
+                <div class="nn-empty-state nn-friends-page__empty">
+                    <h2 class="nn-empty-state__heading">No friends yet</h2>
+                    <p class="nn-empty-state__body">
+                        Search by display name to get started.
+                    </p>
+                    <a href="/friends?tab=find" class="btn btn-primary">Find friends</a>
+                </div>
+            }
+            else
+            {
+                <ul class="nn-friends-page__list" role="list">
+                    @foreach (var friend in _friends)
+                    {
+                        <li class="nn-friends-page__row" role="listitem">
+                            <div class="nn-friends-page__row-who">
+                                <PlayerBadge PlayerId="@friend.PlayerId"
+                                             DisplayName="@friend.DisplayName"
+                                             AvatarUrl="@(friend.Avatar is not null ? $"/api/avatars/{friend.PlayerId}" : null)"
+                                             AvatarSizePx="40" />
+                            </div>
+                            <div class="nn-friends-page__row-actions">
+                                <EditForm Model="_removeModel" method="post"
+                                          OnValidSubmit="HandleRemoveFriendAsync"
+                                          FormName="@($"remove-friend-{friend.PlayerId}")">
+                                    <input type="hidden" name="_removeModel.TargetPlayerId"
+                                           value="@friend.PlayerId" />
+                                    <button type="submit"
+                                            class="btn btn-ghost btn-sm nn-friends-page__remove-btn"
+                                            aria-label="Remove @friend.DisplayName from your friends">
+                                        Remove
+                                    </button>
+                                </EditForm>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        }
+
+        @* ── Tab: Requests ────────────────────────────────────────── *@
+        else if (ActiveTab == "requests")
+        {
+            <section class="nn-friends-page__section" aria-label="Incoming requests">
+                <h2 class="nn-friends-page__section-title">Incoming</h2>
+
+                @if (_incoming.Count == 0)
+                {
+                    <p class="nn-friends-page__section-empty">No pending requests.</p>
+                }
+                else
+                {
+                    <ul class="nn-friends-page__list" role="list">
+                        @foreach (var req in _incoming)
+                        {
+                            var sender = _requestPartners.GetValueOrDefault(req.FromPlayerId);
+                            <li class="nn-friends-page__row" role="listitem">
+                                <div class="nn-friends-page__row-who">
+                                    <PlayerBadge PlayerId="@req.FromPlayerId"
+                                                 DisplayName="@(sender?.DisplayName ?? "Unknown")"
+                                                 AvatarUrl="@(sender?.Avatar is not null ? $"/api/avatars/{req.FromPlayerId}" : null)"
+                                                 AvatarSizePx="40" />
+                                    @if (!string.IsNullOrWhiteSpace(req.Message))
+                                    {
+                                        <p class="nn-friends-page__row-message">&ldquo;@req.Message&rdquo;</p>
+                                    }
+                                </div>
+                                <div class="nn-friends-page__row-actions">
+                                    <EditForm Model="_requestIdModel" method="post"
+                                              OnValidSubmit="HandleAcceptAsync"
+                                              FormName="@($"accept-{req.RequestId}")">
+                                        <input type="hidden" name="_requestIdModel.RequestId"
+                                               value="@req.RequestId" />
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            Accept
+                                        </button>
+                                    </EditForm>
+                                    <EditForm Model="_requestIdModel" method="post"
+                                              OnValidSubmit="HandleDeclineAsync"
+                                              FormName="@($"decline-{req.RequestId}")">
+                                        <input type="hidden" name="_requestIdModel.RequestId"
+                                               value="@req.RequestId" />
+                                        <button type="submit" class="btn btn-ghost btn-sm">
+                                            Decline
+                                        </button>
+                                    </EditForm>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            <section class="nn-friends-page__section" aria-label="Outgoing requests">
+                <h2 class="nn-friends-page__section-title">Outgoing</h2>
+
+                @if (_outgoing.Count == 0)
+                {
+                    <p class="nn-friends-page__section-empty">No pending requests.</p>
+                }
+                else
+                {
+                    <ul class="nn-friends-page__list" role="list">
+                        @foreach (var req in _outgoing)
+                        {
+                            var recipient = _requestPartners.GetValueOrDefault(req.ToPlayerId);
+                            <li class="nn-friends-page__row" role="listitem">
+                                <div class="nn-friends-page__row-who">
+                                    <PlayerBadge PlayerId="@req.ToPlayerId"
+                                                 DisplayName="@(recipient?.DisplayName ?? "Unknown")"
+                                                 AvatarUrl="@(recipient?.Avatar is not null ? $"/api/avatars/{req.ToPlayerId}" : null)"
+                                                 AvatarSizePx="40" />
+                                </div>
+                                <div class="nn-friends-page__row-actions">
+                                    <EditForm Model="_requestIdModel" method="post"
+                                              OnValidSubmit="HandleCancelAsync"
+                                              FormName="@($"cancel-{req.RequestId}")">
+                                        <input type="hidden" name="_requestIdModel.RequestId"
+                                               value="@req.RequestId" />
+                                        <button type="submit" class="btn btn-ghost btn-sm">
+                                            Cancel
+                                        </button>
+                                    </EditForm>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+
+        @* ── Tab: Find friends ────────────────────────────────────── *@
+        else if (ActiveTab == "find")
+        {
+            <div class="nn-friends-page__find">
+                <EditForm Model="_searchModel" method="post"
+                          OnValidSubmit="HandleSearchAsync"
+                          FormName="find-friends">
+                    <label class="form-label nn-friends-page__label" for="search-query">
+                        Display name
+                    </label>
+                    <div class="nn-friends-page__search-row">
+                        <InputText id="search-query"
+                                   class="form-control"
+                                   @bind-Value="_searchModel.Query"
+                                   placeholder="e.g. carey or george"
+                                   autocomplete="off"
+                                   aria-describedby="search-hint" />
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                    <p id="search-hint" class="form-text nn-friends-page__hint">
+                        Only display names are searched. Email addresses are never exposed.
+                    </p>
+                </EditForm>
+
+                @if (_searchResults is not null)
+                {
+                    @if (_searchResults.Count == 0)
+                    {
+                        <p class="nn-friends-page__section-empty">No players matched "<strong>@_searchModel.Query</strong>".</p>
+                    }
+                    else
+                    {
+                        <ul class="nn-friends-page__list" role="list">
+                            @foreach (var hit in _searchResults)
+                            {
+                                var rel = _searchRelationships.GetValueOrDefault(hit.PlayerId, RelationshipState.None);
+                                <li class="nn-friends-page__row" role="listitem">
+                                    <div class="nn-friends-page__row-who">
+                                        <PlayerBadge PlayerId="@hit.PlayerId"
+                                                     DisplayName="@hit.DisplayName"
+                                                     AvatarUrl="@(hit.Avatar is not null ? $"/api/avatars/{hit.PlayerId}" : null)"
+                                                     AvatarSizePx="40" />
+                                        <FriendshipStateChip State="rel" />
+                                    </div>
+                                    <div class="nn-friends-page__row-actions">
+                                        @switch (rel)
+                                        {
+                                            case RelationshipState.None:
+                                                <EditForm Model="_sendModel" method="post"
+                                                          OnValidSubmit="HandleSendAsync"
+                                                          FormName="@($"send-{hit.PlayerId}")">
+                                                    <input type="hidden" name="_sendModel.TargetPlayerId"
+                                                           value="@hit.PlayerId" />
+                                                    <button type="submit" class="btn btn-primary btn-sm">
+                                                        Send request
+                                                    </button>
+                                                </EditForm>
+                                                break;
+                                            case RelationshipState.RequestSent:
+                                                <span class="nn-friends-page__status-label">Request sent</span>
+                                                break;
+                                            case RelationshipState.RequestReceived:
+                                                <span class="nn-friends-page__status-label">Awaiting your response</span>
+                                                break;
+                                            case RelationshipState.Friends:
+                                                <span class="nn-friends-page__status-label">Friends</span>
+                                                break;
+                                            case RelationshipState.Self:
+                                                <span class="nn-friends-page__status-label">That's you</span>
+                                                break;
+                                        }
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "tab")]
+    public string? Tab { get; set; }
+
+    [SupplyParameterFromQuery(Name = "flash")]
+    public string? Flash { get; set; }
+
+    [SupplyParameterFromForm(FormName = "find-friends")]
+    private SearchModel _searchModel { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    private TargetPlayerIdModel _sendModel { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    private RequestIdModel _requestIdModel { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    private TargetPlayerIdModel _removeModel { get; set; } = new();
+
+    private Guid? _viewerId;
+    private List<Player> _friends = [];
+    private List<FriendRequest> _incoming = [];
+    private List<FriendRequest> _outgoing = [];
+    private Dictionary<Guid, Player> _requestPartners = new();
+
+    private List<Player>? _searchResults;
+    private Dictionary<Guid, RelationshipState> _searchRelationships = new();
+
+    private string _flashError = "";
+    private string _flashSuccess = "";
+
+    private string ActiveTab => (Tab ?? "friends").ToLowerInvariant() switch
+    {
+        "requests" => "requests",
+        "find" => "find",
+        _ => "friends",
+    };
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _viewerId = id;
+
+        // Apply flash messages from a prior form post's redirect.
+        _flashSuccess = Flash switch
+        {
+            "sent" => "Friend request sent.",
+            "accepted" => "Friend request accepted.",
+            "declined" => "Friend request declined.",
+            "cancelled" => "Friend request cancelled.",
+            "removed" => "Friend removed.",
+            _ => "",
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_viewerId is null)
+        {
+            Navigation.NavigateTo("/login?ReturnUrl=/friends", forceLoad: true);
+            return;
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _friends = (await FriendService.ListFriendsAsync(_viewerId!.Value)).ToList();
+        _incoming = (await FriendService.ListIncomingRequestsAsync(_viewerId.Value)).ToList();
+        _outgoing = (await FriendService.ListOutgoingRequestsAsync(_viewerId.Value)).ToList();
+
+        // Preload the "who" for incoming + outgoing requests so the list
+        // can render avatars and display names in one pass.
+        _requestPartners = new Dictionary<Guid, Player>();
+        foreach (var id in _incoming.Select(r => r.FromPlayerId)
+            .Concat(_outgoing.Select(r => r.ToPlayerId))
+            .Distinct())
+        {
+            var p = await PlayerRepository.GetByIdAsync(id);
+            if (p is not null) _requestPartners[id] = p;
+        }
+    }
+
+    // ── Form handlers ───────────────────────────────────────────────────
+
+    private async Task HandleSendAsync()
+    {
+        if (_viewerId is null || _sendModel.TargetPlayerId == Guid.Empty) return;
+
+        var result = await FriendService.SendRequestAsync(_viewerId.Value, _sendModel.TargetPlayerId);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not send the request.";
+            return;
+        }
+        Navigation.NavigateTo("/friends?tab=requests&flash=sent");
+    }
+
+    private async Task HandleAcceptAsync()
+    {
+        if (_viewerId is null || _requestIdModel.RequestId == Guid.Empty) return;
+
+        var result = await FriendService.AcceptRequestAsync(_requestIdModel.RequestId, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not accept the request.";
+            return;
+        }
+        Navigation.NavigateTo("/friends?tab=friends&flash=accepted");
+    }
+
+    private async Task HandleDeclineAsync()
+    {
+        if (_viewerId is null || _requestIdModel.RequestId == Guid.Empty) return;
+
+        var result = await FriendService.DeclineRequestAsync(_requestIdModel.RequestId, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not decline the request.";
+            return;
+        }
+        Navigation.NavigateTo("/friends?tab=requests&flash=declined");
+    }
+
+    private async Task HandleCancelAsync()
+    {
+        if (_viewerId is null || _requestIdModel.RequestId == Guid.Empty) return;
+
+        var result = await FriendService.CancelRequestAsync(_requestIdModel.RequestId, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not cancel the request.";
+            return;
+        }
+        Navigation.NavigateTo("/friends?tab=requests&flash=cancelled");
+    }
+
+    private async Task HandleRemoveFriendAsync()
+    {
+        if (_viewerId is null || _removeModel.TargetPlayerId == Guid.Empty) return;
+
+        var result = await FriendService.RemoveFriendAsync(_viewerId.Value, _removeModel.TargetPlayerId);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not remove the friend.";
+            return;
+        }
+        Navigation.NavigateTo("/friends?tab=friends&flash=removed");
+    }
+
+    private async Task HandleSearchAsync()
+    {
+        if (_viewerId is null) return;
+
+        var query = (_searchModel.Query ?? string.Empty).Trim();
+        if (query.Length < 2)
+        {
+            _flashError = "Enter at least 2 characters.";
+            _searchResults = null;
+            return;
+        }
+
+        var hits = await PlayerRepository.SearchAsync(query, limit: 10);
+        _searchResults = hits.ToList();
+        _searchRelationships = new Dictionary<Guid, RelationshipState>();
+        foreach (var hit in _searchResults)
+        {
+            _searchRelationships[hit.PlayerId] =
+                await FriendService.GetRelationshipAsync(_viewerId.Value, hit.PlayerId);
+        }
+    }
+
+    // ── Form models ─────────────────────────────────────────────────────
+
+    public sealed class SearchModel
+    {
+        [Required, MinLength(2)]
+        public string? Query { get; set; }
+    }
+
+    public sealed class TargetPlayerIdModel
+    {
+        public Guid TargetPlayerId { get; set; }
+    }
+
+    public sealed class RequestIdModel
+    {
+        public Guid RequestId { get; set; }
+    }
+}
