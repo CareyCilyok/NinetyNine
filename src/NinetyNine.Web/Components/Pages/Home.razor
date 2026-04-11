@@ -1,4 +1,7 @@
 @page "/"
+@inject IFriendService FriendService
+@inject IPlayerRepository PlayerRepository
+@inject IHttpContextAccessor HttpContextAccessor
 
 @*
     Home.razor — public landing page.
@@ -81,6 +84,55 @@
     *@
     <AuthorizeView>
         <Authorized>
+            @* ── Friend requests card (Sprint 1 S1.4) ─────────────────
+               Shown only when the signed-in user has at least one Pending
+               incoming friend request. Previews the first 3 senders by
+               avatar + display name with a "View all" link to the
+               /friends Requests tab. *@
+            @if (_incomingRequests.Count > 0)
+            {
+                <section class="nn-home__section nn-home__friend-requests"
+                         aria-labelledby="nn-home-friend-requests-title">
+                    <header class="nn-home__section-header">
+                        <h2 id="nn-home-friend-requests-title" class="nn-home__section-title">
+                            Friend requests
+                            <span class="nn-home__friend-requests-count"
+                                  aria-label="@($"{_incomingRequests.Count} pending")">
+                                @_incomingRequests.Count
+                            </span>
+                        </h2>
+                        <p class="nn-home__section-sub">
+                            @(_incomingRequests.Count == 1
+                                ? "Someone wants to add you as a friend."
+                                : $"{_incomingRequests.Count} players want to add you.")
+                        </p>
+                    </header>
+
+                    <div class="nn-home__friend-requests-preview">
+                        @foreach (var req in _incomingRequests.Take(3))
+                        {
+                            var sender = _requestSenders.GetValueOrDefault(req.FromPlayerId);
+                            <div class="nn-home__friend-requests-row">
+                                <PlayerBadge PlayerId="@req.FromPlayerId"
+                                             DisplayName="@(sender?.DisplayName ?? "Unknown")"
+                                             AvatarUrl="@(sender?.Avatar is not null ? $"/api/avatars/{req.FromPlayerId}" : null)"
+                                             AvatarSizePx="36" />
+                            </div>
+                        }
+                        @if (_incomingRequests.Count > 3)
+                        {
+                            <span class="nn-home__friend-requests-more">
+                                +@(_incomingRequests.Count - 3) more
+                            </span>
+                        }
+                    </div>
+
+                    <a href="/friends?tab=requests" class="btn btn-primary nn-home__friend-requests-cta">
+                        View all requests
+                    </a>
+                </section>
+            }
+
             <section class="nn-home__section" aria-labelledby="nn-home-quick-title">
                 <header class="nn-home__section-header">
                     <h2 id="nn-home-quick-title" class="nn-home__section-title">Jump back in</h2>
@@ -202,3 +254,28 @@
     </p>
 
 </div>
+
+@code {
+    private List<FriendRequest> _incomingRequests = [];
+    private Dictionary<Guid, Player> _requestSenders = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var viewerId))
+            return;
+
+        _incomingRequests = (await FriendService.ListIncomingRequestsAsync(viewerId)).ToList();
+        if (_incomingRequests.Count == 0) return;
+
+        // Preload sender display names + avatars for the first 3 previewed
+        // rows. Bounded small-N; no pagination.
+        foreach (var req in _incomingRequests.Take(3))
+        {
+            var sender = await PlayerRepository.GetByIdAsync(req.FromPlayerId);
+            if (sender is not null)
+                _requestSenders[req.FromPlayerId] = sender;
+        }
+    }
+}

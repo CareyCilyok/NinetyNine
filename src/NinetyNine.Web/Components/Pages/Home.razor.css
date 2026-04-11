@@ -479,3 +479,57 @@
         transform: none;
     }
 }
+
+/* =====================================================================
+   Friend requests card (Sprint 1 S1.4)
+   Appears above the "Jump back in" grid when the signed-in user has
+   at least one Pending incoming request.
+   ===================================================================== */
+
+.nn-home__friend-requests {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-accent-teal);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-5) var(--nn-space-6);
+    margin-bottom: var(--nn-space-5);
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-home__friend-requests-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    padding: 0 var(--nn-space-2);
+    margin-left: var(--nn-space-2);
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 999px;
+    background-color: var(--nn-accent-teal);
+    color: var(--nn-text-on-accent);
+    vertical-align: middle;
+}
+
+.nn-home__friend-requests-preview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-2);
+    margin: var(--nn-space-4) 0;
+}
+
+.nn-home__friend-requests-row {
+    display: flex;
+    align-items: center;
+}
+
+.nn-home__friend-requests-more {
+    color: var(--nn-text-tertiary);
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+.nn-home__friend-requests-cta {
+    width: 100%;
+    min-height: var(--nn-touch-target);
+}
