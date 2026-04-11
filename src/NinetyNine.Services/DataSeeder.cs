@@ -16,6 +16,8 @@ public sealed class DataSeeder(
     IVenueRepository venueRepository,
     IGameRepository gameRepository,
     IFriendshipRepository friendshipRepository,
+    ICommunityRepository communityRepository,
+    ICommunityMemberRepository communityMemberRepository,
     ILogger<DataSeeder> logger,
     IPasswordHasher<Player> passwordHasher) : IDataSeeder
 {
@@ -132,6 +134,12 @@ public sealed class DataSeeder(
         // See docs/plans/friends-communities-v1.md Sprint 1 S1.5.
         var addedFriendships = await ReconcileSeededFriendshipsAsync(ct);
 
+        // Community reconcile pass: ensure the canonical seeded community
+        // "Pocket Sports" exists with all test players as members and
+        // every seeded venue affiliated. Idempotent across restarts.
+        // See docs/plans/friends-communities-v1.md Sprint 2 S2.6.
+        var communityChange = await ReconcileSeededCommunityAsync(ct);
+
         // Idempotent creation: if the primary test player already exists,
         // we've already seeded at some point — skip the rest of the seed.
         var existing = await playerRepository.GetByDisplayNameAsync(
@@ -143,6 +151,9 @@ public sealed class DataSeeder(
             if (healed > 0) parts.Add($"healed {healed} test player(s)");
             if (addedVenues > 0) parts.Add($"added {addedVenues} venue(s)");
             if (addedFriendships > 0) parts.Add($"seeded {addedFriendships} friendship(s)");
+            if (communityChange.CommunityCreated) parts.Add("created Pocket Sports community");
+            if (communityChange.MembersAdded > 0) parts.Add($"added {communityChange.MembersAdded} community member(s)");
+            if (communityChange.VenuesAffiliated > 0) parts.Add($"affiliated {communityChange.VenuesAffiliated} venue(s)");
             if (parts.Count > 0)
                 logger.LogInformation("Seed skipped — test players already exist. {Parts}.",
                     string.Join(", ", parts));
@@ -262,6 +273,127 @@ public sealed class DataSeeder(
         }
 
         return added;
+    }
+
+    /// <summary>
+    /// Seeded canonical community name. Lives in a single place so tests
+    /// and future heal passes can reference it by constant.
+    /// </summary>
+    public const string SeededCommunityName = "Pocket Sports";
+    private const string SeededCommunitySlug = "pocket-sports";
+
+    /// <summary>
+    /// Tracks which reconcile actions ran, for the "Seed skipped" log line.
+    /// </summary>
+    private record struct CommunityReconcileChange(
+        bool CommunityCreated,
+        int MembersAdded,
+        int VenuesAffiliated);
+
+    /// <summary>
+    /// Ensures the canonical seeded community exists with every seeded
+    /// test player as a member (the first test player is Owner, the rest
+    /// are Members) and every seeded venue affiliated with it.
+    /// Idempotent via the unique name index on communities + the
+    /// (player, community) unique index on memberships.
+    /// </summary>
+    private async Task<CommunityReconcileChange> ReconcileSeededCommunityAsync(CancellationToken ct)
+    {
+        // Need all seeded test players to exist first — on a fresh DB
+        // this pass runs before player creation, so short-circuit until
+        // the next restart.
+        var seededPlayers = new List<Player>();
+        foreach (var displayName in IDataSeeder.TestPlayerDisplayNames)
+        {
+            var p = await playerRepository.GetByDisplayNameAsync(displayName, ct);
+            if (p is null) return default;
+            seededPlayers.Add(p);
+        }
+
+        var ownerPlayer = seededPlayers[0];
+
+        var community = await communityRepository.GetByNameAsync(SeededCommunityName, ct);
+        bool created = false;
+        if (community is null)
+        {
+            community = new Community
+            {
+                Name = SeededCommunityName,
+                Slug = SeededCommunitySlug,
+                Description = "The seeded community — every test player is a member, every seeded venue is affiliated.",
+                Visibility = CommunityVisibility.Public,
+                OwnerType = CommunityOwnerType.Player,
+                OwnerPlayerId = ownerPlayer.PlayerId,
+                CreatedByPlayerId = ownerPlayer.PlayerId,
+                CreatedAt = DateTime.UtcNow,
+                SchemaVersion = 1,
+            };
+            try
+            {
+                await communityRepository.CreateAsync(community, ct);
+                created = true;
+                logger.LogInformation(
+                    "Seeded community '{Name}' (owner {Owner})",
+                    SeededCommunityName, ownerPlayer.DisplayName);
+            }
+            catch (MongoDB.Driver.MongoWriteException ex)
+                when (ex.WriteError?.Category == MongoDB.Driver.ServerErrorCategory.DuplicateKey)
+            {
+                // Raced another reconcile run. Fetch the live doc.
+                var racedDoc = await communityRepository.GetByNameAsync(SeededCommunityName, ct);
+                if (racedDoc is null) throw;
+                community = racedDoc;
+            }
+        }
+
+        // Memberships: owner first (Owner role), then the rest as Members.
+        int membersAdded = 0;
+        for (int i = 0; i < seededPlayers.Count; i++)
+        {
+            var player = seededPlayers[i];
+            var role = i == 0 ? CommunityRole.Owner : CommunityRole.Member;
+
+            var existing = await communityMemberRepository.GetMembershipAsync(
+                community.CommunityId, player.PlayerId, ct);
+            if (existing is not null) continue;
+
+            try
+            {
+                await communityMemberRepository.AddAsync(new CommunityMembership
+                {
+                    CommunityId = community.CommunityId,
+                    PlayerId = player.PlayerId,
+                    Role = role,
+                    JoinedAt = DateTime.UtcNow,
+                }, ct);
+                membersAdded++;
+                logger.LogInformation(
+                    "Seeded community member: {Player} → {Community} ({Role})",
+                    player.DisplayName, SeededCommunityName, role);
+            }
+            catch (MongoDB.Driver.MongoWriteException ex)
+                when (ex.WriteError?.Category == MongoDB.Driver.ServerErrorCategory.DuplicateKey)
+            {
+                // Raced another reconcile run — benign.
+            }
+        }
+
+        // Venues: affiliate every venue whose CommunityId is still null.
+        // Never touch venues that already point at another community —
+        // the user may have manually affiliated something.
+        int venuesAffiliated = 0;
+        var allVenues = await venueRepository.GetAllAsync(includePrivate: true, ct);
+        foreach (var venue in allVenues.Where(v => v.CommunityId is null))
+        {
+            venue.CommunityId = community.CommunityId;
+            await venueRepository.UpdateAsync(venue, ct);
+            venuesAffiliated++;
+            logger.LogInformation(
+                "Seeded community venue affiliation: {Venue} → {Community}",
+                venue.Name, SeededCommunityName);
+        }
+
+        return new CommunityReconcileChange(created, membersAdded, venuesAffiliated);
     }
 
     /// <summary>
