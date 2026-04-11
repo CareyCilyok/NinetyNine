@@ -80,6 +80,27 @@ public class Player
     public AvatarRef? Avatar { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Schema evolution marker. Values:
+    /// <list type="bullet">
+    /// <item><b>0 or missing</b> — legacy pre-Sprint-0 player. Visibility uses
+    /// the bool flags only; Audience enum properties are at default. The
+    /// heal pass migrates to version 2 on next startup.</item>
+    /// <item><b>2</b> — Sprint 0 migrated. Audience enum properties reflect
+    /// the intended state; bool flags are still written for backward read
+    /// compatibility but will be removed in Sprint 3.</item>
+    /// </list>
+    /// <para>See <c>docs/plans/friends-communities-v1.md</c> Sprint 0 S0.5.</para>
+    /// </summary>
+    public int SchemaVersion { get; set; }
+
+    /// <summary>
+    /// Transient flag set by the bool → Audience heal pass. When true, the
+    /// Edit Profile page shows a one-time banner explaining what changed
+    /// and how to widen any field back. The dismiss button flips it to true.
+    /// </summary>
+    public bool MigrationBannerDismissed { get; set; }
 }
 
 /// <summary>

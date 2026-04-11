@@ -28,4 +28,12 @@ public interface IPlayerRepository
     Task CreateAsync(Player player, CancellationToken ct = default);
     Task UpdateAsync(Player player, CancellationToken ct = default);
     Task DeleteAsync(Guid playerId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Lists every player in the collection. Used by startup maintenance
+    /// passes (bool → Audience heal in Sprint 0 S0.5; friend-count
+    /// denormalization sync in later sprints). Small app scale — tens of
+    /// players max — so no pagination.
+    /// </summary>
+    Task<IReadOnlyList<Player>> ListAllAsync(CancellationToken ct = default);
 }

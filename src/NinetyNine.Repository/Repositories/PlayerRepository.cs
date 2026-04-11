@@ -137,4 +137,10 @@ public sealed class PlayerRepository(INinetyNineDbContext context, ILogger<Playe
         var filter = Builders<Player>.Filter.Eq(p => p.PlayerId, playerId);
         await _collection.DeleteOneAsync(filter, cancellationToken: ct);
     }
+
+    public async Task<IReadOnlyList<Player>> ListAllAsync(CancellationToken ct = default)
+    {
+        var all = await _collection.Find(Builders<Player>.Filter.Empty).ToListAsync(ct);
+        return all.AsReadOnly();
+    }
 }

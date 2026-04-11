@@ -103,6 +103,13 @@ public sealed class DataSeeder(
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
+        // Profile visibility heal: migrate any player with legacy bool
+        // visibility flags into the new Audience enum fields. Runs for
+        // every player (not just seeded test players) and is idempotent:
+        // once SchemaVersion reaches 2 the player is skipped.
+        // See docs/plans/friends-communities-v1.md Sprint 0 S0.5.
+        var visibilityHealed = await HealProfileVisibilityAsync(ct);
+
         // Heal pass: existing test players whose password hash is empty get
         // their hash populated in place. This handles the upgrade case where
         // players were seeded before the password-hashing field existed
@@ -124,6 +131,7 @@ public sealed class DataSeeder(
         if (existing is not null)
         {
             var parts = new List<string>();
+            if (visibilityHealed > 0) parts.Add($"migrated {visibilityHealed} player(s) to Audience enum");
             if (healed > 0) parts.Add($"healed {healed} test player(s)");
             if (addedVenues > 0) parts.Add($"added {addedVenues} venue(s)");
             if (parts.Count > 0)
@@ -217,6 +225,74 @@ public sealed class DataSeeder(
             logger.LogInformation("Reconciled seeded venue: {Name}", name);
         }
         return added;
+    }
+
+    /// <summary>
+    /// Migrates every player from schema version 1 (bool visibility flags)
+    /// to schema version 2 (Audience enum). Idempotent: skips any player
+    /// already at <see cref="Player.SchemaVersion"/> &gt;= 2.
+    /// <para>
+    /// Migration map (locked by fork D in docs/plans/friends-communities-v1.md):
+    /// </para>
+    /// <list type="bullet">
+    /// <item>EmailAddress bool → <see cref="Audience.Friends"/> when true, <see cref="Audience.Private"/> when false</item>
+    /// <item>PhoneNumber bool → Friends when true, Private when false</item>
+    /// <item>RealName bool → Friends when true, Private when false</item>
+    /// <item>Avatar bool → <b>Public</b> when true, Private when false (the
+    /// one documented exception; preserves existing avatar-visible behavior)</item>
+    /// </list>
+    /// <para>
+    /// The <c>true → Friends</c> map for Email/Phone/RealName is strictly
+    /// tighter than the old bool semantics ("visible to everyone"),
+    /// implementing the security auditor's "no silent widening" rule.
+    /// Migrated players get <see cref="Player.MigrationBannerDismissed"/>
+    /// set to <c>false</c> so the Edit Profile page can show a one-time
+    /// notice in Sprint 3.
+    /// </para>
+    /// </summary>
+    private async Task<int> HealProfileVisibilityAsync(CancellationToken ct)
+    {
+        var players = await playerRepository.ListAllAsync(ct);
+        int migrated = 0;
+
+        foreach (var player in players)
+        {
+            if (player.SchemaVersion >= 2) continue;
+
+            // Map legacy bool flags to Audience enum per fork D.
+            player.Visibility.EmailAudience = player.Visibility.EmailAddress
+                ? Audience.Friends
+                : Audience.Private;
+            player.Visibility.PhoneAudience = player.Visibility.PhoneNumber
+                ? Audience.Friends
+                : Audience.Private;
+            player.Visibility.RealNameAudience = player.Visibility.RealName
+                ? Audience.Friends
+                : Audience.Private;
+            player.Visibility.AvatarAudience = player.Visibility.Avatar
+                ? Audience.Public    // Exception: preserves default-visible avatars.
+                : Audience.Private;
+
+            player.SchemaVersion = 2;
+            player.MigrationBannerDismissed = false;
+
+            await playerRepository.UpdateAsync(player, ct);
+            migrated++;
+
+            logger.LogInformation(
+                "Migrated visibility for player {DisplayName}: " +
+                "email={Email}, phone={Phone}, realName={RealName}, avatar={Avatar}",
+                player.DisplayName,
+                player.Visibility.EmailAudience,
+                player.Visibility.PhoneAudience,
+                player.Visibility.RealNameAudience,
+                player.Visibility.AvatarAudience);
+        }
+
+        if (migrated > 0)
+            logger.LogInformation("Profile visibility heal: migrated {Count} player(s) to SchemaVersion 2.", migrated);
+
+        return migrated;
     }
 
     /// <summary>

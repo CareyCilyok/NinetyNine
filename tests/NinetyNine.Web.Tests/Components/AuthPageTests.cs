@@ -89,6 +89,8 @@ public class AuthPageTests : TestContext
         public Task CreateAsync(Player player, CancellationToken ct = default) => Task.CompletedTask;
         public Task UpdateAsync(Player player, CancellationToken ct = default) => Task.CompletedTask;
         public Task DeleteAsync(Guid playerId, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<IReadOnlyList<Player>> ListAllAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<Player>>(Array.Empty<Player>());
     }
 
     private sealed class StubWebHostEnvironment : IWebHostEnvironment
