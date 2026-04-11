@@ -304,3 +304,62 @@ Add the missing `@` prefix on the three expression parameters on lines 92–94 o
 ### Why this wasn't caught
 
 No bUnit component test exercises the rendered output of `Leaderboard.razor`'s desktop branch; the existing Wave 6 component tests check structural rendering but not the specific props passed to `PlayerBadge`. A follow-up test could assert that `PlayerBadge` receives non-literal string props by rendering with seed data and grepping the DOM for the literal substring `entry.`.
+
+---
+
+## DEF-007 — `.form-control` inputs do not fill their container (missing `width: 100%`)
+
+**Discovered**: 2026-04-11 during Wave 7 manual smoke testing of the Edit Profile page (section 8)
+**Status**: Fixed
+**Severity**: Medium — visible layout breakage on every form; name-row on Edit Profile looked mis-aligned because First/Middle/Last were left-anchored in three `1fr` grid cells.
+**Owner**: frontend
+
+### Symptom
+
+On `/players/me/edit`, the three name inputs (First name, Middle name, Last name) rendered at their intrinsic ~20ch default width and sat left-aligned inside the three-column grid cells, producing visibly uneven spacing and a wide gap between the Middle and Last name fields.
+
+### Root cause
+
+[wwwroot/css/app.css:189-216](src/NinetyNine.Web/wwwroot/css/app.css#L189-L216) styles `.form-control` (and sibling selectors) with background, border, padding, and focus rules — **but declares no `width`**. In the standard Blazor project template the missing property comes from Bootstrap's own `.form-control { width: 100%; }` rule. This project does not load Bootstrap CSS, so inputs fell back to their browser-default intrinsic size.
+
+Inside [EditProfile.razor.css:146-151](src/NinetyNine.Web/Components/Pages/Players/EditProfile.razor.css#L146-L151) the name row is `display: grid; grid-template-columns: repeat(3, 1fr)`, so each cell is 1/3 of the container. But because the inputs didn't fill their cells, they appeared huddled on the left of each cell, leaving empty gaps on the right and making the whole row look broken.
+
+### Fix
+
+Add `display: block; width: 100%; box-sizing: border-box;` to the shared form-input rule in `app.css`. This restores the Bootstrap-equivalent behavior and applies consistently to every form in the app (login, register, forgot/reset password, venue edit, profile edit, new game), not just Edit Profile. The rule targets only `.form-control`, `.form-select`, `textarea`, and typed text inputs — checkboxes, radios, and `input[type="hidden"]` are excluded by the selector list, so their layout is untouched.
+
+### Blast radius of the fix
+
+Positive: every form input on every page is now the same width as its container, matching the designs.
+Negative risk: minimal — any previously-narrow intentional inline input would now stretch. A grep of the codebase shows no intentional inline `.form-control` usage; every input is inside a field wrapper that expects full width.
+
+---
+
+## DEF-008 — Seeder forces `Visibility.RealName = true` on every seeded test player
+
+**Discovered**: 2026-04-11 during Wave 7 manual smoke testing of the Edit Profile page (section 8)
+**Status**: Fixed
+**Severity**: Medium — privacy default contradicts the user's stated intent; visible as a toggle starting in the ON/PUBLIC position.
+**Owner**: backend
+
+### Symptom
+
+On `/players/me/edit`, the **"Show real name publicly"** toggle rendered in the ON position (labeled PUBLIC) for every seeded test player. The tester reported this should default to PRIVATE (OFF) because the upcoming Friends/Communities features will add finer-grained audience controls and the safe default for every new sharing dimension is the most-private option.
+
+### Root cause
+
+Two layers contributed:
+
+1. **Model default is correct**: [Player.cs:97](src/NinetyNine.Model/Player.cs#L97) declares `public bool RealName { get; set; } = false;` — so any newly-registered user already lands in the desired state.
+2. **Seeder overrides the default**: [DataSeeder.cs:158-162](src/NinetyNine.Services/DataSeeder.cs#L158-L162) constructed each seeded test player with `Visibility = new ProfileVisibility { RealName = true, Avatar = true }`, deliberately opting the three dev test players into publishing their real name. This was carried forward from an earlier wave when the test data was expected to exercise the real-name-visible branch of the public profile page.
+
+Once the override wrote `realName: true` into Mongo, DEF-001's "create once, skip forever" idempotency meant subsequent seed runs never reconciled the value — the field stayed true even after the `new ProfileVisibility` expression's literal was changed.
+
+### Fix
+
+1. Drop `RealName = true` from the seeder literal; the `ProfileVisibility` default (`false`) now applies.
+2. Extend the DEF-001 heal pass in `HealExistingTestPlayersAsync` to reset `Visibility.RealName` from `true` to `false` for the three known seeded display names (`carey`, `george`, `carey_b`). The heal pass is scoped by display name, so it can never touch a real user account. It also remains idempotent: once reset, subsequent runs see `RealName == false` and skip the write.
+
+### Related: Friends/Communities privacy defaults
+
+The user introduced the Friends and Communities features in the same session. A project memory has been saved capturing the rule: "any new sharing dimension should default to the most-private option so the eventual multi-tier audience model (Private / Friends / Communities / Public) has safe defaults." Future visibility toggles should follow this convention.

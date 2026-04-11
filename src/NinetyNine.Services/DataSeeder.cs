@@ -126,7 +126,13 @@ public sealed class DataSeeder(
             var needsEmail = string.IsNullOrEmpty(player.EmailAddress);
             var needsHash = string.IsNullOrEmpty(player.PasswordHash);
 
-            if (!needsEmail && !needsHash) continue;
+            // DEF-008: earlier seeds set Visibility.RealName = true for all
+            // three test players. The new default is false (the safe default
+            // for the upcoming Friends/Communities audience model). Reset
+            // only the seeded test players — never touch real user accounts.
+            var needsRealNameReset = player.Visibility.RealName;
+
+            if (!needsEmail && !needsHash && !needsRealNameReset) continue;
 
             if (needsEmail)
                 player.EmailAddress = $"{displayName}@example.local";
@@ -134,13 +140,18 @@ public sealed class DataSeeder(
             if (needsHash)
                 player.PasswordHash = passwordHasher.HashPassword(player, DevPassword);
 
+            if (needsRealNameReset)
+                player.Visibility.RealName = false;
+
             player.EmailVerified = true;
             await playerRepository.UpdateAsync(player, ct);
             healed++;
             logger.LogInformation(
                 "Healed seeded test player {DisplayName}: {Fields}",
                 displayName,
-                (needsEmail ? "email " : "") + (needsHash ? "passwordHash" : ""));
+                (needsEmail ? "email " : "")
+                  + (needsHash ? "passwordHash " : "")
+                  + (needsRealNameReset ? "visibility.realName" : ""));
         }
         return healed;
     }
@@ -157,7 +168,11 @@ public sealed class DataSeeder(
             LastName = lastName,
             Visibility = new ProfileVisibility
             {
-                RealName = true,
+                // RealName defaults to false (the ProfileVisibility default)
+                // because the upcoming Friends/Communities features will add
+                // finer-grained audience controls and the safe default for
+                // every new sharing dimension is the most-private option.
+                // See docs/defects.md DEF-008.
                 Avatar = true
             },
             CreatedAt = DateTime.UtcNow
