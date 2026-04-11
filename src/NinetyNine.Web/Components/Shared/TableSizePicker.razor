@@ -1,22 +1,24 @@
-@* Radio button group for picking a pool table size. *@
+@* Segmented button group for picking a pool table size. *@
 
-@foreach (var size in _sizes)
-{
-    var s = size;
-    var inputId = $"table-size-{s}";
-    <div class="form-check form-check-inline">
-        <input type="radio"
-               class="form-check-input"
-               id="@inputId"
-               name="tableSize"
-               value="@s"
-               checked="@(Value == s)"
-               @onchange="() => OnChange(s)" />
-        <label class="form-check-label" for="@inputId">
+<div class="nn-picker"
+     role="radiogroup"
+     aria-label="Table size">
+    @for (var i = 0; i < _sizes.Length; i++)
+    {
+        var index = i;
+        var s = _sizes[index];
+        var isSelected = Value == s;
+        <button type="button"
+                class="nn-picker__option @(isSelected ? "nn-picker__option--selected" : null)"
+                role="radio"
+                aria-checked="@(isSelected ? "true" : "false")"
+                tabindex="@(isSelected ? 0 : -1)"
+                @onclick="() => OnChange(s)"
+                @onkeydown="e => OnKeyDown(e, index)">
             @Label(s)
-        </label>
-    </div>
-}
+        </button>
+    }
+</div>
 
 @code {
     [Parameter] public TableSize Value { get; set; } = TableSize.SevenFoot;
@@ -25,7 +27,40 @@
     private static readonly TableSize[] _sizes =
         Enum.GetValues<TableSize>().Where(s => s != TableSize.Unknown).ToArray();
 
-    private async Task OnChange(TableSize s) => await ValueChanged.InvokeAsync(s);
+    private async Task OnChange(TableSize s)
+    {
+        if (Value == s) return;
+        await ValueChanged.InvokeAsync(s);
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e, int currentIndex)
+    {
+        int nextIndex = currentIndex;
+        switch (e.Key)
+        {
+            case "ArrowRight":
+            case "ArrowDown":
+                nextIndex = (currentIndex + 1) % _sizes.Length;
+                break;
+            case "ArrowLeft":
+            case "ArrowUp":
+                nextIndex = (currentIndex - 1 + _sizes.Length) % _sizes.Length;
+                break;
+            case "Home":
+                nextIndex = 0;
+                break;
+            case "End":
+                nextIndex = _sizes.Length - 1;
+                break;
+            default:
+                return;
+        }
+
+        if (nextIndex != currentIndex)
+        {
+            await ValueChanged.InvokeAsync(_sizes[nextIndex]);
+        }
+    }
 
     private static string Label(TableSize s) => s switch
     {

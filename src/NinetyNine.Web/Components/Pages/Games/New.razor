@@ -5,84 +5,129 @@
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<New> Logger
+@using System.ComponentModel.DataAnnotations
 
 <PageTitle>New Game &mdash; NinetyNine</PageTitle>
 
-<div class="row justify-content-center">
-    <div class="col-md-7 col-lg-5">
-        <h1 class="mb-4">Start New Game</h1>
+<div class="nn-page nn-new-page">
+    <div class="nn-new-page__inner">
+        <header class="nn-new-page__header">
+            <h1 class="nn-new-page__title">Start a New Game</h1>
+            <p class="nn-new-page__subtitle">Pick a venue and table size, then rack 'em up.</p>
+        </header>
 
         @if (!string.IsNullOrEmpty(_errorMessage))
         {
             <div class="alert alert-danger" role="alert">@_errorMessage</div>
         }
 
-        <EditForm Model="_model" OnValidSubmit="HandleStart">
-            <DataAnnotationsValidator />
-
-            <div class="mb-3">
-                <label class="form-label fw-semibold" for="venue">Venue</label>
-                <InputSelect id="venue"
-                             class="form-select"
-                             @bind-Value="_model.VenueId"
-                             aria-required="true">
-                    <option value="">-- Select a venue --</option>
-                    @foreach (var venue in _venues)
-                    {
-                        <option value="@venue.VenueId">@venue.Name</option>
-                    }
-                </InputSelect>
-                <ValidationMessage For="() => _model.VenueId" />
-                <div class="form-text">
-                    <a href="/venues/new">Add a new venue</a> if yours is not listed.
-                </div>
+        @if (_venuesLoaded && _venues.Count == 0)
+        {
+            <div class="nn-empty-state nn-new-page__empty">
+                <h2 class="nn-empty-state__heading">No venues yet</h2>
+                <p class="nn-empty-state__body">
+                    Add a venue before starting a game so you can track where you play.
+                </p>
+                <a href="/venues/new" class="btn btn-primary">Add your first venue</a>
             </div>
+        }
+        else
+        {
+            <div class="nn-new-page__form-card">
+                <EditForm Model="_model" method="post" OnValidSubmit="HandleSubmitAsync" FormName="new-game">
+                    <AntiforgeryToken />
+                    <DataAnnotationsValidator />
 
-            <div class="mb-4">
-                <label class="form-label fw-semibold">Table Size</label>
-                <div class="d-flex flex-wrap gap-2" role="group" aria-label="Table size options">
-                    <TableSizePicker @bind-Value="_model.TableSize" />
-                </div>
+                    <div class="nn-new-page__field">
+                        <label class="form-label nn-new-page__label" for="venue">Venue</label>
+                        <InputSelect id="venue"
+                                     class="form-select nn-new-page__select"
+                                     @bind-Value="_model.VenueId"
+                                     aria-required="true"
+                                     aria-describedby="venue-hint">
+                            <option value="">-- Select a venue --</option>
+                            @foreach (var venue in _venues)
+                            {
+                                <option value="@venue.VenueId">
+                                    @venue.Name@(!string.IsNullOrWhiteSpace(venue.Address) ? $" \u2014 {venue.Address}" : "")
+                                </option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => _model.VenueId" />
+                        <div id="venue-hint" class="form-text nn-new-page__hint">
+                            Venue not listed? <a href="/venues/new">Add a new venue</a>.
+                        </div>
+                    </div>
+
+                    <div class="nn-new-page__field">
+                        <label class="form-label nn-new-page__label" id="table-size-label">Table Size</label>
+                        <div class="nn-new-page__table-sizes"
+                             role="group"
+                             aria-labelledby="table-size-label">
+                            <TableSizePicker @bind-Value="_model.TableSize" />
+                        </div>
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary nn-new-page__submit"
+                            disabled="@_isSaving"
+                            aria-busy="@_isSaving.ToString().ToLowerInvariant()">
+                        @if (_isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"
+                                  role="status"
+                                  aria-hidden="true"></span>
+                            <span>Starting&hellip;</span>
+                        }
+                        else
+                        {
+                            <span>Start Game</span>
+                        }
+                    </button>
+                </EditForm>
             </div>
-
-            <button type="submit" class="btn btn-primary w-100" disabled="@_isSaving">
-                @if (_isSaving)
-                {
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    <span>Starting&hellip;</span>
-                }
-                else
-                {
-                    <span>Start Game</span>
-                }
-            </button>
-        </EditForm>
+        }
     </div>
 </div>
 
 @code {
-    private NewGameModel _model = new();
+    [SupplyParameterFromForm(FormName = "new-game")]
+    private NewGameModel _model { get; set; } = new();
+
     private List<Venue> _venues = [];
+    private bool _venuesLoaded;
     private string _errorMessage = "";
     private bool _isSaving;
-    private Guid _playerId;
+    private Guid? _playerId;
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _playerId = id;
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        var context = HttpContextAccessor.HttpContext;
-        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
-
-        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        if (_playerId is null)
         {
             Navigation.NavigateTo("/login", forceLoad: true);
             return;
         }
 
-        _venues = (await VenueService.ListAsync(includePrivate: false)).ToList();
+        _venues = (await VenueService.ListAsync(includePrivate: true)).ToList();
+        _venuesLoaded = true;
     }
 
-    private async Task HandleStart()
+    private async Task HandleSubmitAsync()
     {
+        if (_playerId is null)
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
         if (string.IsNullOrEmpty(_model.VenueId))
         {
             _errorMessage = "Please select a venue.";
@@ -95,7 +140,7 @@
         try
         {
             var game = await GameService.StartNewGameAsync(
-                _playerId,
+                _playerId.Value,
                 Guid.Parse(_model.VenueId),
                 _model.TableSize);
 
@@ -103,7 +148,7 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message;
+            _errorMessage = "Failed to start the game. Please try again.";
             Logger.LogWarning(ex, "Failed to start new game for player {PlayerId}.", _playerId);
             _isSaving = false;
         }
@@ -111,7 +156,7 @@
 
     private sealed class NewGameModel
     {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Please select a venue.")]
+        [Required(ErrorMessage = "Please select a venue.")]
         public string? VenueId { get; set; }
 
         public TableSize TableSize { get; set; } = TableSize.SevenFoot;

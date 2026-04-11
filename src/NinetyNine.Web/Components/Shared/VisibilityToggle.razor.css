@@ -1,0 +1,161 @@
+/* =====================================================================
+   VisibilityToggle — iOS-style switch bound to a boolean visibility flag.
+   Scoped to VisibilityToggle.razor.
+   ---------------------------------------------------------------------
+   Layout: label + state badge on the left, switch on the right.
+   The underlying <input type="checkbox"> is visually hidden but keeps
+   full keyboard + screen-reader semantics; the painted track/thumb
+   reads `:checked` state off the sibling input via `:has(...)`.
+   ===================================================================== */
+
+.nn-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--nn-space-4);
+    padding: var(--nn-space-2) var(--nn-space-3);
+    min-height: var(--nn-touch-target);
+    background-color: transparent;
+    color: var(--nn-text-primary);
+    font-family: var(--nn-font-sans);
+}
+
+.nn-toggle__label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-2);
+    margin: 0;
+    cursor: pointer;
+    color: var(--nn-text-primary);
+    font-weight: 500;
+    line-height: 1.3;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.nn-toggle__text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.nn-toggle__state {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--nn-space-1) var(--nn-space-2);
+    border-radius: var(--nn-radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    border: 1px solid var(--nn-border-default);
+}
+
+.nn-toggle__state--on {
+    background-color: var(--nn-accent-teal-muted);
+    color: var(--nn-accent-teal);
+    border-color: var(--nn-accent-teal);
+}
+
+.nn-toggle__state--off {
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-secondary);
+    border-color: var(--nn-border-default);
+}
+
+/* Switch: input is hidden behind the painted track.
+   We keep it an actual checkbox for a11y + bUnit compatibility. */
+.nn-toggle__switch {
+    position: relative;
+    display: inline-block;
+    width: 3rem;   /* 48px */
+    height: 1.75rem; /* 28px */
+    flex-shrink: 0;
+}
+
+.nn-toggle__input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+    /* Expand hit area without affecting layout. */
+}
+
+.nn-toggle__track {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--nn-radius-full);
+    background-color: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-default);
+    box-shadow: var(--nn-shadow-sm);
+    transition:
+        background-color var(--nn-transition-base),
+        border-color var(--nn-transition-base),
+        box-shadow var(--nn-transition-fast);
+    pointer-events: none;
+}
+
+.nn-toggle__thumb {
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    width: calc(1.75rem - 8px);
+    height: calc(1.75rem - 8px);
+    border-radius: var(--nn-radius-full);
+    background-color: var(--nn-text-tertiary);
+    transform: translateY(-50%);
+    transition:
+        left var(--nn-transition-base),
+        background-color var(--nn-transition-base),
+        box-shadow var(--nn-transition-fast);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ON state: drive off :checked via :has() so no JS is needed. */
+.nn-toggle__switch:has(.nn-toggle__input:checked) .nn-toggle__track {
+    background-color: var(--nn-accent-teal);
+    border-color: var(--nn-accent-teal-hover);
+}
+
+.nn-toggle__switch:has(.nn-toggle__input:checked) .nn-toggle__thumb {
+    left: calc(100% - 3px - (1.75rem - 8px));
+    background-color: var(--nn-text-on-accent);
+}
+
+/* Focus ring — draw on the painted track when the real input is focused. */
+.nn-toggle__switch:has(.nn-toggle__input:focus-visible) .nn-toggle__track {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+}
+
+/* Hover affordance. */
+.nn-toggle__switch:hover .nn-toggle__track {
+    box-shadow: var(--nn-shadow-md);
+}
+
+/* Disabled state (defensive, not currently exposed). */
+.nn-toggle__input:disabled {
+    cursor: not-allowed;
+}
+
+.nn-toggle__switch:has(.nn-toggle__input:disabled) {
+    opacity: 0.5;
+}
+
+.nn-toggle__switch:has(.nn-toggle__input:disabled) .nn-toggle__track,
+.nn-toggle__switch:has(.nn-toggle__input:disabled) .nn-toggle__thumb {
+    cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nn-toggle__track,
+    .nn-toggle__thumb {
+        transition: none;
+    }
+}

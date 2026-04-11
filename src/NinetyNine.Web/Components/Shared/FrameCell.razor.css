@@ -1,0 +1,275 @@
+/* =====================================================================
+   FrameCell.razor.css  (Blazor scoped)
+   ---------------------------------------------------------------------
+   A single 4-row column of the ScoreCardGrid:
+       ┌─────────────┐
+       │    ( n )    │  frame number circle
+       ├─────────────┤
+       │ Break   —   │
+       ├─────────────┤
+       │ Ball    —   │
+       ├─────────────┤
+       │ Total   —   │  (emphasized, larger, bolder)
+       └─────────────┘
+
+   Three visual states, each signalled by TWO cues:
+     • pending    : dashed border + tertiary text
+     • active     : gold fill + thick top/bottom borders + inset glow + lift
+     • completed  : teal ring + filled frame number + secondary text
+
+   All colors reference the --nn-* token namespace from theme.css.
+   ===================================================================== */
+
+.frame-cell {
+    /* Structural layout */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: 0;
+    min-height: calc(var(--nn-touch-target) * 4);
+    padding: var(--nn-space-3) var(--nn-space-2) var(--nn-space-2);
+    border-radius: var(--nn-radius-md);
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-subtle);
+    color: var(--nn-text-primary);
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+    position: relative;
+    text-align: center;
+    box-shadow: var(--nn-shadow-sm);
+    transition: border-color var(--nn-transition-fast),
+                background-color var(--nn-transition-fast),
+                box-shadow var(--nn-transition-base),
+                transform var(--nn-transition-base);
+}
+
+/* When the cell is a <button> it must reset the UA styling. */
+button.frame-cell {
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+    cursor: pointer;
+    width: 100%;
+    user-select: none;
+}
+
+button.frame-cell:focus-visible {
+    outline: 3px solid var(--nn-accent-gold);
+    outline-offset: 3px;
+}
+
+/* -------------------------------------------------------------------
+   HEADER — circled frame number
+   ------------------------------------------------------------------- */
+
+.frame-cell-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: var(--nn-space-2);
+    padding-bottom: var(--nn-space-2);
+    border-bottom: 1px solid var(--nn-border-subtle);
+}
+
+.frame-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--nn-radius-full);
+    background-color: transparent;
+    color: var(--nn-text-secondary);
+    border: 2px solid var(--nn-border-default);
+    font-family: var(--nn-font-sans);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: background-color var(--nn-transition-fast),
+                color var(--nn-transition-fast),
+                border-color var(--nn-transition-fast);
+}
+
+@media (min-width: 768px) {
+    .frame-number {
+        width: 2rem;
+        height: 2rem;
+        font-size: 0.9375rem;
+    }
+}
+
+/* -------------------------------------------------------------------
+   ROWS — Break / Ball / Total
+   ------------------------------------------------------------------- */
+
+.frame-cell-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--nn-space-1);
+    padding: var(--nn-space-1) var(--nn-space-1);
+    min-height: 1.75rem;
+    font-size: 0.9375rem;
+    line-height: 1.1;
+}
+
+.frame-cell-row + .frame-cell-row {
+    border-top: 1px solid var(--nn-border-subtle);
+}
+
+.frame-cell-label {
+    font-family: var(--nn-font-sans);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--nn-text-tertiary);
+    flex-shrink: 0;
+}
+
+.score-value {
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: var(--nn-text-primary);
+    min-width: 1.75ch;
+    text-align: right;
+}
+
+.score-value.score-placeholder {
+    color: var(--nn-text-tertiary);
+    font-weight: 400;
+}
+
+/* Running Total row — the emphasized value. */
+.frame-cell-running-total {
+    margin-top: var(--nn-space-1);
+    padding-top: var(--nn-space-2);
+    border-top: 1px solid var(--nn-border-default) !important;
+    min-height: 2.25rem;
+}
+
+.frame-cell-running-total .score-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    letter-spacing: -0.02em;
+}
+
+.frame-cell-running-total .score-value.score-placeholder {
+    color: var(--nn-text-tertiary);
+    font-weight: 500;
+}
+
+/* -------------------------------------------------------------------
+   STATE — PENDING (empty, not yet reached)
+   ------------------------------------------------------------------- */
+
+.frame-cell-pending {
+    background-color: var(--nn-bg-secondary);
+    border: 1px dashed var(--nn-border-default);
+}
+
+.frame-cell-pending .score-value {
+    color: var(--nn-text-tertiary);
+}
+
+.frame-cell-pending .frame-number {
+    border-color: var(--nn-border-default);
+    color: var(--nn-text-tertiary);
+}
+
+/* -------------------------------------------------------------------
+   STATE — COMPLETED
+   ------------------------------------------------------------------- */
+
+.frame-cell-completed {
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-accent-teal-muted);
+    box-shadow: var(--nn-shadow-sm),
+                inset 0 0 0 1px rgba(var(--nn-accent-teal-rgb), 0.35);
+}
+
+.frame-cell-completed .score-value {
+    color: var(--nn-text-secondary);
+}
+
+.frame-cell-completed .frame-cell-running-total .score-value {
+    color: var(--nn-text-primary);
+}
+
+.frame-cell-completed .frame-number {
+    background-color: var(--nn-accent-teal);
+    color: var(--nn-text-on-accent);
+    border-color: var(--nn-accent-teal);
+    box-shadow: 0 0 0 2px rgba(var(--nn-accent-teal-rgb), 0.15);
+}
+
+/* -------------------------------------------------------------------
+   STATE — ACTIVE (current frame, edit mode)
+   ------------------------------------------------------------------- */
+
+.frame-cell-active {
+    background-color: var(--nn-bg-tertiary);
+    border-top: 3px solid var(--nn-accent-gold);
+    border-bottom: 3px solid var(--nn-accent-gold);
+    border-left: 1px solid var(--nn-accent-gold);
+    border-right: 1px solid var(--nn-accent-gold);
+    box-shadow: var(--nn-shadow-glow-gold),
+                inset 0 1px 0 var(--nn-border-subtle);
+    transform: translateY(-2px);
+}
+
+.frame-cell-active .score-value {
+    color: var(--nn-text-primary);
+}
+
+.frame-cell-active .score-value.score-placeholder {
+    color: var(--nn-accent-gold);
+    font-weight: 600;
+}
+
+.frame-cell-active .frame-cell-label {
+    color: var(--nn-text-secondary);
+}
+
+.frame-cell-active .frame-number {
+    background-color: var(--nn-accent-gold);
+    color: var(--nn-text-inverse);
+    border-color: var(--nn-accent-gold);
+    box-shadow: 0 0 0 3px var(--nn-accent-gold-muted);
+}
+
+/* Reduced-motion users: no lift, no transitions. */
+@media (prefers-reduced-motion: reduce) {
+    .frame-cell,
+    .frame-cell-active,
+    .frame-number {
+        transform: none !important;
+        transition: none !important;
+    }
+}
+
+/* -------------------------------------------------------------------
+   RESPONSIVE — mobile (<768px)
+   ------------------------------------------------------------------- */
+
+/* On mobile the 9-column grid is hidden by the parent; only the
+   mobile detail+picker view is visible. So we shrink cell padding
+   for the unlikely case the grid is still shown (tablets in portrait). */
+@media (max-width: 767.98px) {
+    .frame-cell {
+        padding: var(--nn-space-2) var(--nn-space-1);
+        min-height: calc(var(--nn-touch-target) * 3);
+    }
+
+    .frame-cell-row {
+        font-size: 0.8125rem;
+    }
+
+    .frame-cell-running-total .score-value {
+        font-size: 1.0625rem;
+    }
+}

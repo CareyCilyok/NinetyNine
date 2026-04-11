@@ -1,20 +1,26 @@
 @* A labeled toggle switch bound to a boolean visibility flag. *@
 
-<div class="visibility-toggle form-check form-switch">
-    <input class="form-check-input"
-           type="checkbox"
-           role="switch"
-           id="@_inputId"
-           checked="@Value"
-           @onchange="OnChanged"
-           aria-checked="@Value"
-           aria-label="@Label visibility" />
-    <label class="form-check-label" for="@_inputId">
-        @Label
-        <span class="badge @(Value ? "bg-success" : "bg-secondary") ms-1">
+<div class="visibility-toggle nn-toggle">
+    <label class="nn-toggle__label" for="@_inputId">
+        <span class="nn-toggle__text">@Label</span>
+        <span class="badge nn-toggle__state @(Value ? "nn-toggle__state--on" : "nn-toggle__state--off")">
             @(Value ? "Public" : "Private")
         </span>
     </label>
+
+    <span class="nn-toggle__switch">
+        <input class="nn-toggle__input form-check-input"
+               type="checkbox"
+               role="switch"
+               id="@_inputId"
+               checked="@Value"
+               @onchange="OnChanged"
+               aria-checked="@Value"
+               aria-label="@Label visibility" />
+        <span class="nn-toggle__track" aria-hidden="true">
+            <span class="nn-toggle__thumb"></span>
+        </span>
+    </span>
 </div>
 
 @code {

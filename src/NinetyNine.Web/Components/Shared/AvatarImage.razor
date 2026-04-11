@@ -1,14 +1,16 @@
 @* Renders an avatar image or falls back to an initials-based SVG placeholder. *@
 
-<div class="avatar-container" style="width:@(SizePx)px;height:@(SizePx)px;"
-     role="img" aria-label="Avatar for @DisplayName">
+<div class="avatar-container nn-avatar"
+     style="width:@(SizePx)px;height:@(SizePx)px;"
+     role="img"
+     aria-label="Avatar for @DisplayName">
     @if (!string.IsNullOrEmpty(AvatarUrl))
     {
         <img src="@AvatarUrl"
              alt="Avatar for @DisplayName"
              width="@SizePx"
              height="@SizePx"
-             class="avatar-img rounded-circle"
+             class="avatar-img rounded-circle nn-avatar__img"
              loading="lazy"
              @onerror="HandleImageError" />
     }

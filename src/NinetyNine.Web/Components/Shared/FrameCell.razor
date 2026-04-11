@@ -1,65 +1,117 @@
 @*
-    Single frame column within the score card grid.
-    Three rows: Break Bonus / Ball Count / Running Total.
-    Keyboard accessible — Tab to reach, Enter/Space to submit when in Edit mode.
+    FrameCell — a single column of the P&B score card grid.
+
+    Vertical stack of four visual parts:
+      1. Circled frame number header
+      2. Break Bonus row  (label + 0/1 or em-dash)
+      3. Ball Count row   (label + 0-10 or em-dash)
+      4. Running Total row (label + total, emphasized)
+
+    States (two signals each — never color alone):
+      - Empty     : tertiary text + dashed border
+      - Active    : gold fill + thick top/bottom borders + inset glow + lift
+      - Completed : teal ring + filled frame number + secondary text
+
+    When Mode == Edit && IsActive, the entire cell is a <button type="button">
+    so the whole column is clickable and keyboard-accessible. Otherwise it is
+    a plain <div role="gridcell"> with no focusable affordance.
 *@
 
-<div class="frame-cell @CellCssClass"
-     role="gridcell"
-     tabindex="@(IsActive && Mode == ScoreCardMode.Edit ? 0 : -1)"
-     aria-label="@AriaLabel"
-     aria-current="@(IsActive ? "true" : null)"
-     @onkeydown="OnKeyDown">
-
-    <div class="frame-cell-header text-center">
-        <span class="frame-number">@Frame.FrameNumber</span>
-    </div>
-
-    <div class="frame-cell-row frame-cell-break-bonus" aria-label="Break bonus: @Frame.BreakBonus">
-        @if (Frame.IsCompleted || !IsActive)
-        {
-            <span class="score-value">@Frame.BreakBonus</span>
-        }
-        else
-        {
-            <span class="score-value score-placeholder">-</span>
-        }
-    </div>
-
-    <div class="frame-cell-row frame-cell-ball-count" aria-label="Ball count: @Frame.BallCount">
-        @if (Frame.IsCompleted || !IsActive)
-        {
-            <span class="score-value">@Frame.BallCount</span>
-        }
-        else
-        {
-            <span class="score-value score-placeholder">-</span>
-        }
-    </div>
-
-    <div class="frame-cell-row frame-cell-running-total" aria-label="Running total: @(Frame.IsCompleted ? Frame.RunningTotal : "-")">
-        @if (Frame.IsCompleted)
-        {
-            <span class="score-value running-total">@Frame.RunningTotal</span>
-        }
-        else
-        {
-            <span class="score-value score-placeholder">-</span>
-        }
-    </div>
-
-    @if (IsActive && Mode == ScoreCardMode.Edit)
-    {
-        <div class="frame-cell-action">
-            <button type="button"
-                    class="btn btn-sm btn-primary w-100"
-                    @onclick="OnEnterScore"
-                    aria-label="Enter score for frame @Frame.FrameNumber">
-                Score
-            </button>
+@if (IsInteractive)
+{
+    <button type="button"
+            class="@CellCssClass"
+            role="gridcell"
+            aria-label="@AriaLabel"
+            aria-current="true"
+            @onclick="OnEnterScore">
+        <div class="frame-cell-header">
+            <span class="frame-number" aria-hidden="true">@Frame.FrameNumber</span>
         </div>
-    }
-</div>
+
+        <div class="frame-cell-row frame-cell-break-bonus">
+            <span class="frame-cell-label" aria-hidden="true">Break</span>
+            @if (Frame.IsCompleted)
+            {
+                <span class="score-value">@Frame.BreakBonus</span>
+            }
+            else
+            {
+                <span class="score-value score-placeholder">@EmDash</span>
+            }
+        </div>
+
+        <div class="frame-cell-row frame-cell-ball-count">
+            <span class="frame-cell-label" aria-hidden="true">Ball</span>
+            @if (Frame.IsCompleted)
+            {
+                <span class="score-value">@Frame.BallCount</span>
+            }
+            else
+            {
+                <span class="score-value score-placeholder">@EmDash</span>
+            }
+        </div>
+
+        <div class="frame-cell-row frame-cell-running-total">
+            <span class="frame-cell-label" aria-hidden="true">Total</span>
+            @if (Frame.IsCompleted)
+            {
+                <span class="score-value running-total">@Frame.RunningTotal</span>
+            }
+            else
+            {
+                <span class="score-value score-placeholder running-total">@EmDash</span>
+            }
+        </div>
+    </button>
+}
+else
+{
+    <div class="@CellCssClass"
+         role="gridcell"
+         aria-label="@AriaLabel">
+        <div class="frame-cell-header">
+            <span class="frame-number" aria-hidden="true">@Frame.FrameNumber</span>
+        </div>
+
+        <div class="frame-cell-row frame-cell-break-bonus">
+            <span class="frame-cell-label" aria-hidden="true">Break</span>
+            @if (Frame.IsCompleted)
+            {
+                <span class="score-value">@Frame.BreakBonus</span>
+            }
+            else
+            {
+                <span class="score-value score-placeholder">@EmDash</span>
+            }
+        </div>
+
+        <div class="frame-cell-row frame-cell-ball-count">
+            <span class="frame-cell-label" aria-hidden="true">Ball</span>
+            @if (Frame.IsCompleted)
+            {
+                <span class="score-value">@Frame.BallCount</span>
+            }
+            else
+            {
+                <span class="score-value score-placeholder">@EmDash</span>
+            }
+        </div>
+
+        <div class="frame-cell-row frame-cell-running-total">
+            <span class="frame-cell-label" aria-hidden="true">Total</span>
+            @if (Frame.IsCompleted)
+            {
+                <span class="score-value running-total">@Frame.RunningTotal</span>
+            }
+            else
+            {
+                <span class="score-value score-placeholder running-total">@EmDash</span>
+            }
+        </div>
+    </div>
+}
 
 @code {
     [Parameter] public Frame Frame { get; set; } = default!;
@@ -67,30 +119,50 @@
     [Parameter] public ScoreCardMode Mode { get; set; } = ScoreCardMode.View;
     [Parameter] public EventCallback<Frame> OnFrameActivated { get; set; }
 
+    private const string EmDash = "\u2014";
+
+    private bool IsInteractive => IsActive && Mode == ScoreCardMode.Edit;
+
     private string CellCssClass
     {
         get
         {
-            if (IsActive && Mode == ScoreCardMode.Edit) return "frame-cell-active";
-            if (Frame.IsCompleted) return "frame-cell-completed";
-            return "frame-cell-pending";
+            if (IsActive && Mode == ScoreCardMode.Edit)
+            {
+                return "frame-cell frame-cell-active";
+            }
+            if (Frame.IsCompleted)
+            {
+                return "frame-cell frame-cell-completed";
+            }
+            return "frame-cell frame-cell-pending";
         }
     }
 
-    private string AriaLabel => Frame.IsCompleted
-        ? $"Frame {Frame.FrameNumber}: Break Bonus {Frame.BreakBonus}, Ball Count {Frame.BallCount}, Running Total {Frame.RunningTotal}"
-        : IsActive
-            ? $"Frame {Frame.FrameNumber}: active, awaiting score entry"
-            : $"Frame {Frame.FrameNumber}: not yet played";
+    private string AriaLabel
+    {
+        get
+        {
+            if (Frame.IsCompleted)
+            {
+                return $"Frame {Frame.FrameNumber}, Break Bonus {Frame.BreakBonus}, " +
+                       $"Ball Count {Frame.BallCount}, Running Total {Frame.RunningTotal}. Completed.";
+            }
+            if (IsActive && Mode == ScoreCardMode.Edit)
+            {
+                return $"Frame {Frame.FrameNumber}, currently active. Press Enter to record score.";
+            }
+            if (IsActive)
+            {
+                return $"Frame {Frame.FrameNumber}, currently active, awaiting score.";
+            }
+            return $"Frame {Frame.FrameNumber}, not yet played.";
+        }
+    }
 
     private async Task OnEnterScore()
     {
-        await OnFrameActivated.InvokeAsync(Frame);
-    }
-
-    private async Task OnKeyDown(KeyboardEventArgs e)
-    {
-        if ((e.Key == "Enter" || e.Key == " ") && IsActive && Mode == ScoreCardMode.Edit)
+        if (IsInteractive)
         {
             await OnFrameActivated.InvokeAsync(Frame);
         }

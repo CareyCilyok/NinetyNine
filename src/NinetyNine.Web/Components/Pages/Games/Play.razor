@@ -2,48 +2,117 @@
 @attribute [Authorize]
 @rendermode InteractiveServer
 @inject IGameService GameService
+@inject IVenueService VenueService
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<Play> Logger
 
-<PageTitle>Playing &mdash; NinetyNine</PageTitle>
+<PageTitle>
+    @(_game is not null ? $"Frame {_game.CurrentFrameNumber} / 9" : "Playing") &mdash; NinetyNine
+</PageTitle>
 
-@if (_loading)
-{
-    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading game"></span>Loading game&hellip;</p>
-}
-else if (_game is null)
-{
-    <div class="alert alert-danger">Game not found or you do not have access.</div>
-}
-else if (_game.IsCompleted)
-{
-    <div class="alert alert-info">
-        This game is complete. <a href="/games/@GameId">View results</a>.
-    </div>
-}
-else
-{
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Frame @_game.CurrentFrameNumber <span class="text-muted fs-5">/ 9</span></h1>
-        <span class="badge bg-primary fs-6" aria-live="polite">
-            Score: @_game.TotalScore
-        </span>
-    </div>
+<div class="nn-page nn-play-page">
 
-    @if (!string.IsNullOrEmpty(_errorMessage))
+    @if (_loading)
     {
-        <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        <div class="nn-play-page__loading" aria-live="polite" aria-busy="true">
+            <span class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"></span>
+            Loading game&hellip;
+        </div>
+    }
+    else if (_game is null)
+    {
+        <div class="nn-play-page__not-found">
+            <h1 class="nn-play-page__not-found-title">Game not found</h1>
+            <p class="nn-play-page__not-found-body">
+                This game does not exist or you do not have access to it.
+            </p>
+            <a href="/games" class="btn btn-outline-secondary">Back to history</a>
+        </div>
+    }
+    else if (_game.IsCompleted)
+    {
+        <div class="nn-play-page__complete" aria-live="assertive">
+            <div class="nn-play-page__complete-inner">
+                <div class="nn-play-page__complete-icon" aria-hidden="true">&#127921;</div>
+                <h1 class="nn-play-page__complete-title">Game Complete!</h1>
+                <p class="nn-play-page__complete-score">
+                    Final score:
+                    <strong class="@(_game.IsPerfectGame ? "nn-play-page__perfect-score" : "")">
+                        @_game.TotalScore
+                    </strong>
+                    <span class="nn-play-page__complete-max">/ 99</span>
+                </p>
+                @if (_game.IsPerfectGame)
+                {
+                    <p class="nn-play-page__perfect-label">Perfect game!</p>
+                }
+                <div class="nn-play-page__complete-actions">
+                    <a href="/games/@GameId" class="btn btn-primary">View details</a>
+                    <a href="/games/new" class="btn btn-outline-secondary">New game</a>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* Header strip *@
+        <header class="nn-play-page__header">
+            <div class="nn-play-page__meta">
+                <span class="nn-play-page__venue" aria-label="Venue">
+                    @(_venueName ?? "Unknown venue")
+                </span>
+                <span class="nn-play-page__sep" aria-hidden="true">&middot;</span>
+                <span class="nn-play-page__table-size">
+                    @TableSizeLabel(_game.TableSize)
+                </span>
+                <span class="nn-play-page__sep" aria-hidden="true">&middot;</span>
+                <time class="nn-play-page__when"
+                      datetime="@_game.WhenPlayed.ToString("O")"
+                      title="@_game.WhenPlayed.ToLocalTime().ToString("f")">
+                    Started @_game.WhenPlayed.ToLocalTime().ToString("MMM d, h:mm tt")
+                </time>
+            </div>
+            <div class="nn-play-page__state-pill">
+                <span class="badge nn-play-page__state-badge nn-play-page__state-badge--inprogress"
+                      aria-label="Game in progress">
+                    In progress
+                </span>
+            </div>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger nn-play-page__error" role="alert">
+                @_errorMessage
+            </div>
+        }
+
+        @* Score card *@
+        <main class="nn-play-page__main">
+            <ScoreCardGrid Game="_game"
+                           Mode="ScoreCardMode.Edit"
+                           OnFrameSubmit="HandleFrameSubmit" />
+        </main>
+
+        @* Footer strip *@
+        <footer class="nn-play-page__footer">
+            <div class="nn-play-page__footer-info">
+                <span class="nn-play-page__frame-indicator">
+                    Current frame: <strong>@_game.CurrentFrameNumber</strong> / 9
+                </span>
+                <span class="nn-play-page__footer-sep" aria-hidden="true">&middot;</span>
+                <span class="nn-play-page__score-so-far" aria-live="polite" aria-atomic="true">
+                    Score so far: <strong class="nn-play-page__score-value">@_game.TotalScore</strong> / 99
+                </span>
+            </div>
+            <a href="/games" class="nn-play-page__exit-link">Exit to history</a>
+        </footer>
     }
 
-    <ScoreCardGrid Game="_game"
-                   Mode="ScoreCardMode.Edit"
-                   OnFrameSubmit="HandleFrameSubmit" />
-
-    <div class="mt-4 d-flex gap-2">
-        <a href="/games" class="btn btn-outline-secondary">Quit Game</a>
-    </div>
-}
+</div>
 
 @code {
     [Parameter] public Guid GameId { get; set; }
@@ -51,14 +120,20 @@ else
     private Game? _game;
     private bool _loading = true;
     private string _errorMessage = "";
-    private Guid _playerId;
+    private string? _venueName;
+    private Guid? _playerId;
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _playerId = id;
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        var context = HttpContextAccessor.HttpContext;
-        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
-
-        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        if (_playerId is null)
         {
             Navigation.NavigateTo("/login", forceLoad: true);
             return;
@@ -72,13 +147,44 @@ else
     {
         var game = await GameService.GetGameAsync(GameId);
 
+        // Ownership guard: don't reveal existence via 403 — just show "not found"
         if (game is null || game.PlayerId != _playerId)
         {
             _game = null;
             return;
         }
 
+        // Redirect completed games to the details page
+        if (game.IsCompleted)
+        {
+            Navigation.NavigateTo($"/games/{GameId}", forceLoad: false);
+            return;
+        }
+
+        // Defensive: initialize frames if somehow still NotStarted
+        if (game.GameState == GameState.NotStarted)
+        {
+            game.InitializeFrames();
+            // Persist via a dummy RecordFrame would mutate state — instead just
+            // rely on the service to have already done this on StartNewGameAsync.
+            // This path should not occur in normal operation.
+            Logger.LogWarning(
+                "Game {GameId} was in NotStarted state on Play page load — frames initialized defensively.",
+                GameId);
+        }
+
         _game = game;
+
+        // Resolve venue name (best-effort; no N+1 since it's a single game)
+        try
+        {
+            var venue = await VenueService.GetAsync(game.VenueId);
+            _venueName = venue?.Name;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Could not resolve venue {VenueId} for game {GameId}.", game.VenueId, GameId);
+        }
     }
 
     private async Task HandleFrameSubmit(ScoreCardGrid.FrameSubmitArgs args)
@@ -94,15 +200,24 @@ else
                 args.BallCount,
                 args.Notes);
 
-            if (_game.IsCompleted)
-            {
-                Navigation.NavigateTo($"/games/{GameId}");
-            }
+            // Completion state is shown inline (celebration state in markup above).
+            // No redirect — let the user see the completed grid and use the action links.
         }
         catch (Exception ex)
         {
-            _errorMessage = ex.Message;
-            Logger.LogWarning(ex, "Failed to record frame {Frame} for game {GameId}.", args.FrameNumber, args.GameId);
+            _errorMessage = "Failed to record the frame. Please try again.";
+            Logger.LogWarning(ex,
+                "Failed to record frame {Frame} for game {GameId}.",
+                args.FrameNumber, args.GameId);
         }
     }
+
+    private static string TableSizeLabel(TableSize size) => size switch
+    {
+        TableSize.SixFoot   => "6 ft",
+        TableSize.SevenFoot => "7 ft",
+        TableSize.NineFoot  => "9 ft",
+        TableSize.TenFoot   => "10 ft",
+        _                   => size.ToString()
+    };
 }

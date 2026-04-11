@@ -1,129 +1,248 @@
 @page "/games"
 @attribute [Authorize]
 @inject IGameRepository GameRepository
+@inject IVenueService VenueService
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<List> Logger
 
 <PageTitle>My Games &mdash; NinetyNine</PageTitle>
 
-<h1 class="mb-4">My Games</h1>
+<div class="nn-page nn-list-page">
 
-@if (_loading)
-{
-    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading games"></span>Loading&hellip;</p>
-}
-else if (_games.Count == 0)
-{
-    <div class="alert alert-info">
-        No games yet. <a href="/games/new">Start your first game!</a>
-    </div>
-}
-else
-{
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <caption class="visually-hidden">List of my games</caption>
-            <thead>
-                <tr>
-                    <th scope="col">Date</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Score</th>
-                    <th scope="col">Frames</th>
-                    <th scope="col">Avg / Frame</th>
-                    <th scope="col">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var game in _games)
-                {
-                    <tr>
-                        <td>@game.WhenPlayed.ToLocalTime().ToString("MMM d, yyyy")</td>
-                        <td>
-                            <span class="badge @GameStateBadge(game.GameState)">
-                                @game.GameState
-                            </span>
-                        </td>
-                        <td class="font-monospace fw-bold">
-                            @game.TotalScore
-                            @if (game.IsPerfectGame)
-                            {
-                                <span class="badge bg-warning text-dark ms-1" title="Perfect game!">99!</span>
-                            }
-                        </td>
-                        <td>@game.CompletedFrames / 9</td>
-                        <td>@(game.AverageScore > 0 ? game.AverageScore.ToString("F1") : "-")</td>
-                        <td>
-                            @if (game.IsInProgress)
-                            {
-                                <a href="/games/@game.GameId/play" class="btn btn-sm btn-primary me-1">Continue</a>
-                            }
-                            <a href="/games/@game.GameId" class="btn btn-sm btn-outline-secondary">Details</a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    <header class="nn-list-page__header">
+        <h1 class="nn-list-page__title">My Games</h1>
+        <a href="/games/new" class="btn btn-primary nn-list-page__new-btn">
+            New Game
+        </a>
+    </header>
 
-    @if (_hasMore)
+    @if (_loading)
     {
-        <div class="text-center mt-3">
-            <button type="button" class="btn btn-outline-primary" @onclick="LoadMore" disabled="@_loadingMore">
-                @if (_loadingMore)
-                {
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                }
-                Load more
-            </button>
+        <div class="nn-list-page__loading" aria-live="polite" aria-busy="true">
+            <span class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"></span>
+            Loading&hellip;
         </div>
     }
-}
+    else if (_games.Count == 0)
+    {
+        <div class="nn-empty-state nn-list-page__empty">
+            <img src="/img/billiards/balls-racked.jpg"
+                 alt=""
+                 class="nn-empty-state__img"
+                 loading="lazy" />
+            <h2 class="nn-empty-state__heading">No games yet</h2>
+            <p class="nn-empty-state__body">
+                Rack 'em up. Your first game of Ninety-Nine is just a click away.
+            </p>
+            <a href="/games/new" class="btn btn-primary">Start your first game</a>
+        </div>
+    }
+    else
+    {
+        @* Desktop table *@
+        <div class="table-responsive nn-list-page__table-wrapper">
+            <table class="table table-hover nn-list-page__table"
+                   aria-label="My game history">
+                <caption class="visually-hidden">
+                    List of my games, @_games.Count total. Click a row to view details.
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">When</th>
+                        <th scope="col">Venue</th>
+                        <th scope="col">Table</th>
+                        <th scope="col">Score</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var game in _games)
+                    {
+                        var href = game.IsInProgress
+                            ? $"/games/{game.GameId}/play"
+                            : $"/games/{game.GameId}";
+
+                        <tr class="nn-list-page__row"
+                            @onclick="() => Navigation.NavigateTo(href)"
+                            tabindex="0"
+                            role="link"
+                            aria-label="@GameRowLabel(game)"
+                            @onkeydown="(e) => HandleRowKey(e, href)">
+                            <td class="nn-list-page__cell-when">
+                                <time datetime="@game.WhenPlayed.ToString("O")"
+                                      title="@game.WhenPlayed.ToLocalTime().ToString("f")">
+                                    @RelativeTime(game.WhenPlayed)
+                                </time>
+                            </td>
+                            <td class="nn-list-page__cell-venue">
+                                @(_venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "\u2014")
+                            </td>
+                            <td class="nn-list-page__cell-table">
+                                @TableSizeLabel(game.TableSize)
+                            </td>
+                            <td class="nn-list-page__cell-score font-monospace">
+                                @game.TotalScore / 99
+                                @if (game.IsPerfectGame)
+                                {
+                                    <span class="nn-list-page__perfect-badge ms-1"
+                                          title="Perfect game!">99!</span>
+                                }
+                            </td>
+                            <td class="nn-list-page__cell-status">
+                                <span class="nn-status-pill @StatusPillClass(game.GameState)">
+                                    @StatusLabel(game.GameState)
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @* Mobile stacked cards *@
+        <div class="nn-list-page__cards" aria-label="My game history" role="list">
+            @foreach (var game in _games)
+            {
+                var href = game.IsInProgress
+                    ? $"/games/{game.GameId}/play"
+                    : $"/games/{game.GameId}";
+
+                <a href="@href"
+                   class="nn-list-page__card"
+                   role="listitem"
+                   aria-label="@GameRowLabel(game)">
+                    <div class="nn-list-page__card-row">
+                        <time class="nn-list-page__card-when"
+                              datetime="@game.WhenPlayed.ToString("O")"
+                              title="@game.WhenPlayed.ToLocalTime().ToString("f")">
+                            @RelativeTime(game.WhenPlayed)
+                        </time>
+                        <span class="nn-status-pill @StatusPillClass(game.GameState)">
+                            @StatusLabel(game.GameState)
+                        </span>
+                    </div>
+                    <div class="nn-list-page__card-venue">
+                        @(_venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "Unknown venue")
+                    </div>
+                    <div class="nn-list-page__card-meta">
+                        <span>@TableSizeLabel(game.TableSize)</span>
+                        <span class="font-monospace nn-list-page__card-score">
+                            @game.TotalScore / 99
+                        </span>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+
+</div>
 
 @code {
-    private const int PageSize = 20;
     private List<Game> _games = [];
+    private Dictionary<Guid, string> _venueNames = new();
     private bool _loading = true;
-    private bool _loadingMore;
-    private bool _hasMore;
-    private int _skip;
-    private Guid _playerId;
+    private Guid? _playerId;
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _playerId = id;
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        var context = HttpContextAccessor.HttpContext;
-        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
-
-        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        if (_playerId is null)
         {
             Navigation.NavigateTo("/login", forceLoad: true);
             return;
         }
 
-        await LoadGamesAsync();
+        // v1: hardcoded limit 50, no pagination UI
+        var page = await GameRepository.GetByPlayerAsync(_playerId.Value, skip: 0, limit: 50);
+
+        // Sort descending by WhenPlayed (repository may not guarantee order)
+        _games = page.OrderByDescending(g => g.WhenPlayed).ToList();
+
+        // Batch venue lookups — collect unique IDs, resolve once each
+        var uniqueVenueIds = _games
+            .Select(g => g.VenueId)
+            .Distinct()
+            .ToList();
+
+        foreach (var venueId in uniqueVenueIds)
+        {
+            try
+            {
+                var venue = await VenueService.GetAsync(venueId);
+                if (venue is not null)
+                    _venueNames[venueId] = venue.Name;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Could not resolve venue {VenueId}.", venueId);
+            }
+        }
+
         _loading = false;
     }
 
-    private async Task LoadGamesAsync()
+    private void HandleRowKey(KeyboardEventArgs e, string href)
     {
-        var page = await GameRepository.GetByPlayerAsync(_playerId, _skip, PageSize + 1);
-        _hasMore = page.Count > PageSize;
-        _games.AddRange(page.Take(PageSize));
-        _skip += PageSize;
+        if (e.Key is "Enter" or " ")
+            Navigation.NavigateTo(href);
     }
 
-    private async Task LoadMore()
+    // ── Display helpers ───────────────────────────────────────────────
+
+    private static string RelativeTime(DateTime utc)
     {
-        _loadingMore = true;
-        await LoadGamesAsync();
-        _loadingMore = false;
+        var now = DateTime.UtcNow;
+        var diff = now - utc;
+
+        return diff.TotalSeconds < 60       ? "Just now"
+             : diff.TotalMinutes < 60       ? $"{(int)diff.TotalMinutes}m ago"
+             : diff.TotalHours < 24         ? $"{(int)diff.TotalHours}h ago"
+             : diff.TotalDays < 2           ? "Yesterday"
+             : diff.TotalDays < 7           ? $"{(int)diff.TotalDays} days ago"
+             : diff.TotalDays < 30          ? $"{(int)(diff.TotalDays / 7)} weeks ago"
+             : diff.TotalDays < 365         ? $"{(int)(diff.TotalDays / 30)} months ago"
+             : $"{(int)(diff.TotalDays / 365)} years ago";
     }
 
-    private static string GameStateBadge(GameState state) => state switch
+    private static string TableSizeLabel(TableSize size) => size switch
     {
-        GameState.Completed => "bg-success",
-        GameState.InProgress => "bg-primary",
-        GameState.Paused => "bg-warning text-dark",
-        _ => "bg-secondary"
+        TableSize.SixFoot   => "6 ft",
+        TableSize.SevenFoot => "7 ft",
+        TableSize.NineFoot  => "9 ft",
+        TableSize.TenFoot   => "10 ft",
+        _                   => "\u2014"
     };
+
+    private static string StatusLabel(GameState state) => state switch
+    {
+        GameState.Completed  => "Completed",
+        GameState.InProgress => "In progress",
+        GameState.Paused     => "Paused",
+        _                    => "Not started"
+    };
+
+    private static string StatusPillClass(GameState state) => state switch
+    {
+        GameState.Completed  => "nn-status-pill--completed",
+        GameState.InProgress => "nn-status-pill--inprogress",
+        GameState.Paused     => "nn-status-pill--paused",
+        _                    => "nn-status-pill--muted"
+    };
+
+    private string GameRowLabel(Game game)
+    {
+        var venueName = _venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "unknown venue";
+        var when = RelativeTime(game.WhenPlayed);
+        return $"{StatusLabel(game.GameState)} game at {venueName}, {when}, score {game.TotalScore} out of 99";
+    }
 }

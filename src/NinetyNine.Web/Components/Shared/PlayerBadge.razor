@@ -1,8 +1,12 @@
 @* Player name + avatar combination, links to the player's public profile. *@
 
-<a href="/players/@PlayerId" class="player-badge d-inline-flex align-items-center gap-2 text-decoration-none">
-    <AvatarImage AvatarUrl="@AvatarUrl" DisplayName="@DisplayName" SizePx="@AvatarSizePx" />
-    <span class="player-badge-name">@DisplayName</span>
+<a href="/players/@PlayerId"
+   class="player-badge nn-badge"
+   aria-label="Open profile for @DisplayName">
+    <AvatarImage AvatarUrl="@AvatarUrl"
+                 DisplayName="@DisplayName"
+                 SizePx="@AvatarSizePx" />
+    <span class="player-badge-name nn-badge__name">@DisplayName</span>
 </a>
 
 @code {

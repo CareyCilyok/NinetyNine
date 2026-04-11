@@ -1,0 +1,278 @@
+/* =====================================================================
+   Games/Play.razor.css — scoped styles for the Live Scoring page.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   ===================================================================== */
+
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.nn-play-page {
+    display: flex;
+    flex-direction: column;
+    padding: var(--nn-space-4) var(--nn-space-4) var(--nn-space-6);
+    min-height: calc(100vh - var(--nn-navbar-height));
+    max-width: 72rem;
+    margin-inline: auto;
+}
+
+/* ── Loading state ───────────────────────────────────────────────────── */
+.nn-play-page__loading {
+    padding: var(--nn-space-8);
+    color: var(--nn-text-secondary);
+    text-align: center;
+}
+
+/* ── Not found state ─────────────────────────────────────────────────── */
+.nn-play-page__not-found {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--nn-space-10);
+    gap: var(--nn-space-4);
+}
+
+.nn-play-page__not-found-title {
+    color: var(--nn-text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.nn-play-page__not-found-body {
+    color: var(--nn-text-secondary);
+    max-width: 28rem;
+}
+
+/* ── Header strip ────────────────────────────────────────────────────── */
+.nn-play-page__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-3) var(--nn-space-4);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-sm);
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-play-page__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--nn-space-2);
+    font-size: 0.9rem;
+    color: var(--nn-text-secondary);
+}
+
+.nn-play-page__venue {
+    font-weight: 600;
+    color: var(--nn-text-primary);
+}
+
+.nn-play-page__sep {
+    color: var(--nn-text-tertiary);
+}
+
+.nn-play-page__table-size {
+    color: var(--nn-text-secondary);
+}
+
+.nn-play-page__when {
+    color: var(--nn-text-tertiary);
+    font-size: 0.85rem;
+}
+
+.nn-play-page__state-badge--inprogress {
+    background-color: var(--nn-accent-gold-muted);
+    color: var(--nn-accent-gold);
+    border: 1px solid var(--nn-accent-gold-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: var(--nn-space-1) var(--nn-space-3);
+    border-radius: var(--nn-radius-full);
+}
+
+/* ── Error message ───────────────────────────────────────────────────── */
+.nn-play-page__error {
+    margin-bottom: var(--nn-space-4);
+}
+
+/* ── Main score card area ────────────────────────────────────────────── */
+.nn-play-page__main {
+    flex: 1;
+    margin-bottom: var(--nn-space-4);
+}
+
+/* ── Footer strip ────────────────────────────────────────────────────── */
+.nn-play-page__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-3) var(--nn-space-4);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-sm);
+    margin-top: auto;
+}
+
+.nn-play-page__footer-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--nn-space-2);
+    font-size: 0.9rem;
+    color: var(--nn-text-secondary);
+}
+
+.nn-play-page__frame-indicator {
+    color: var(--nn-text-secondary);
+}
+
+.nn-play-page__frame-indicator strong {
+    color: var(--nn-text-primary);
+}
+
+.nn-play-page__footer-sep {
+    color: var(--nn-text-tertiary);
+}
+
+.nn-play-page__score-so-far {
+    color: var(--nn-text-secondary);
+}
+
+.nn-play-page__score-value {
+    color: var(--nn-accent-teal);
+    font-family: var(--nn-font-mono);
+    font-size: 1.05rem;
+}
+
+.nn-play-page__exit-link {
+    color: var(--nn-text-tertiary);
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: color var(--nn-transition-fast);
+}
+
+.nn-play-page__exit-link:hover {
+    color: var(--nn-text-secondary);
+}
+
+.nn-play-page__exit-link:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    border-radius: var(--nn-radius-sm);
+}
+
+/* ── Game complete celebration state ─────────────────────────────────── */
+.nn-play-page__complete {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--nn-space-8) var(--nn-space-4);
+}
+
+.nn-play-page__complete-inner {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-8) var(--nn-space-6);
+    text-align: center;
+    box-shadow: var(--nn-shadow-lg);
+    max-width: 28rem;
+    width: 100%;
+}
+
+.nn-play-page__complete-icon {
+    font-size: 3rem;
+    margin-bottom: var(--nn-space-4);
+    line-height: 1;
+}
+
+.nn-play-page__complete-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-play-page__complete-score {
+    font-size: 1.25rem;
+    color: var(--nn-text-secondary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-play-page__complete-score strong {
+    color: var(--nn-accent-teal);
+    font-family: var(--nn-font-mono);
+    font-size: 2rem;
+}
+
+.nn-play-page__perfect-score {
+    color: var(--nn-accent-gold) !important;
+    text-shadow: var(--nn-shadow-glow-gold);
+}
+
+.nn-play-page__complete-max {
+    color: var(--nn-text-tertiary);
+    font-size: 1rem;
+}
+
+.nn-play-page__perfect-label {
+    color: var(--nn-accent-gold);
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-play-page__complete-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+    margin-top: var(--nn-space-5);
+}
+
+.nn-play-page__complete-actions .btn:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .nn-play-page {
+        padding: var(--nn-space-3) var(--nn-space-3) var(--nn-space-4);
+    }
+
+    .nn-play-page__header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: var(--nn-space-3);
+    }
+
+    .nn-play-page__footer {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: var(--nn-space-3);
+    }
+
+    .nn-play-page__complete-inner {
+        padding: var(--nn-space-5) var(--nn-space-4);
+    }
+
+    .nn-play-page__complete-actions {
+        flex-direction: column;
+    }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .nn-play-page__exit-link {
+        transition: none;
+    }
+}

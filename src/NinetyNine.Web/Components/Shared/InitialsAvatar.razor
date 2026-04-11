@@ -3,15 +3,15 @@
 <svg xmlns="http://www.w3.org/2000/svg"
      width="@SizePx" height="@SizePx"
      viewBox="0 0 @SizePx @SizePx"
-     class="avatar-initials rounded-circle"
+     class="avatar-initials rounded-circle nn-initials"
      aria-hidden="true">
-    <circle cx="@(SizePx / 2)" cy="@(SizePx / 2)" r="@(SizePx / 2)" fill="#0f5132" />
-    <text x="50%" y="50%"
+    <circle class="nn-initials__bg"
+            cx="@(SizePx / 2)" cy="@(SizePx / 2)" r="@(SizePx / 2)" />
+    <text class="nn-initials__text"
+          x="50%" y="50%"
           dominant-baseline="central"
           text-anchor="middle"
-          fill="white"
-          font-family="system-ui, sans-serif"
-          font-size="@(SizePx / 2.5)">
+          font-size="@FontSize">
         @Initials
     </text>
 </svg>
@@ -26,4 +26,8 @@
             DisplayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                        .Take(2)
                        .Select(w => char.ToUpperInvariant(w[0])));
+
+    // Scale the glyph with the container; clamp to a sensible band.
+    private string FontSize => (SizePx / 2.2).ToString("F2",
+        System.Globalization.CultureInfo.InvariantCulture);
 }

@@ -1,0 +1,306 @@
+/* =====================================================================
+   Games/Details.razor.css — scoped styles for the Game Details page.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   ===================================================================== */
+
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.nn-details-page {
+    padding: var(--nn-space-6) var(--nn-space-4);
+    max-width: 72rem;
+    margin-inline: auto;
+}
+
+/* ── Loading state ───────────────────────────────────────────────────── */
+.nn-details-page__loading {
+    padding: var(--nn-space-8);
+    color: var(--nn-text-secondary);
+    text-align: center;
+}
+
+/* ── Not found state ─────────────────────────────────────────────────── */
+.nn-details-page__not-found {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--nn-space-10);
+    gap: var(--nn-space-4);
+}
+
+.nn-details-page__not-found-title {
+    color: var(--nn-text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.nn-details-page__not-found-body {
+    color: var(--nn-text-secondary);
+    max-width: 28rem;
+}
+
+/* ── Header strip ────────────────────────────────────────────────────── */
+.nn-details-page__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--nn-space-4);
+    padding: var(--nn-space-4) var(--nn-space-5);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-details-page__title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-details-page__meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--nn-space-2);
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+}
+
+.nn-details-page__venue {
+    font-weight: 600;
+    color: var(--nn-text-secondary);
+}
+
+.nn-details-page__sep {
+    color: var(--nn-text-tertiary);
+}
+
+.nn-details-page__table-size,
+.nn-details-page__when {
+    color: var(--nn-text-tertiary);
+}
+
+/* ── Score display (top-right) ───────────────────────────────────────── */
+.nn-details-page__score-display {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.nn-details-page__score-value {
+    display: block;
+    font-family: var(--nn-font-mono);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--nn-accent-teal);
+    line-height: 1;
+}
+
+.nn-details-page__score-value--perfect {
+    color: var(--nn-accent-gold);
+    text-shadow: var(--nn-shadow-glow-gold);
+}
+
+.nn-details-page__score-max {
+    color: var(--nn-text-tertiary);
+    font-size: 1rem;
+    margin-left: var(--nn-space-1);
+}
+
+.nn-details-page__perfect-badge {
+    margin-top: var(--nn-space-2);
+    display: inline-block;
+    background-color: var(--nn-accent-gold-muted);
+    color: var(--nn-accent-gold);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: var(--nn-space-1) var(--nn-space-3);
+    border-radius: var(--nn-radius-full);
+}
+
+/* ── Status pills (shared with List page) ────────────────────────────── */
+.nn-status-pill {
+    display: inline-block;
+    padding: var(--nn-space-1) var(--nn-space-3);
+    border-radius: var(--nn-radius-full);
+    font-size: 0.775rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.nn-status-pill--completed {
+    background-color: var(--nn-success-bg);
+    color: var(--nn-success);
+    border: 1px solid var(--nn-success-border);
+}
+
+.nn-status-pill--inprogress {
+    background-color: var(--nn-accent-gold-muted);
+    color: var(--nn-accent-gold);
+    border: 1px solid var(--nn-accent-gold-muted);
+}
+
+.nn-status-pill--paused {
+    background-color: var(--nn-warning-bg);
+    color: var(--nn-warning);
+    border: 1px solid var(--nn-warning-border);
+}
+
+.nn-status-pill--muted {
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-tertiary);
+    border: 1px solid var(--nn-border-default);
+}
+
+/* ── Score card section ──────────────────────────────────────────────── */
+.nn-details-page__scorecard {
+    margin-bottom: var(--nn-space-5);
+}
+
+/* ── Stats card ──────────────────────────────────────────────────────── */
+.nn-details-page__stats {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-5);
+    box-shadow: var(--nn-shadow-md);
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-details-page__stats-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--nn-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-details-page__stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: var(--nn-space-3);
+}
+
+.nn-details-page__stat-card {
+    background: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+    padding: var(--nn-space-4) var(--nn-space-3);
+    text-align: center;
+}
+
+.nn-details-page__stat-value {
+    font-family: var(--nn-font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    line-height: 1.2;
+    margin-bottom: var(--nn-space-1);
+}
+
+.nn-details-page__stat-denominator {
+    font-size: 0.875rem;
+    color: var(--nn-text-tertiary);
+    font-weight: 400;
+}
+
+.nn-details-page__stat-sub {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--nn-text-tertiary);
+    font-weight: 400;
+    font-family: var(--nn-font-sans);
+}
+
+.nn-details-page__stat-label {
+    font-size: 0.8rem;
+    color: var(--nn-text-tertiary);
+    font-weight: 500;
+}
+
+/* ── Notes block ─────────────────────────────────────────────────────── */
+.nn-details-page__notes {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-left: 3px solid var(--nn-accent-teal);
+    border-radius: var(--nn-radius-md);
+    padding: var(--nn-space-4) var(--nn-space-5);
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-details-page__notes-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--nn-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-details-page__notes-body {
+    color: var(--nn-text-secondary);
+    white-space: pre-wrap;
+    margin-bottom: 0;
+}
+
+/* ── Action links ────────────────────────────────────────────────────── */
+.nn-details-page__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--nn-space-3);
+    margin-top: var(--nn-space-2);
+}
+
+.nn-details-page__actions .btn:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .nn-details-page {
+        padding: var(--nn-space-4) var(--nn-space-3);
+    }
+
+    .nn-details-page__header {
+        flex-direction: column;
+        padding: var(--nn-space-4);
+    }
+
+    .nn-details-page__score-display {
+        text-align: left;
+    }
+
+    .nn-details-page__score-value {
+        font-size: 2rem;
+    }
+
+    .nn-details-page__title {
+        font-size: 1.2rem;
+    }
+
+    .nn-details-page__stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .nn-details-page__actions {
+        flex-direction: column;
+    }
+
+    .nn-details-page__actions .btn {
+        width: 100%;
+    }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    /* No transitions on this page currently — guard here for future additions */
+    * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

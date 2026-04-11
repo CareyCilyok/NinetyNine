@@ -1,0 +1,63 @@
+/* =====================================================================
+   PlayerBadge — horizontal pill (avatar + display name), links to the
+   player's public profile. Scoped to PlayerBadge.razor.
+   ===================================================================== */
+
+.nn-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-2) var(--nn-space-3);
+    min-height: var(--nn-touch-target);
+    max-width: 100%;
+
+    background-color: var(--nn-bg-secondary);
+    color: var(--nn-text-primary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-full);
+
+    text-decoration: none;
+    font-family: var(--nn-font-sans);
+    font-weight: 500;
+    line-height: 1.2;
+
+    transition:
+        background-color var(--nn-transition-fast),
+        border-color var(--nn-transition-fast),
+        box-shadow var(--nn-transition-fast),
+        transform var(--nn-transition-fast);
+}
+
+.nn-badge:hover {
+    background-color: var(--nn-bg-tertiary);
+    border-color: var(--nn-border-strong);
+    box-shadow: var(--nn-shadow-sm);
+    color: var(--nn-text-primary);
+    text-decoration: none;
+}
+
+.nn-badge:active {
+    transform: translateY(1px);
+}
+
+.nn-badge:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+    text-decoration: none;
+}
+
+.nn-badge__name {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nn-badge {
+        transition: none;
+    }
+    .nn-badge:active {
+        transform: none;
+    }
+}

@@ -1,0 +1,25 @@
+/* =====================================================================
+   InitialsAvatar — SVG fallback shown when no AvatarUrl is supplied.
+   Scoped to InitialsAvatar.razor by Blazor.
+   ===================================================================== */
+
+.nn-initials {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--nn-radius-full);
+    /* The parent AvatarImage provides the border; keep this flush. */
+}
+
+.nn-initials__bg {
+    fill: var(--nn-accent-teal);
+}
+
+.nn-initials__text {
+    fill: var(--nn-text-on-accent);
+    font-family: var(--nn-font-sans);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    /* SVG <text> ignores CSS user-select on some engines; harmless. */
+    user-select: none;
+}

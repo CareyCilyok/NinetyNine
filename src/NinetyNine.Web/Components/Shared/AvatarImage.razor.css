@@ -1,0 +1,30 @@
+/* =====================================================================
+   AvatarImage — circular avatar with dark theme border and focus ring.
+   Scoped to AvatarImage.razor by Blazor.
+   ===================================================================== */
+
+.nn-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--nn-radius-full);
+    overflow: hidden;
+    background-color: var(--nn-bg-secondary);
+    border: 2px solid var(--nn-border-default);
+    box-shadow: var(--nn-shadow-sm);
+    flex-shrink: 0;
+    line-height: 0;
+}
+
+.nn-avatar__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--nn-radius-full);
+}
+
+.nn-avatar:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+}

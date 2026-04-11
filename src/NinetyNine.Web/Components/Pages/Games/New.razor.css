@@ -1,0 +1,150 @@
+/* =====================================================================
+   Games/New.razor.css — scoped styles for the Start New Game page.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   ===================================================================== */
+
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.nn-new-page {
+    display: flex;
+    justify-content: center;
+    padding: var(--nn-space-6) var(--nn-space-4);
+    min-height: calc(100vh - var(--nn-navbar-height));
+}
+
+.nn-new-page__inner {
+    width: 100%;
+    max-width: 36rem;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.nn-new-page__header {
+    margin-bottom: var(--nn-space-6);
+}
+
+.nn-new-page__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-new-page__subtitle {
+    color: var(--nn-text-secondary);
+    margin-bottom: 0;
+}
+
+/* ── Form card ───────────────────────────────────────────────────────── */
+.nn-new-page__form-card {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-6);
+    box-shadow: var(--nn-shadow-md);
+}
+
+/* ── Form fields ─────────────────────────────────────────────────────── */
+.nn-new-page__field {
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-new-page__label {
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-new-page__select {
+    background-color: var(--nn-bg-tertiary);
+    border-color: var(--nn-border-default);
+    color: var(--nn-text-primary);
+    min-height: var(--nn-touch-target);
+}
+
+.nn-new-page__select:focus-visible,
+.nn-new-page__select:focus {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 0.2rem var(--nn-focus-ring);
+}
+
+.nn-new-page__hint {
+    color: var(--nn-text-tertiary);
+    font-size: 0.875rem;
+    margin-top: var(--nn-space-2);
+}
+
+.nn-new-page__hint a {
+    color: var(--nn-accent-teal);
+}
+
+.nn-new-page__hint a:hover {
+    color: var(--nn-accent-teal-hover);
+}
+
+/* ── Table size radio group ──────────────────────────────────────────── */
+.nn-new-page__table-sizes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--nn-space-2);
+}
+
+/* ── Submit button ───────────────────────────────────────────────────── */
+.nn-new-page__submit {
+    width: 100%;
+    min-height: var(--nn-touch-target);
+    font-weight: 600;
+    font-size: 1rem;
+    margin-top: var(--nn-space-2);
+    transition: background-color var(--nn-transition-fast),
+                box-shadow var(--nn-transition-fast);
+}
+
+.nn-new-page__submit:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    box-shadow: var(--nn-shadow-glow-teal);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.nn-new-page__empty {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-8) var(--nn-space-6);
+    text-align: center;
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-empty-state__heading {
+    color: var(--nn-text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-empty-state__body {
+    color: var(--nn-text-secondary);
+    margin-bottom: var(--nn-space-5);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .nn-new-page {
+        padding: var(--nn-space-4) var(--nn-space-3);
+    }
+
+    .nn-new-page__form-card {
+        padding: var(--nn-space-4);
+    }
+
+    .nn-new-page__title {
+        font-size: 1.5rem;
+    }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .nn-new-page__submit {
+        transition: none;
+    }
+}

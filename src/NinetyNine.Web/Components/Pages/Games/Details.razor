@@ -1,98 +1,169 @@
 @page "/games/{GameId:guid}"
 @attribute [Authorize]
 @inject IGameService GameService
+@inject IVenueService VenueService
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<Details> Logger
 
-<PageTitle>Game Details &mdash; NinetyNine</PageTitle>
+<PageTitle>
+    @(_game is not null
+        ? $"Game \u2014 {_game.WhenPlayed.ToLocalTime():MMMM d, yyyy}"
+        : "Game Details") &mdash; NinetyNine
+</PageTitle>
 
-@if (_loading)
-{
-    <p><span class="spinner-border spinner-border-sm me-2" role="status" aria-label="Loading game"></span>Loading&hellip;</p>
-}
-else if (_game is null)
-{
-    <div class="alert alert-danger">Game not found or you do not have access.</div>
-}
-else
-{
-    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
-        <div>
-            <h1 class="mb-1">
-                Game &mdash; @_game.WhenPlayed.ToLocalTime().ToString("MMMM d, yyyy")
-            </h1>
-            <span class="badge @StateClass">@_game.GameState</span>
-        </div>
-        <div class="text-end">
-            <div class="display-6 fw-bold @(_game.IsPerfectGame ? "text-warning" : "")">
-                @_game.TotalScore <span class="fs-5 text-muted">/ 99</span>
-            </div>
-            @if (_game.IsPerfectGame)
-            {
-                <span class="badge bg-warning text-dark">Perfect Game!</span>
-            }
-        </div>
-    </div>
+<div class="nn-page nn-details-page">
 
-    <div class="row g-3 mb-4">
-        <div class="col-sm-4">
-            <div class="stat-card card text-center py-3">
-                <div class="h4 mb-0">@_game.CompletedFrames</div>
-                <div class="text-muted small">Frames</div>
-            </div>
-        </div>
-        <div class="col-sm-4">
-            <div class="stat-card card text-center py-3">
-                <div class="h4 mb-0">@_game.AverageScore.ToString("F1")</div>
-                <div class="text-muted small">Avg / Frame</div>
-            </div>
-        </div>
-        <div class="col-sm-4">
-            <div class="stat-card card text-center py-3">
-                <div class="h4 mb-0">@_game.PerfectFrames</div>
-                <div class="text-muted small">Perfect Frames</div>
-            </div>
-        </div>
-    </div>
-
-    <ScoreCardGrid Game="_game" Mode="ScoreCardMode.View" />
-
-    @if (_game.IsInProgress)
+    @if (_loading)
     {
-        <div class="mt-4">
-            <a href="/games/@GameId/play" class="btn btn-primary">Continue Game</a>
+        <div class="nn-details-page__loading" aria-live="polite" aria-busy="true">
+            <span class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"></span>
+            Loading&hellip;
+        </div>
+    }
+    else if (_game is null)
+    {
+        <div class="nn-details-page__not-found">
+            <h1 class="nn-details-page__not-found-title">Game not found</h1>
+            <p class="nn-details-page__not-found-body">
+                This game does not exist or you do not have access to it.
+            </p>
+            <a href="/games" class="btn btn-outline-secondary">Back to history</a>
         </div>
     }
     else
     {
-        <div class="mt-4">
-            <a href="/games" class="btn btn-outline-secondary">Back to History</a>
-        </div>
+        @* Header strip *@
+        <header class="nn-details-page__header">
+            <div class="nn-details-page__meta">
+                <h1 class="nn-details-page__title">
+                    Game &mdash;
+                    <time datetime="@_game.WhenPlayed.ToString("O")">
+                        @_game.WhenPlayed.ToLocalTime().ToString("MMMM d, yyyy")
+                    </time>
+                </h1>
+                <div class="nn-details-page__meta-row">
+                    @if (!string.IsNullOrWhiteSpace(_venueName))
+                    {
+                        <span class="nn-details-page__venue">@_venueName</span>
+                        <span class="nn-details-page__sep" aria-hidden="true">&middot;</span>
+                    }
+                    <span class="nn-details-page__table-size">
+                        @TableSizeLabel(_game.TableSize)
+                    </span>
+                    <span class="nn-details-page__sep" aria-hidden="true">&middot;</span>
+                    <time class="nn-details-page__when"
+                          datetime="@_game.WhenPlayed.ToString("O")"
+                          title="@_game.WhenPlayed.ToLocalTime().ToString("f")">
+                        @_game.WhenPlayed.ToLocalTime().ToString("MMM d, h:mm tt")
+                    </time>
+                    <span class="nn-details-page__sep" aria-hidden="true">&middot;</span>
+                    <span class="nn-status-pill @StatusPillClass(_game.GameState)">
+                        @StatusLabel(_game.GameState)
+                    </span>
+                </div>
+            </div>
+            <div class="nn-details-page__score-display" aria-label="Final score">
+                <span class="nn-details-page__score-value @(_game.IsPerfectGame ? "nn-details-page__score-value--perfect" : "")">
+                    @_game.TotalScore
+                </span>
+                <span class="nn-details-page__score-max">/ 99</span>
+                @if (_game.IsPerfectGame)
+                {
+                    <div class="nn-details-page__perfect-badge" aria-label="Perfect game">
+                        Perfect game!
+                    </div>
+                }
+            </div>
+        </header>
+
+        @* Read-only score card *@
+        <section class="nn-details-page__scorecard" aria-label="Score card">
+            <ScoreCardGrid Game="_game" Mode="ScoreCardMode.View" />
+        </section>
+
+        @* Stats card *@
+        <section class="nn-details-page__stats" aria-label="Game statistics">
+            <h2 class="nn-details-page__stats-title">Statistics</h2>
+            <div class="nn-details-page__stats-grid">
+                <div class="nn-details-page__stat-card">
+                    <div class="nn-details-page__stat-value">
+                        @_game.TotalScore<span class="nn-details-page__stat-denominator">/99</span>
+                    </div>
+                    <div class="nn-details-page__stat-label">Total Score</div>
+                </div>
+                <div class="nn-details-page__stat-card">
+                    <div class="nn-details-page__stat-value">
+                        @(_game.AverageScore > 0 ? _game.AverageScore.ToString("F1") : "\u2014")
+                    </div>
+                    <div class="nn-details-page__stat-label">Avg / Frame</div>
+                </div>
+                <div class="nn-details-page__stat-card">
+                    <div class="nn-details-page__stat-value">
+                        @(_game.BestFrame is not null ? _game.BestFrame.FrameScore.ToString() : "\u2014")
+                        @if (_game.BestFrame is not null)
+                        {
+                            <span class="nn-details-page__stat-sub">frame @_game.BestFrame.FrameNumber</span>
+                        }
+                    </div>
+                    <div class="nn-details-page__stat-label">Best Frame</div>
+                </div>
+                <div class="nn-details-page__stat-card">
+                    <div class="nn-details-page__stat-value">@_game.PerfectFrames</div>
+                    <div class="nn-details-page__stat-label">Perfect Frames</div>
+                </div>
+                @if (_game.CompletedAt.HasValue)
+                {
+                    var duration = _game.CompletedAt.Value - _game.WhenPlayed;
+                    <div class="nn-details-page__stat-card">
+                        <div class="nn-details-page__stat-value">
+                            @FormatDuration(duration)
+                        </div>
+                        <div class="nn-details-page__stat-label">Duration</div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        @* Notes block *@
+        @if (!string.IsNullOrWhiteSpace(_game.Notes))
+        {
+            <section class="nn-details-page__notes" aria-label="Game notes">
+                <h2 class="nn-details-page__notes-title">Notes</h2>
+                <p class="nn-details-page__notes-body">@_game.Notes</p>
+            </section>
+        }
+
+        @* Action links *@
+        <footer class="nn-details-page__actions">
+            <a href="/games" class="btn btn-outline-secondary">Back to history</a>
+            <a href="/games/new" class="btn btn-primary">Start new game</a>
+        </footer>
     }
-}
+
+</div>
 
 @code {
     [Parameter] public Guid GameId { get; set; }
 
     private Game? _game;
     private bool _loading = true;
-    private Guid _playerId;
+    private string? _venueName;
+    private Guid? _playerId;
 
-    private string StateClass => _game?.GameState switch
+    protected override void OnInitialized()
     {
-        GameState.Completed => "bg-success",
-        GameState.InProgress => "bg-primary",
-        GameState.Paused => "bg-warning text-dark",
-        _ => "bg-secondary"
-    };
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _playerId = id;
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        var context = HttpContextAccessor.HttpContext;
-        var playerIdStr = context?.User.FindFirst(ClaimNames.PlayerId)?.Value;
-
-        if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out _playerId))
+        if (_playerId is null)
         {
             Navigation.NavigateTo("/login", forceLoad: true);
             return;
@@ -100,15 +171,71 @@ else
 
         var game = await GameService.GetGameAsync(GameId);
 
+        // Ownership guard: don't reveal existence via 403 text
         if (game is null || game.PlayerId != _playerId)
         {
             _game = null;
+            _loading = false;
+            return;
         }
-        else
+
+        // In-progress games belong on the play page
+        if (game.IsInProgress)
         {
-            _game = game;
+            Navigation.NavigateTo($"/games/{GameId}/play", forceLoad: false);
+            return;
+        }
+
+        _game = game;
+
+        // Resolve venue name (best-effort)
+        try
+        {
+            var venue = await VenueService.GetAsync(game.VenueId);
+            _venueName = venue?.Name;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex,
+                "Could not resolve venue {VenueId} for game {GameId}.", game.VenueId, GameId);
         }
 
         _loading = false;
+    }
+
+    // ── Display helpers ───────────────────────────────────────────────
+
+    private static string TableSizeLabel(TableSize size) => size switch
+    {
+        TableSize.SixFoot   => "6 ft",
+        TableSize.SevenFoot => "7 ft",
+        TableSize.NineFoot  => "9 ft",
+        TableSize.TenFoot   => "10 ft",
+        _                   => size.ToString()
+    };
+
+    private static string StatusLabel(GameState state) => state switch
+    {
+        GameState.Completed  => "Completed",
+        GameState.InProgress => "In progress",
+        GameState.Paused     => "Paused",
+        _                    => "Not started"
+    };
+
+    private static string StatusPillClass(GameState state) => state switch
+    {
+        GameState.Completed  => "nn-status-pill--completed",
+        GameState.InProgress => "nn-status-pill--inprogress",
+        GameState.Paused     => "nn-status-pill--paused",
+        _                    => "nn-status-pill--muted"
+    };
+
+    private static string FormatDuration(TimeSpan duration)
+    {
+        if (duration.TotalHours >= 1)
+            return $"{(int)duration.TotalHours}h {duration.Minutes}m";
+        if (duration.TotalMinutes >= 1)
+            return $"{(int)duration.TotalMinutes}m {duration.Seconds}s";
+        return $"{(int)duration.TotalSeconds}s";
     }
 }

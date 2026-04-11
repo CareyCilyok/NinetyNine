@@ -1,0 +1,90 @@
+/* =====================================================================
+   TableSizePicker — segmented button group for selecting a table size.
+   Scoped to TableSizePicker.razor.
+   ===================================================================== */
+
+.nn-picker {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.25rem;
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    box-shadow: var(--nn-shadow-sm);
+    max-width: 100%;
+    flex-wrap: wrap;
+}
+
+.nn-picker__option {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: var(--nn-text-primary);
+
+    padding: var(--nn-space-2) var(--nn-space-4);
+    min-height: var(--nn-touch-target);
+    min-width: var(--nn-touch-target);
+
+    font-family: var(--nn-font-sans);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+
+    border-radius: calc(var(--nn-radius-md) - 0.125rem);
+    cursor: pointer;
+
+    transition:
+        background-color var(--nn-transition-fast),
+        color var(--nn-transition-fast),
+        border-color var(--nn-transition-fast),
+        box-shadow var(--nn-transition-fast);
+}
+
+.nn-picker__option:hover:not(.nn-picker__option--selected) {
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-primary);
+}
+
+.nn-picker__option:focus {
+    outline: none;
+}
+
+.nn-picker__option:focus-visible {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+    /* Keep the ring above adjacent options. */
+    z-index: 1;
+}
+
+.nn-picker__option--selected {
+    background-color: var(--nn-accent-teal);
+    color: var(--nn-text-on-accent);
+    border-color: var(--nn-accent-teal-hover);
+    box-shadow: var(--nn-shadow-sm);
+}
+
+.nn-picker__option--selected:hover {
+    background-color: var(--nn-accent-teal-hover);
+    color: var(--nn-text-on-accent);
+}
+
+@media (max-width: 480px) {
+    .nn-picker {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .nn-picker__option {
+        flex: 1 1 auto;
+        padding: var(--nn-space-2) var(--nn-space-2);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nn-picker__option {
+        transition: none;
+    }
+}

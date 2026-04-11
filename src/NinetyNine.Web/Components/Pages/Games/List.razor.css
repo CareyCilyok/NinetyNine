@@ -1,0 +1,268 @@
+/* =====================================================================
+   Games/List.razor.css — scoped styles for the Game History page.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   ===================================================================== */
+
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.nn-list-page {
+    padding: var(--nn-space-6) var(--nn-space-4);
+    max-width: 72rem;
+    margin-inline: auto;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.nn-list-page__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--nn-space-3);
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-list-page__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: 0;
+}
+
+.nn-list-page__new-btn:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+}
+
+/* ── Loading state ───────────────────────────────────────────────────── */
+.nn-list-page__loading {
+    padding: var(--nn-space-8);
+    color: var(--nn-text-secondary);
+    text-align: center;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.nn-list-page__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--nn-space-8) var(--nn-space-4);
+    gap: var(--nn-space-4);
+}
+
+.nn-empty-state__img {
+    width: 100%;
+    max-width: 24rem;
+    border-radius: var(--nn-radius-lg);
+    object-fit: cover;
+    opacity: 0.75;
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-empty-state__heading {
+    color: var(--nn-text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+.nn-empty-state__body {
+    color: var(--nn-text-secondary);
+    max-width: 28rem;
+    margin-bottom: 0;
+}
+
+/* ── Desktop table ───────────────────────────────────────────────────── */
+.nn-list-page__table-wrapper {
+    /* shown on md+ */
+}
+
+.nn-list-page__table th {
+    color: var(--nn-text-tertiary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom-color: var(--nn-border-default);
+    padding-block: var(--nn-space-3);
+}
+
+.nn-list-page__row {
+    cursor: pointer;
+    transition: background-color var(--nn-transition-fast);
+}
+
+.nn-list-page__row:hover {
+    background-color: var(--nn-bg-tertiary);
+}
+
+.nn-list-page__row:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: -2px;
+}
+
+.nn-list-page__row td {
+    vertical-align: middle;
+    border-bottom-color: var(--nn-border-subtle);
+    padding-block: var(--nn-space-3);
+    color: var(--nn-text-secondary);
+}
+
+.nn-list-page__cell-when time {
+    color: var(--nn-text-primary);
+}
+
+.nn-list-page__cell-venue {
+    color: var(--nn-text-secondary);
+    max-width: 14rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nn-list-page__cell-table {
+    white-space: nowrap;
+}
+
+.nn-list-page__cell-score {
+    color: var(--nn-text-primary);
+    font-size: 0.95rem;
+}
+
+.nn-list-page__perfect-badge {
+    background-color: var(--nn-accent-gold-muted);
+    color: var(--nn-accent-gold);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: var(--nn-space-1) var(--nn-space-2);
+    border-radius: var(--nn-radius-full);
+    vertical-align: middle;
+}
+
+/* ── Status pills ────────────────────────────────────────────────────── */
+.nn-status-pill {
+    display: inline-block;
+    padding: var(--nn-space-1) var(--nn-space-3);
+    border-radius: var(--nn-radius-full);
+    font-size: 0.775rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.nn-status-pill--completed {
+    background-color: var(--nn-success-bg);
+    color: var(--nn-success);
+    border: 1px solid var(--nn-success-border);
+}
+
+.nn-status-pill--inprogress {
+    background-color: var(--nn-accent-gold-muted);
+    color: var(--nn-accent-gold);
+    border: 1px solid var(--nn-accent-gold-muted);
+}
+
+.nn-status-pill--paused {
+    background-color: var(--nn-warning-bg);
+    color: var(--nn-warning);
+    border: 1px solid var(--nn-warning-border);
+}
+
+.nn-status-pill--muted {
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-tertiary);
+    border: 1px solid var(--nn-border-default);
+}
+
+/* ── Mobile stacked cards ────────────────────────────────────────────── */
+.nn-list-page__cards {
+    display: none;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+}
+
+.nn-list-page__card {
+    display: block;
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-4);
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--nn-shadow-sm);
+    transition: background-color var(--nn-transition-fast),
+                box-shadow var(--nn-transition-fast);
+}
+
+.nn-list-page__card:hover {
+    background: var(--nn-bg-tertiary);
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-list-page__card:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    box-shadow: var(--nn-shadow-glow-teal);
+}
+
+.nn-list-page__card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--nn-space-2);
+    gap: var(--nn-space-2);
+}
+
+.nn-list-page__card-when {
+    color: var(--nn-text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.nn-list-page__card-venue {
+    color: var(--nn-text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: var(--nn-space-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nn-list-page__card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--nn-text-tertiary);
+    font-size: 0.85rem;
+}
+
+.nn-list-page__card-score {
+    color: var(--nn-text-primary);
+    font-weight: 700;
+}
+
+/* ── Responsive breakpoint ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .nn-list-page {
+        padding: var(--nn-space-4) var(--nn-space-3);
+    }
+
+    .nn-list-page__title {
+        font-size: 1.5rem;
+    }
+
+    /* Hide table, show cards */
+    .nn-list-page__table-wrapper {
+        display: none;
+    }
+
+    .nn-list-page__cards {
+        display: flex;
+    }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .nn-list-page__row,
+    .nn-list-page__card {
+        transition: none;
+    }
+}
