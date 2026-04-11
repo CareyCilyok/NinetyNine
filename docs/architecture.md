@@ -386,12 +386,62 @@ Validation rules enforced at the service boundary:
 
 ## 7. Authentication (`NinetyNine.Web/Auth/`)
 
+**Third-party OAuth has been REMOVED.** The app uses classic email + password authentication with mandatory email verification. No Google, Discord, Telegram, or other external identity providers. User decision: cleaner UX, no external dependencies, full control over the identity store.
+
 ### 7.1 Packages
 
-- `Microsoft.AspNetCore.Authentication.Cookies`
-- `Microsoft.AspNetCore.Authentication.Google`
+- `Microsoft.AspNetCore.Authentication.Cookies` (framework, cookie session)
+- `Microsoft.AspNetCore.Identity` — used only for `PasswordHasher<T>` (PBKDF2, sensible defaults). The full Identity store / `UserManager` / `IdentityDbContext` are **not** used — we keep our own `Player` document in MongoDB and hash passwords ourselves.
+- `MailKit` (or equivalent) — for SMTP email delivery. Configurable via `Email:*` settings.
 
-### 7.2 Configuration (Program.cs)
+Packages **removed** from the previous design:
+
+- `Microsoft.AspNetCore.Authentication.Google`
+- `AspNet.Security.OAuth.Discord` (never actually added)
+- Telegram handler (never actually added)
+
+### 7.2 Revised `Player` model fields
+
+Additions required to support email/password auth:
+
+```csharp
+public class Player
+{
+    // ... existing fields (PlayerId, DisplayName, FirstName/MiddleName/LastName,
+    //     PhoneNumber, Visibility, Avatar, CreatedAt) remain ...
+
+    // CHANGED: EmailAddress is now REQUIRED and UNIQUE (was optional)
+    public string EmailAddress { get; set; } = "";
+
+    // NEW: password hash (PBKDF2 via Microsoft.AspNetCore.Identity.PasswordHasher)
+    public string PasswordHash { get; set; } = "";
+
+    // NEW: email verification state
+    public bool EmailVerified { get; set; }
+    public string? EmailVerificationToken { get; set; }
+    public DateTime? EmailVerificationTokenExpiresAt { get; set; }
+
+    // NEW: password reset state
+    public string? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetTokenExpiresAt { get; set; }
+
+    // NEW: activity tracking
+    public DateTime? LastLoginAt { get; set; }
+    public int FailedLoginAttempts { get; set; }
+    public DateTime? LockedOutUntil { get; set; }
+
+    // REMOVED: List<LinkedIdentity> LinkedIdentities
+}
+```
+
+Indexes required on the `players` collection:
+
+- Unique on `emailAddress` (lowercased at write time)
+- Unique on `displayName`
+- Sparse index on `emailVerificationToken` (lookups during verification)
+- Sparse index on `passwordResetToken` (lookups during reset)
+
+### 7.3 Configuration (Program.cs)
 
 ```csharp
 services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -399,48 +449,90 @@ services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     {
         options.LoginPath = "/login";
         options.LogoutPath = "/logout";
+        options.AccessDeniedPath = "/login";
         options.ExpireTimeSpan = TimeSpan.FromDays(30);
         options.SlidingExpiration = true;
         options.Cookie.Name = "NinetyNine.Auth";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // upgrade when TLS added
-    })
-    .AddGoogle(options =>
-    {
-        options.ClientId = config["Auth:Google:ClientId"]!;
-        options.ClientSecret = config["Auth:Google:ClientSecret"]!;
-        options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.CallbackPath = "/signin-google";
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
+
+services.AddScoped<IPasswordHasher<Player>, PasswordHasher<Player>>();
+services.AddScoped<IEmailSender, MailKitEmailSender>();
+services.Configure<EmailSettings>(config.GetSection("Email"));
 ```
 
-### 7.3 Login Flow
+### 7.4 Registration Flow
 
-1. User clicks "Sign in with Google" → `/login?provider=Google` → challenge
-2. Google redirects back to `/signin-google` → cookie handler validates
-3. `OnTicketReceived` event handler (in `ExternalLoginHandler`):
-   - Read `sub` claim → `providerUserId`
-   - Call `IPlayerService.LoginAsync("Google", providerUserId)`
-   - If found → augment principal with `PlayerId` and `DisplayName` claims, persist cookie
-   - If not found → stash provider + sub in temp cookie, redirect to `/register`
-4. `/register` page:
-   - Form: `DisplayName` (required, live availability check), optional PII fields, visibility checkboxes
-   - Submit → `IPlayerService.RegisterAsync(...)` → cookie issued with claims
-5. Subsequent requests use cookie; all queries filter by `PlayerId` claim
+1. User fills `/register`: `EmailAddress`, `DisplayName`, `Password`, `ConfirmPassword`.
+2. Server validates:
+   - Email well-formed, not already taken (case-insensitive)
+   - DisplayName 2–32 chars, `[a-zA-Z0-9_-]`, not taken
+   - Password ≥ 10 chars, at least one of each: lowercase, uppercase, digit, symbol (configurable)
+   - ConfirmPassword matches
+3. `IPlayerService.RegisterAsync` creates the `Player` with `PasswordHash`, `EmailVerified = false`, a random `EmailVerificationToken` (32 bytes, URL-safe base64), and `EmailVerificationTokenExpiresAt = now + 24h`.
+4. `IEmailSender.SendVerificationAsync` delivers an email with a link to `/verify-email?token={token}`.
+5. User is shown a "Check your email" page. No session cookie is issued yet.
+6. User clicks the email link → `/verify-email` validates the token, marks `EmailVerified = true`, clears the token, issues the auth cookie, redirects to `/`.
 
-### 7.4 Claims
+### 7.5 Login Flow
 
-Standard claims after login:
+1. User fills `/login`: `EmailAddress`, `Password`.
+2. Server loads the `Player` by email (case-insensitive).
+3. If not found OR email not verified OR account locked out → generic "Invalid credentials" error (no user enumeration).
+4. `PasswordHasher.VerifyHashedPassword` → if mismatch, increment `FailedLoginAttempts`; at 5 attempts lock for 15 minutes.
+5. If match → reset `FailedLoginAttempts`, set `LastLoginAt`, issue the auth cookie with `PlayerId`/`DisplayName`/optional `avatar_url` claims, redirect to return URL or `/`.
+
+### 7.6 Password Reset Flow
+
+1. User fills `/forgot-password`: `EmailAddress`.
+2. Server always returns "If that email exists, a reset link has been sent" (no enumeration).
+3. If the email exists: generate `PasswordResetToken` (32 bytes URL-safe), store with `PasswordResetTokenExpiresAt = now + 1h`, send email with `/reset-password?token={token}`.
+4. User clicks the link → `/reset-password` validates token, prompts for new password + confirmation, updates `PasswordHash`, clears the reset token, redirects to `/login`.
+
+### 7.7 Verification Re-send
+
+`/resend-verification` endpoint: accepts email, always returns generic success, re-emails the verification link if a matching unverified account exists. Rate-limited to 1 request per email per 5 minutes.
+
+### 7.8 Email Sender
+
+```csharp
+public interface IEmailSender
+{
+    Task SendVerificationAsync(string toEmail, string displayName, string verifyUrl, CancellationToken ct);
+    Task SendPasswordResetAsync(string toEmail, string displayName, string resetUrl, CancellationToken ct);
+}
+```
+
+Implementations:
+
+- **`MailKitEmailSender`** — production SMTP via MailKit, configured with SMTP host/port/username/password/from-address from `Email:*` settings.
+- **`ConsoleEmailSender`** — dev-mode fallback that logs the email body and verification link to the console instead of sending. Registered when `Email:Provider == "Console"` or no SMTP config is present.
+- **`MockEmailSender`** — test-mode implementation that stores sent emails in an in-memory list for assertion in integration tests.
+
+### 7.9 Dev-mode mock login
+
+The existing `/mock/signin-as` endpoint stays for UX prototyping. It bypasses the password/verification flow and issues a cookie directly for a seeded test player. Guarded by `Auth:Mock:Enabled` + `Environment.IsDevelopment()`. Seeded test players have `EmailVerified = true` and a known dev password (`Test1234!`) so the real email/password login also works against them.
+
+### 7.10 Claims
+
+Standard claims after login (unchanged):
+
 - `ClaimTypes.NameIdentifier` = `PlayerId.ToString()`
 - `ClaimTypes.Name` = `DisplayName`
-- Custom claim `avatar_url` = `/api/avatars/{playerId}` if avatar set
+- `ClaimNames.PlayerId` = `PlayerId.ToString()` (custom)
+- `ClaimNames.AvatarUrl` = `/api/avatars/{playerId}` if avatar set
 
-### 7.5 Authorization
+### 7.11 Authorization
 
 - All game/profile/stats pages require authentication (`[Authorize]`)
-- Public: landing page, leaderboard, public profile views
+- Public: landing page, leaderboard, public profile views, `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, `/resend-verification`
 - Players can only modify their own data (enforced via `PlayerId` claim vs. resource ownership)
+
+### 7.12 Rate limiting
+
+The existing `auth` rate limit window (10 req/min per IP) applies to `/login`, `/register`, `/forgot-password`, `/resend-verification`, `/verify-email`, `/reset-password`.
 
 ## 8. Blazor UI (`NinetyNine.Web`)
 

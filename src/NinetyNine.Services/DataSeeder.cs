@@ -30,13 +30,16 @@ public sealed class DataSeeder(
         logger.LogInformation("Seeding test data (development mock mode)…");
 
         // ── Players ──────────────────────────────────────────────────────────
+        // Two players on the original score cards share the first name "Carey"
+        // (the primary user and a second Carey). DisplayName must be unique so
+        // the second Carey is seeded as "carey_b".
         var carey = CreateTestPlayer("carey", "Carey", "Cilyok");
         var george = CreateTestPlayer("george", "George", null);
-        var carol = CreateTestPlayer("carol", "Carol", null);
+        var careyB = CreateTestPlayer("carey_b", "Carey", null);
 
         await playerRepository.CreateAsync(carey, ct);
         await playerRepository.CreateAsync(george, ct);
-        await playerRepository.CreateAsync(carol, ct);
+        await playerRepository.CreateAsync(careyB, ct);
 
         // ── Venues ───────────────────────────────────────────────────────────
         var home = new Venue
@@ -66,8 +69,8 @@ public sealed class DataSeeder(
             (carey,  home, [5, 7, 11, 3, 9, 6, 8, 4, 10],  7),
             (george, hall, [4, 8, 6, 7, 5, 9, 3, 11, 7],   3),
             (george, home, [7, 5, 10, 4, 6, 8, 5, 7, 9],  12),
-            (carol,  hall, [3, 6, 8, 5, 7, 4, 9, 6, 5],    3),
-            (carol,  home, [8, 10, 6, 9, 7, 5, 11, 8, 4], 18)
+            (careyB, hall, [3, 6, 8, 5, 7, 4, 9, 6, 5],    3),
+            (careyB, home, [8, 10, 6, 9, 7, 5, 11, 8, 4], 18)
         };
 
         foreach (var (player, venue, scores, daysAgo) in completedGames)
