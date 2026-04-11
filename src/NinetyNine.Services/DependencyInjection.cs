@@ -24,6 +24,9 @@ public static class DependencyInjection
         services.AddScoped<IDataSeeder, DataSeeder>();
         services.AddScoped<IAuthService, AuthService>();
 
+        // Friends + Communities (Sprint 1+) — plan docs/plans/friends-communities-v1.md
+        services.AddScoped<IFriendService, FriendService>();
+
         return services;
     }
 }
