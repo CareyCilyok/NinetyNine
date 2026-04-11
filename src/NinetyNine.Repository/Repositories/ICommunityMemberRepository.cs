@@ -42,4 +42,11 @@ public interface ICommunityMemberRepository
 
     /// <summary>Number of members currently in a community.</summary>
     Task<long> CountMembersAsync(Guid communityId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Bulk-deletes every membership row for a community. Used by
+    /// <c>CommunityService.DeleteAsync</c> as part of the cascade.
+    /// Returns the number of rows deleted.
+    /// </summary>
+    Task<long> RemoveAllFromCommunityAsync(Guid communityId, CancellationToken ct = default);
 }

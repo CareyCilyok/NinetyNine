@@ -46,11 +46,13 @@ public static class DependencyInjection
         services.AddScoped<IGameRepository, GameRepository>();
         services.AddScoped<IAvatarStore, GridFsAvatarStore>();
 
-        // Friends + Communities repositories (Sprint 0 S0.4)
+        // Friends + Communities repositories (Sprint 0 S0.4 + Sprint 2 S2.1)
         services.AddScoped<IFriendshipRepository, FriendshipRepository>();
         services.AddScoped<IFriendRequestRepository, FriendRequestRepository>();
         services.AddScoped<ICommunityRepository, CommunityRepository>();
         services.AddScoped<ICommunityMemberRepository, CommunityMemberRepository>();
+        services.AddScoped<ICommunityInvitationRepository, CommunityInvitationRepository>();
+        services.AddScoped<ICommunityJoinRequestRepository, CommunityJoinRequestRepository>();
 
         return services;
     }

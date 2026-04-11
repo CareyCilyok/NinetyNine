@@ -61,11 +61,13 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
         EnsureVenueIndexes();
         EnsureGameIndexes();
 
-        // Friends + Communities — plan Sprint 0 S0.3 (15 indexes)
+        // Friends + Communities — plan Sprint 0 S0.3 (15 indexes) + Sprint 2 S2.1 (5 more)
         EnsureFriendshipIndexes();
         EnsureFriendRequestIndexes();
         EnsureCommunityIndexes();
         EnsureCommunityMemberIndexes();
+        EnsureCommunityInvitationIndexes();
+        EnsureCommunityJoinRequestIndexes();
     }
 
     private void EnsurePlayerIndexes()
@@ -238,6 +240,69 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
                 new CreateIndexOptions { Name = "idx_community_members_community_role" }),
         };
         members.Indexes.CreateMany(indexes);
+    }
+
+    // ── Sprint 2 S2.1 indexes (invitations + join requests) ──────────
+
+    private void EnsureCommunityInvitationIndexes()
+    {
+        var invitations = CommunityInvitations;
+        var indexes = new List<CreateIndexModel<CommunityInvitation>>
+        {
+            // 16. Inbox: "invitations for me" filtered by status.
+            new(Builders<CommunityInvitation>.IndexKeys
+                    .Ascending(i => i.InvitedPlayerId)
+                    .Ascending(i => i.Status),
+                new CreateIndexOptions { Name = "idx_community_invitations_invitee_status" }),
+
+            // 17. Community settings: "pending invites for this community".
+            new(Builders<CommunityInvitation>.IndexKeys
+                    .Ascending(i => i.CommunityId)
+                    .Ascending(i => i.Status),
+                new CreateIndexOptions { Name = "idx_community_invitations_community_status" }),
+
+            // 18. Partial unique: prevent duplicate Pending invite per
+            // (community, invitee). Terminal states can coexist with a
+            // new Pending row after cancellation / expiry.
+            new(Builders<CommunityInvitation>.IndexKeys
+                    .Ascending(i => i.CommunityId)
+                    .Ascending(i => i.InvitedPlayerId),
+                new CreateIndexOptions<CommunityInvitation>
+                {
+                    Name = "ux_community_invitations_pending_pair",
+                    Unique = true,
+                    PartialFilterExpression = Builders<CommunityInvitation>.Filter.Eq(
+                        i => i.Status, CommunityInvitationStatus.Pending),
+                }),
+        };
+        invitations.Indexes.CreateMany(indexes);
+    }
+
+    private void EnsureCommunityJoinRequestIndexes()
+    {
+        var requests = CommunityJoinRequests;
+        var indexes = new List<CreateIndexModel<CommunityJoinRequest>>
+        {
+            // 19. Community owner queue: "pending join requests at this community".
+            new(Builders<CommunityJoinRequest>.IndexKeys
+                    .Ascending(r => r.CommunityId)
+                    .Ascending(r => r.Status),
+                new CreateIndexOptions { Name = "idx_community_join_requests_community_status" }),
+
+            // 20. Partial unique: prevent duplicate Pending join request
+            // from the same (player, community) pair.
+            new(Builders<CommunityJoinRequest>.IndexKeys
+                    .Ascending(r => r.PlayerId)
+                    .Ascending(r => r.CommunityId),
+                new CreateIndexOptions<CommunityJoinRequest>
+                {
+                    Name = "ux_community_join_requests_pending_pair",
+                    Unique = true,
+                    PartialFilterExpression = Builders<CommunityJoinRequest>.Filter.Eq(
+                        r => r.Status, CommunityJoinRequestStatus.Pending),
+                }),
+        };
+        requests.Indexes.CreateMany(indexes);
     }
 
     private void EnsureGameIndexes()

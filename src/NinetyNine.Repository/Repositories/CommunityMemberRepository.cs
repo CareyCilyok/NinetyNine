@@ -75,4 +75,15 @@ public sealed class CommunityMemberRepository(
         var filter = Builders<CommunityMembership>.Filter.Eq(m => m.CommunityId, communityId);
         return await _collection.CountDocumentsAsync(filter, cancellationToken: ct);
     }
+
+    public async Task<long> RemoveAllFromCommunityAsync(Guid communityId, CancellationToken ct = default)
+    {
+        var filter = Builders<CommunityMembership>.Filter.Eq(m => m.CommunityId, communityId);
+        var result = await _collection.DeleteManyAsync(filter, ct);
+        if (result.DeletedCount > 0)
+            logger.LogInformation(
+                "Removed {Count} membership(s) from community {CommunityId}",
+                result.DeletedCount, communityId);
+        return result.DeletedCount;
+    }
 }

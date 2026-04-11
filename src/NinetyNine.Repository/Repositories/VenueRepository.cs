@@ -56,4 +56,26 @@ public sealed class VenueRepository(INinetyNineDbContext context, ILogger<VenueR
         var filter = Builders<Venue>.Filter.Eq(v => v.VenueId, venueId);
         await _collection.DeleteOneAsync(filter, cancellationToken: ct);
     }
+
+    public async Task<long> ClearCommunityAffiliationsAsync(Guid communityId, CancellationToken ct = default)
+    {
+        // Matching nullable Guid fields on Eq requires wrapping the value
+        // as a nullable explicitly; otherwise Linq-to-Mongo's expression
+        // visitor emits a query that doesn't compare against the Bson
+        // representation.
+        var filter = Builders<Venue>.Filter.Eq(
+            v => v.CommunityId, (Guid?)communityId);
+
+        // $unset the field rather than $set: null — more robust for the
+        // nullable Guid round-trip and produces a cleaner BSON document.
+        var update = Builders<Venue>.Update.Unset(v => v.CommunityId);
+
+        var result = await _collection.UpdateManyAsync(filter, update, cancellationToken: ct);
+
+        logger.LogInformation(
+            "ClearCommunityAffiliations for community {CommunityId}: matched={Matched} modified={Modified}",
+            communityId, result.MatchedCount, result.ModifiedCount);
+
+        return result.ModifiedCount;
+    }
 }

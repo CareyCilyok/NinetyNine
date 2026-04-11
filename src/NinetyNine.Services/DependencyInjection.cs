@@ -26,6 +26,7 @@ public static class DependencyInjection
 
         // Friends + Communities (Sprint 1+) — plan docs/plans/friends-communities-v1.md
         services.AddScoped<IFriendService, FriendService>();
+        services.AddScoped<ICommunityService, CommunityService>();
 
         return services;
     }
