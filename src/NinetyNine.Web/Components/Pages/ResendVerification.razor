@@ -61,6 +61,7 @@
         // Always show a generic success message regardless of whether the email exists,
         // to prevent user enumeration.
         _isSubmitting = true;
+        await Task.CompletedTask;
         _submitted = true;
         _isSubmitting = false;
         _successMessage = "If an unverified account with that email exists, a new verification link has been sent. Check your inbox.";
