@@ -1,9 +1,15 @@
 @page "/players/{PlayerId:guid}"
+@page "/players/me"
+@* "/players/me" is the authenticated-viewer shortcut — PlayerId is
+   resolved from the ClaimNames.PlayerId claim in OnInitialized. Both
+   UserMenu and NavMenu link to this literal route. See docs/defects.md
+   DEF-002. *@
 @inject IPlayerRepository PlayerRepository
 @inject IStatisticsService StatisticsService
 @inject IGameRepository GameRepository
 @inject IVenueService VenueService
 @inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
 @inject ILogger<Profile> Logger
 @using System.ComponentModel.DataAnnotations
 
@@ -233,8 +239,22 @@
     {
         var user = HttpContextAccessor.HttpContext?.User;
         var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
-        if (Guid.TryParse(claim, out var viewerId))
-            _isOwnProfile = viewerId == PlayerId;
+        Guid.TryParse(claim, out var viewerId);
+
+        // Route "/players/me" omits the PlayerId route parameter, so it
+        // arrives as Guid.Empty. Resolve from claims; redirect to login
+        // if the viewer is not authenticated.
+        if (PlayerId == Guid.Empty)
+        {
+            if (viewerId == Guid.Empty)
+            {
+                Navigation.NavigateTo("/login?ReturnUrl=/players/me", forceLoad: true);
+                return;
+            }
+            PlayerId = viewerId;
+        }
+
+        _isOwnProfile = viewerId != Guid.Empty && viewerId == PlayerId;
     }
 
     protected override async Task OnInitializedAsync()
