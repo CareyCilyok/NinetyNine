@@ -3,7 +3,7 @@
 # can fail with certain NuGet packages that rely on native code (e.g. MongoDB
 # driver native libraries, ImageSharp). The build stage is discarded after
 # publish, so its size does not affect the final image.
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # ── Restore layer (cache-optimised) ───────────────────────────────────────────
