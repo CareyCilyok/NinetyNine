@@ -26,12 +26,24 @@ public sealed class DataSeeder(
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        // Idempotent: if any of the test players already exists, assume seeded.
+        // Heal pass: existing test players whose password hash is empty get
+        // their hash populated in place. This handles the upgrade case where
+        // players were seeded before the password-hashing field existed
+        // (their PasswordHash is still "").
+        var healed = await HealExistingTestPlayersAsync(ct);
+
+        // Idempotent creation: if the primary test player already exists,
+        // we've already seeded at some point — skip the rest of the seed.
         var existing = await playerRepository.GetByDisplayNameAsync(
             IDataSeeder.TestPlayerDisplayNames[0], ct);
         if (existing is not null)
         {
-            logger.LogInformation("Seed skipped — test players already exist.");
+            if (healed > 0)
+                logger.LogInformation(
+                    "Seed skipped — test players already exist. Healed {Count} empty password hash(es).",
+                    healed);
+            else
+                logger.LogInformation("Seed skipped — test players already exist.");
             return;
         }
 
@@ -94,6 +106,43 @@ public sealed class DataSeeder(
 
         logger.LogInformation(
             "Seed complete: 3 players, 2 venues, 6 completed games, 1 in-progress game.");
+    }
+
+    /// <summary>
+    /// Heals existing test players whose PasswordHash is empty. This covers
+    /// the upgrade path where players were seeded before WP-11 added
+    /// password-hashing support. Returns the number of players healed.
+    /// </summary>
+    private async Task<int> HealExistingTestPlayersAsync(CancellationToken ct)
+    {
+        int healed = 0;
+        foreach (var displayName in IDataSeeder.TestPlayerDisplayNames)
+        {
+            var player = await playerRepository.GetByDisplayNameAsync(displayName, ct);
+            if (player is null) continue;
+
+            // Also fix stale seeds where the email address wasn't populated
+            // (emailAddress was added later and earlier seeds left it blank).
+            var needsEmail = string.IsNullOrEmpty(player.EmailAddress);
+            var needsHash = string.IsNullOrEmpty(player.PasswordHash);
+
+            if (!needsEmail && !needsHash) continue;
+
+            if (needsEmail)
+                player.EmailAddress = $"{displayName}@example.local";
+
+            if (needsHash)
+                player.PasswordHash = passwordHasher.HashPassword(player, DevPassword);
+
+            player.EmailVerified = true;
+            await playerRepository.UpdateAsync(player, ct);
+            healed++;
+            logger.LogInformation(
+                "Healed seeded test player {DisplayName}: {Fields}",
+                displayName,
+                (needsEmail ? "email " : "") + (needsHash ? "passwordHash" : ""));
+        }
+        return healed;
     }
 
     private Player CreateTestPlayer(string displayName, string firstName, string? lastName)
