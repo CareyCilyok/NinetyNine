@@ -469,6 +469,81 @@ Result: __________  (PASS / FAIL / BLOCKED)
 
 ---
 
+### 18. Communities end-to-end (Sprint 2)
+
+*Sprint 2 ships player-owned communities with public + private visibility, an invite flow, a join-request flow, profile surfaces, and a seeded canonical community "Pocket Sports".*
+
+#### Prerequisites
+
+- Stack running via `./deploy.sh up`.
+- Signed in as `carey` via the mock picker.
+
+#### 18.1 — Seeded "Pocket Sports" community
+
+- [ ] Navigate to `/communities`.
+- [ ] Verify: **My communities** section lists "Pocket Sports" with "3 members" and a **Member** pill.
+- [ ] Click the card to open `/communities/{id}`.
+- [ ] Verify: title "Pocket Sports", Public pill, description, "3 members" meta.
+- [ ] Verify: the Members list shows carey (Owner), george (Member), carey_b (Member) in join-order.
+- [ ] Verify: since carey is the owner, the header shows a **Settings** button (not **Leave community**).
+- [ ] Verify: Venues section shows the Sprint-3-placeholder copy.
+
+#### 18.2 — Browse public communities
+
+- [ ] On `/communities`, the "Browse public communities" section should also show Pocket Sports (because it's public).
+- [ ] Search for `pocket` in the browse box and click Search.
+- [ ] Verify: Pocket Sports still appears.
+- [ ] Search for a prefix that doesn't match.
+- [ ] Verify: "No public communities matched \"...\"." empty-state copy.
+
+#### 18.3 — Create a new player-owned community
+
+- [ ] Click **Create community** in the `/communities` header.
+- [ ] Verify: `/communities/new` renders with Name / URL slug / Description / Visibility (Public + Private radio) fields.
+- [ ] Type a unique name; watch the Slug field auto-generate.
+- [ ] Submit with `Visibility = Private`.
+- [ ] Verify: redirected to `/communities/{id}?flash=created` with "Community created." banner.
+- [ ] Verify: the new community appears on `/communities` in **My communities** with "1 member".
+- [ ] Verify: the detail page shows you as the Owner and renders the **Invite a player** section (owner-only).
+
+#### 18.4 — Invite flow via /friends
+
+- [ ] Open a second browser profile and sign in as `george` via the mock picker.
+- [ ] Return to the carey window. On the new private community's detail page, type `george` in the "Invite a player" box and submit.
+- [ ] Verify: redirected with "Invitation sent." flash.
+- [ ] Switch to the george window. Home page: the sidebar **Friends** badge should count the community invitation (+1).
+- [ ] Click **Friends** → **Requests** tab.
+- [ ] Verify: a **Community invitations** section renders above the friend requests section, listing the new community with Accept / Decline buttons.
+- [ ] Click **Accept**.
+- [ ] Verify: redirect with "Friend request accepted." flash, and george is now a member on the community's detail page.
+
+#### 18.5 — Join request flow (private community)
+
+- [ ] In the carey window, create another private community.
+- [ ] Switch to the george window and try to navigate to `/communities/{id}` directly using the new community's guid.
+- [ ] Verify: 404-style "Community not found" page — private communities are fully hidden from non-members.
+- [ ] For this step to work under current UX (no public discovery of private communities), use the direct detail route for invite-based flows and wait for the Sprint 4 in-app discovery surface. Mark this sub-step as **deferred to Sprint 4**.
+
+#### 18.6 — Leave flow
+
+- [ ] As george, navigate to Pocket Sports from the `/communities` list.
+- [ ] Click **Leave community**.
+- [ ] Verify: redirect to `/communities?flash=left` with the "You left the community." banner.
+- [ ] Verify: Pocket Sports no longer appears in **My communities**.
+
+#### 18.7 — Profile Communities section
+
+- [ ] As carey, view `/players/me`.
+- [ ] Verify: a **Communities** card renders between **Statistics** and **Recent games**, listing Pocket Sports (and any private community you created where you're the owner).
+- [ ] Click Pocket Sports — verify it links to the community detail page.
+- [ ] As a test of the privacy filter, view another player's profile (`/players/{guid}`) — verify the Communities card shows only communities you share or that are public.
+
+#### 18.8 — No regression
+
+- [ ] Navigate through `/games`, `/stats`, `/venues`, `/friends`, `/players/me` — verify all existing pages still render cleanly after the Sprint 2 additions.
+
+---
+
 ## Cross-Browser Results Table
 
 Run the complete checklist (sections 1–15) three times — once per browser — and record the result for each section.
