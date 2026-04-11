@@ -145,7 +145,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Builds the image without pushing, using the GHA cache backend so that
       # subsequent CI runs reuse layers and stay well under the 10 min budget.
