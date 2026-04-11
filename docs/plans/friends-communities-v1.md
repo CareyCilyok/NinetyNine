@@ -229,7 +229,7 @@ Each sprint is sized ~M (one focused week of solo work). Sprint 0 is a hard prer
 - `/friends` page serves a tabbed list, requests, and find surface
 - Request → accept → friends-list update works in browser
 - Seeded test players are pre-befriended
-- Smoke test §16 covers the full happy path
+- Smoke test §17 covers the full happy path
 
 ### S1.1 — `IFriendService` [M]
 
@@ -330,7 +330,7 @@ Each sprint is sized ~M (one focused week of solo work). Sprint 0 is a hard prer
 2. Call from `SeedAsync` after the player-heal pass
 3. Log output verification
 
-### S1.6 — Smoke test §16 [S]
+### S1.6 — Smoke test §17 [S]
 
 Add to `docs/smoke-test-checklist.md`:
 
@@ -353,7 +353,7 @@ Add to `docs/smoke-test-checklist.md`:
 - Join public community works in one click
 - Join private community via request → owner approves works
 - Seeded "Pocket Sports" public community exists and contains all 3 test players
-- Smoke test §17 passes
+- Smoke test §18 passes
 
 ### S2.1 — `ICommunityService` + rate limits [M]
 
@@ -433,7 +433,7 @@ Add to `docs/smoke-test-checklist.md`:
 - All 3 seeded test players are members
 - All 17 seeded venues have `CommunityId = pocketSports.Id` (unless already affiliated with another community, in which case leave alone)
 
-### S2.7 — Smoke test §17 [S]
+### S2.7 — Smoke test §18 [S]
 
 - 17.1 Create public community
 - 17.2 Create private community
@@ -455,7 +455,7 @@ Add to `docs/smoke-test-checklist.md`:
 - Edit Profile uses the new picker, shows the one-time migration banner if applicable
 - `IPlayerService.GetProfileForViewerAsync` is the single read path and applies the matrix
 - Profile page respects every Audience tier
-- Smoke test §18 covers the full privacy flow
+- Smoke test §19 covers the full privacy flow
 
 ### S3.1 — Venue affiliation service method [S]
 
@@ -524,7 +524,7 @@ Add to `docs/smoke-test-checklist.md`:
 - Private-venue games in recent-games appear as "Private venue" (no name, no link) for non-members
 - Friends count is itself Audience-gated
 
-### S3.7 — Smoke test §18 [S]
+### S3.7 — Smoke test §19 [S]
 
 - 18.1 Migration banner appears once, dismisses permanently
 - 18.2 Audience picker saves and persists
@@ -571,7 +571,7 @@ Add to `docs/smoke-test-checklist.md`:
   - Community join requests older than 30 days → `Expired`
 - Logs sweeps
 
-### S4.6 — Smoke test §19 [S]
+### S4.6 — Smoke test §20 [S]
 
 ---
 
@@ -609,7 +609,7 @@ Add to `docs/smoke-test-checklist.md`:
 - New page `/settings/activity` shows the current user's own audit log (filtered to their own actions + actions on them)
 - Read-only; server-paged
 
-### S5.6 — Smoke test §20 [S]
+### S5.6 — Smoke test §21 [S]
 
 ---
 
@@ -620,7 +620,7 @@ Add to `docs/smoke-test-checklist.md`:
 - **Unit tests** (xUnit, `NinetyNine.Services.Tests` + `NinetyNine.Repository.Tests`): every invariant from the backend plan and every authz rule from the security matrix. Every service method has at least one "happy path" and one "forbidden" test.
 - **Integration tests** (Testcontainers Mongo, existing pattern): repository query correctness for the 16 data access patterns.
 - **bUnit component tests** (`NinetyNine.Web.Tests`): the `AudiencePicker`, `FriendshipStateChip`, `CommunityCard`, and the `/friends` tab switcher.
-- **Smoke tests**: sections §16–§20 added to `docs/smoke-test-checklist.md` as each sprint lands.
+- **Smoke tests**: sections §16–§21 added to `docs/smoke-test-checklist.md` as each sprint lands (§16 is Sprint 0 foundation verification; §17 is Sprint 1; etc.).
 
 ### Documentation updates per sprint
 
@@ -645,3 +645,4 @@ Every sprint's DB changes are additive (new collections, new fields). No destruc
 |---|---|---|
 | 2026-04-11 | Initial plan accepted; Sprint 0 started. Fork selections A–E locked; all open questions answered per "most usable yet privacy-centric" north star. | Carey + Claude synthesis of 5 specialist sub-plans |
 | 2026-04-11 | S0.1 deviation: legacy `ProfileVisibility.{EmailAddress,PhoneNumber,RealName,Avatar}` bool properties are NOT marked `[Obsolete]` despite the plan's acceptance criteria calling for it. `TreatWarningsAsErrors=true` in every csproj would turn ~20 obsolete-usage warnings into build errors at call sites that don't migrate until Sprint 3. XML doc comments now carry the "legacy — use `*Audience`" signal instead. Functionally equivalent; no scope change. | Claude (during S0.1 implementation) |
+| 2026-04-11 | Smoke-test section renumbering: Sprint 0 took §16 (Foundation migration verification), so every subsequent sprint's smoke section shifted down by one. Sprint 1 = §17, Sprint 2 = §18, Sprint 3 = §19, Sprint 4 = §20, Sprint 5 = §21. The earlier plan draft double-booked §16 across Sprint 0 and Sprint 1 — this resolves the conflict. No scope change. | Claude (at Sprint 1 kickoff) |
