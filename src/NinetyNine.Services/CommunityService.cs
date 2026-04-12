@@ -275,9 +275,9 @@ public sealed class CommunityService(
             return ServiceResult<CommunityInvitation>.Fail(
                 "CommunityNotFound", "Community not found.");
 
-        if (!IsOwner(community, byPlayerId))
+        if (!await IsOwnerOrAdminAsync(community, byPlayerId, ct))
             return ServiceResult<CommunityInvitation>.Fail(
-                "NotAuthorized", "Only the community owner can invite members.");
+                "NotAuthorized", "Only the community owner or an admin can invite members.");
 
         if (invitedPlayerId == byPlayerId)
             return ServiceResult<CommunityInvitation>.Fail(
@@ -440,9 +440,9 @@ public sealed class CommunityService(
             return ServiceResult<CommunityMembership>.Fail(
                 "CommunityNotFound", "Community not found.");
 
-        if (!IsOwner(community, byPlayerId))
+        if (!await IsOwnerOrAdminAsync(community, byPlayerId, ct))
             return ServiceResult<CommunityMembership>.Fail(
-                "NotAuthorized", "Only the community owner can approve join requests.");
+                "NotAuthorized", "Only the community owner or an admin can approve join requests.");
 
         var membership = new CommunityMembership
         {
@@ -488,9 +488,9 @@ public sealed class CommunityService(
         if (community is null)
             return ServiceResult.Fail("CommunityNotFound", "Community not found.");
 
-        if (!IsOwner(community, byPlayerId))
+        if (!await IsOwnerOrAdminAsync(community, byPlayerId, ct))
             return ServiceResult.Fail(
-                "NotAuthorized", "Only the community owner can deny join requests.");
+                "NotAuthorized", "Only the community owner or an admin can deny join requests.");
 
         await joinRequests.UpdateStatusAsync(
             requestId, CommunityJoinRequestStatus.Denied, DateTime.UtcNow, byPlayerId, ct);
@@ -575,13 +575,20 @@ public sealed class CommunityService(
         if (community is null)
             return ServiceResult.Fail("CommunityNotFound", "Community not found.");
 
-        if (!IsOwner(community, byPlayerId))
+        var callerMembership = await members.GetMembershipAsync(communityId, byPlayerId, ct);
+        var isCallerOwner = IsOwner(community, byPlayerId);
+        var isCallerAdmin = callerMembership?.Role == CommunityRole.Admin;
+
+        if (!isCallerOwner && !isCallerAdmin)
             return ServiceResult.Fail(
-                "NotAuthorized", "Only the community owner can remove members.");
+                "NotAuthorized", "Only the community owner or an admin can remove members.");
 
         if (targetPlayerId == byPlayerId)
             return ServiceResult.Fail(
-                "CannotRemoveSelf", "Owners cannot remove themselves.");
+                "CannotRemoveSelf",
+                isCallerOwner
+                    ? "Owners cannot remove themselves."
+                    : "Use the Leave button to leave the community.");
 
         var membership = await members.GetMembershipAsync(communityId, targetPlayerId, ct);
         if (membership is null)
@@ -590,6 +597,12 @@ public sealed class CommunityService(
         if (membership.Role == CommunityRole.Owner)
             return ServiceResult.Fail(
                 "CannotRemoveOwner", "You cannot remove the community owner.");
+
+        // Admins cannot remove other Admins — only the Owner can.
+        if (isCallerAdmin && membership.Role == CommunityRole.Admin)
+            return ServiceResult.Fail(
+                "AdminCannotRemoveAdmin",
+                "Only the community owner can remove an admin.");
 
         await members.RemoveAsync(communityId, targetPlayerId, ct);
         return ServiceResult.Ok();
@@ -741,6 +754,19 @@ public sealed class CommunityService(
 
     private static bool IsOwner(Community community, Guid playerId)
         => community.OwnerPlayerId == playerId;
+
+    /// <summary>
+    /// Returns true when the caller is the Owner or holds the Admin role.
+    /// Used for authz gates that Sprint 4 widened from Owner-only to
+    /// Owner + Admin (invite, approve/deny join requests, remove member).
+    /// </summary>
+    private async Task<bool> IsOwnerOrAdminAsync(
+        Community community, Guid playerId, CancellationToken ct)
+    {
+        if (IsOwner(community, playerId)) return true;
+        var m = await members.GetMembershipAsync(community.CommunityId, playerId, ct);
+        return m?.Role == CommunityRole.Admin;
+    }
 
     private static string? TrimDescription(string? description)
     {

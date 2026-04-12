@@ -158,6 +158,16 @@
     flex-shrink: 0;
 }
 
+.nn-community-detail__member-role--owner {
+    color: var(--nn-accent-gold, var(--nn-text-primary));
+    font-weight: 600;
+}
+
+.nn-community-detail__member-role--admin {
+    color: var(--nn-accent-teal, var(--nn-text-secondary));
+    font-weight: 600;
+}
+
 .nn-community-detail__member-actions {
     display: flex;
     gap: var(--nn-space-2);

@@ -469,4 +469,177 @@ public class CommunityServiceTests(MongoFixture fixture)
         results.Should().HaveCount(1);
         results[0].Visibility.Should().Be(CommunityVisibility.Public);
     }
+
+    // ── Sprint 4 S4.2: Admin role authz ────────────────────────────
+
+    /// <summary>
+    /// Helper: creates a community, adds a second player as a member,
+    /// promotes that player to Admin via the Owner, and returns the
+    /// community plus the admin's player. The (svc, players, venues,
+    /// members) tuple all share a single database context.
+    /// </summary>
+    private async Task<(Community Community, Player Admin)>
+        CreateCommunityWithAdminAsync(
+            ICommunityService svc,
+            IPlayerRepository playerRepo,
+            Player owner)
+    {
+        var c = (await svc.CreatePlayerOwnedAsync(
+            owner.PlayerId, UniqueName("AdminTest"), UniqueSlug("admintest"),
+            null, CommunityVisibility.Public)).Value!;
+
+        var admin = await CreatePlayer(playerRepo, "admin_" + Guid.NewGuid().ToString("N")[..8]);
+        (await svc.JoinPublicAsync(c.CommunityId, admin.PlayerId)).Success.Should().BeTrue();
+        (await svc.SetMemberRoleAsync(c.CommunityId, admin.PlayerId, CommunityRole.Admin, owner.PlayerId))
+            .Success.Should().BeTrue();
+
+        return (c, admin);
+    }
+
+    [Fact]
+    public async Task Admin_CanInviteMembers()
+    {
+        var (svc, players, _, _) = CreateService();
+        var owner = await CreatePlayer(players);
+        var (c, admin) = await CreateCommunityWithAdminAsync(svc, players, owner);
+        var target = await CreatePlayer(players);
+
+        var invite = await svc.InviteAsync(c.CommunityId, target.PlayerId, admin.PlayerId);
+        invite.Success.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Admin_CanApproveJoinRequest()
+    {
+        var (svc, players, _, _) = CreateService();
+        var owner = await CreatePlayer(players);
+        var (c, admin) = await CreateCommunityWithAdminAsync(svc, players, owner);
+
+        // Change to private so we can test join requests.
+        (await svc.UpdateAsync(c.CommunityId, owner.PlayerId,
+            new CommunityUpdate(Visibility: CommunityVisibility.Private))).Success.Should().BeTrue();
+
+        var joiner = await CreatePlayer(players);
+        var request = (await svc.RequestToJoinAsync(c.CommunityId, joiner.PlayerId)).Value!;
+
+        var result = await svc.ApproveJoinRequestAsync(request.RequestId, admin.PlayerId);
+        result.Success.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Admin_CanDenyJoinRequest()
+    {
+        var (svc, players, _, _) = CreateService();
+        var owner = await CreatePlayer(players);
+        var (c, admin) = await CreateCommunityWithAdminAsync(svc, players, owner);
+
+        (await svc.UpdateAsync(c.CommunityId, owner.PlayerId,
+            new CommunityUpdate(Visibility: CommunityVisibility.Private))).Success.Should().BeTrue();
+
+        var joiner = await CreatePlayer(players);
+        var request = (await svc.RequestToJoinAsync(c.CommunityId, joiner.PlayerId)).Value!;
+
+        var result = await svc.DenyJoinRequestAsync(request.RequestId, admin.PlayerId);
+        result.Success.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Admin_CanRemoveMembers()
+    {
+        var (svc, players, _, _) = CreateService();
+        var owner = await CreatePlayer(players);
+        var (c, admin) = await CreateCommunityWithAdminAsync(svc, players, owner);
+        var member = await CreatePlayer(players);
+        (await svc.JoinPublicAsync(c.CommunityId, member.PlayerId)).Success.Should().BeTrue();
+
+        var result = await svc.RemoveMemberAsync(c.CommunityId, member.PlayerId, admin.PlayerId);
+        result.Success.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Admin_CannotRemoveOwner()
+    {
+        var (svc, players, _, _) = CreateService();
+        var owner = await CreatePlayer(players);
+        var (c, admin) = await CreateCommunityWithAdminAsync(svc, players, owner);
+
+        var result = await svc.RemoveMemberAsync(c.CommunityId, owner.PlayerId, admin.PlayerId);
+        result.Success.Should().BeFalse();
+        result.ErrorCode.Should().Be("CannotRemoveOwner");
+    }
+
+    [Fact]
+    public async Task Admin_CannotRemoveOtherAdmin()
+    {
+        var (svc, players, _, _) = CreateService();
+        var owner = await CreatePlayer(players);
+        var (c, admin1) = await CreateCommunityWithAdminAsync(svc, players, owner);
+
+        var admin2 = await CreatePlayer(players);
+        (await svc.JoinPublicAsync(c.CommunityId, admin2.PlayerId)).Success.Should().BeTrue();
+        (await svc.SetMemberRoleAsync(c.CommunityId, admin2.PlayerId, CommunityRole.Admin, owner.PlayerId))
+            .Success.Should().BeTrue();
+
+        var result = await svc.RemoveMemberAsync(c.CommunityId, admin2.PlayerId, admin1.PlayerId);
+        result.Success.Should().BeFalse();
+        result.ErrorCode.Should().Be("AdminCannotRemoveAdmin");
+    }
+
+    [Fact]
+    public async Task Admin_CannotDeleteCommunity()
+    {
+        var (svc, players, _, _) = CreateService();
+        var owner = await CreatePlayer(players);
+        var (c, admin) = await CreateCommunityWithAdminAsync(svc, players, owner);
+
+        var result = await svc.DeleteAsync(c.CommunityId, admin.PlayerId);
+        result.Success.Should().BeFalse();
+        result.ErrorCode.Should().Be("NotAuthorized");
+    }
+
+    [Fact]
+    public async Task Admin_CannotChangeRoles()
+    {
+        var (svc, players, _, _) = CreateService();
+        var owner = await CreatePlayer(players);
+        var (c, admin) = await CreateCommunityWithAdminAsync(svc, players, owner);
+        var member = await CreatePlayer(players);
+        (await svc.JoinPublicAsync(c.CommunityId, member.PlayerId)).Success.Should().BeTrue();
+
+        var result = await svc.SetMemberRoleAsync(
+            c.CommunityId, member.PlayerId, CommunityRole.Admin, admin.PlayerId);
+        result.Success.Should().BeFalse();
+        result.ErrorCode.Should().Be("NotAuthorized");
+    }
+
+    [Fact]
+    public async Task Admin_CannotTransferOwnership()
+    {
+        var (svc, players, _, _) = CreateService();
+        var owner = await CreatePlayer(players);
+        var (c, admin) = await CreateCommunityWithAdminAsync(svc, players, owner);
+
+        var result = await svc.TransferOwnershipAsync(
+            c.CommunityId, admin.PlayerId, admin.PlayerId);
+        result.Success.Should().BeFalse();
+        result.ErrorCode.Should().Be("NotAuthorized");
+    }
+
+    [Fact]
+    public async Task Member_CannotInvite()
+    {
+        var (svc, players, _, _) = CreateService();
+        var owner = await CreatePlayer(players);
+        var c = (await svc.CreatePlayerOwnedAsync(
+            owner.PlayerId, UniqueName("MemberNoInvite"), UniqueSlug("mni"),
+            null, CommunityVisibility.Public)).Value!;
+
+        var member = await CreatePlayer(players);
+        (await svc.JoinPublicAsync(c.CommunityId, member.PlayerId)).Success.Should().BeTrue();
+        var target = await CreatePlayer(players);
+
+        var result = await svc.InviteAsync(c.CommunityId, target.PlayerId, member.PlayerId);
+        result.Success.Should().BeFalse();
+        result.ErrorCode.Should().Be("NotAuthorized");
+    }
 }

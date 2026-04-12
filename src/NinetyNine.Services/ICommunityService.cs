@@ -63,7 +63,7 @@ public interface ICommunityService
     // ── Invitations (community → player) ────────────────────────────
 
     /// <summary>
-    /// Invite a player to join. Owner-only in v1.0 (admins in v1.1).
+    /// Invite a player to join. Owner or Admin (Sprint 4 S4.2).
     /// Enforces:
     /// <list type="bullet">
     /// <item>Max 5 invites from any inviter to any target in a rolling 365 days (<c>InviteRateLimited</c>).</item>
@@ -100,13 +100,13 @@ public interface ICommunityService
         Guid playerId,
         CancellationToken ct = default);
 
-    /// <summary>Approve a Pending join request. Owner-only.</summary>
+    /// <summary>Approve a Pending join request. Owner or Admin.</summary>
     Task<ServiceResult<CommunityMembership>> ApproveJoinRequestAsync(
         Guid requestId,
         Guid byPlayerId,
         CancellationToken ct = default);
 
-    /// <summary>Deny a Pending join request. Owner-only.</summary>
+    /// <summary>Deny a Pending join request. Owner or Admin.</summary>
     Task<ServiceResult> DenyJoinRequestAsync(
         Guid requestId,
         Guid byPlayerId,
@@ -135,8 +135,9 @@ public interface ICommunityService
         CancellationToken ct = default);
 
     /// <summary>
-    /// Remove a member from a community. Owner-only in v1.0. Owner
-    /// cannot be removed (must transfer first).
+    /// Remove a member from a community. Owner or Admin (Sprint 4).
+    /// Admins cannot remove Owner or other Admins. Owner cannot be
+    /// removed (must transfer first).
     /// </summary>
     Task<ServiceResult> RemoveMemberAsync(
         Guid communityId,

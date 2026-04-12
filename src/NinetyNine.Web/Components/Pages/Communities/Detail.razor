@@ -100,8 +100,8 @@
                 </div>
             </header>
 
-            @* ── Owner-only: pending join requests ────────────────── *@
-            @if (_isOwner && _pendingJoinRequests.Count > 0)
+            @* ── Owner/Admin: pending join requests ────────────────── *@
+            @if (_isOwnerOrAdmin && _pendingJoinRequests.Count > 0)
             {
                 <section class="nn-community-detail__section"
                          aria-label="Pending join requests">
@@ -161,19 +161,50 @@
                                              DisplayName="@m.DisplayName"
                                              AvatarUrl="@m.AvatarUrl"
                                              AvatarSizePx="40" />
-                                <span class="nn-community-detail__member-role">
+                                <span class="nn-community-detail__member-role nn-community-detail__member-role--@m.Role.ToString().ToLowerInvariant()">
                                     @(m.Role == CommunityRole.Owner ? "Owner"
                                       : m.Role == CommunityRole.Admin ? "Admin"
                                       : "Member")
                                 </span>
+                                @if (_isOwner && m.PlayerId != _viewerId && m.Role != CommunityRole.Owner)
+                                {
+                                    <div class="nn-community-detail__member-actions">
+                                        @if (m.Role == CommunityRole.Member)
+                                        {
+                                            <EditForm Model="_roleChangeModel" method="post"
+                                                      OnValidSubmit="HandleMakeAdminAsync"
+                                                      FormName="@($"make-admin-{m.PlayerId}")">
+                                                <input type="hidden"
+                                                       name="_roleChangeModel.TargetPlayerId"
+                                                       value="@m.PlayerId" />
+                                                <button type="submit" class="btn btn-ghost btn-sm">
+                                                    Make Admin
+                                                </button>
+                                            </EditForm>
+                                        }
+                                        else if (m.Role == CommunityRole.Admin)
+                                        {
+                                            <EditForm Model="_roleChangeModel" method="post"
+                                                      OnValidSubmit="HandleRemoveAdminAsync"
+                                                      FormName="@($"remove-admin-{m.PlayerId}")">
+                                                <input type="hidden"
+                                                       name="_roleChangeModel.TargetPlayerId"
+                                                       value="@m.PlayerId" />
+                                                <button type="submit" class="btn btn-ghost btn-sm">
+                                                    Remove Admin
+                                                </button>
+                                            </EditForm>
+                                        }
+                                    </div>
+                                }
                             </li>
                         }
                     </ul>
                 }
             </section>
 
-            @* ── Owner-only: invite a player by display name ────── *@
-            @if (_isOwner)
+            @* ── Owner/Admin: invite a player by display name ────── *@
+            @if (_isOwnerOrAdmin)
             {
                 <section class="nn-community-detail__section"
                          aria-label="Invite a player">
@@ -226,11 +257,15 @@
     [SupplyParameterFromForm]
     private RequestIdModel _requestIdModel { get; set; } = new();
 
+    [SupplyParameterFromForm]
+    private RoleChangeModel _roleChangeModel { get; set; } = new();
+
     private Guid? _viewerId;
     private Community? _community;
     private bool _notFound;
     private bool _isMember;
     private bool _isOwner;
+    private bool _isOwnerOrAdmin;
     private List<CommunityMemberView> _members = [];
     private long _memberCount;
     private List<CommunityJoinRequest> _pendingJoinRequests = [];
@@ -250,6 +285,9 @@
             "created" => "Community created.",
             "joined" => "You joined the community.",
             "invited" => "Invitation sent.",
+            "approved" => "Join request approved.",
+            "denied" => "Join request denied.",
+            "role-changed" => "Role updated.",
             _ => "",
         };
     }
@@ -279,8 +317,13 @@
         _members = (await CommunityService.ListMembersAsync(CommunityId, _viewerId)).ToList();
         _memberCount = _members.Count;
 
-        // Owner-only: load pending join requests + preload requester profiles.
-        if (_isOwner)
+        // An admin is any member with Role == Admin (checked from the
+        // already-fetched member list to avoid a second roundtrip).
+        _isOwnerOrAdmin = _isOwner
+            || _members.Any(m => m.PlayerId == _viewerId && m.Role == CommunityRole.Admin);
+
+        // Owner/Admin: load pending join requests + preload requester profiles.
+        if (_isOwnerOrAdmin)
         {
             _pendingJoinRequests =
                 (await JoinRequestRepository.ListPendingByCommunityAsync(CommunityId)).ToList();
@@ -394,4 +437,41 @@
     }
 
     private sealed class EmptyModel { }
+
+    private sealed class RoleChangeModel
+    {
+        public Guid TargetPlayerId { get; set; }
+    }
+
+    private async Task HandleMakeAdminAsync()
+    {
+        if (_viewerId is null || _roleChangeModel.TargetPlayerId == Guid.Empty) return;
+
+        var result = await CommunityService.SetMemberRoleAsync(
+            CommunityId, _roleChangeModel.TargetPlayerId, CommunityRole.Admin, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not change role.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=role-changed");
+    }
+
+    private async Task HandleRemoveAdminAsync()
+    {
+        if (_viewerId is null || _roleChangeModel.TargetPlayerId == Guid.Empty) return;
+
+        var result = await CommunityService.SetMemberRoleAsync(
+            CommunityId, _roleChangeModel.TargetPlayerId, CommunityRole.Member, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not change role.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=role-changed");
+    }
 }
