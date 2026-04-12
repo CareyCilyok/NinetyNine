@@ -4,7 +4,7 @@
    resolved from the ClaimNames.PlayerId claim in OnInitialized. Both
    UserMenu and NavMenu link to this literal route. See docs/defects.md
    DEF-002. *@
-@inject IPlayerRepository PlayerRepository
+@inject IPlayerService PlayerService
 @inject IStatisticsService StatisticsService
 @inject IGameRepository GameRepository
 @inject IVenueService VenueService
@@ -13,9 +13,10 @@
 @inject NavigationManager Navigation
 @inject ILogger<Profile> Logger
 @using System.ComponentModel.DataAnnotations
+@using NinetyNine.Services.Models
 
 <PageTitle>
-    @(_player is not null ? $"{_player.DisplayName} \u2014 NinetyNine" : "Player Profile \u2014 NinetyNine")
+    @(_profile is not null ? $"{_profile.DisplayName} \u2014 NinetyNine" : "Player Profile \u2014 NinetyNine")
 </PageTitle>
 
 <div class="nn-page nn-profile-page">
@@ -29,7 +30,7 @@
             Loading&hellip;
         </div>
     }
-    else if (_player is null)
+    else if (_profile is null)
     {
         <div class="nn-profile-page__not-found">
             <h1 class="nn-profile-page__not-found-title">Player not found</h1>
@@ -45,43 +46,41 @@
         <section class="nn-profile-page__card nn-profile-page__header-card"
                  aria-label="Player profile">
             <div class="nn-profile-page__header-avatar">
-                @if (_player.Visibility.Avatar)
+                @if (_profile.Avatar is not null)
                 {
                     <AvatarImage AvatarUrl="@_avatarUrl"
-                                 DisplayName="@_player.DisplayName"
+                                 DisplayName="@_profile.DisplayName"
                                  SizePx="96" />
                 }
                 else
                 {
-                    <InitialsAvatar DisplayName="@_player.DisplayName" SizePx="96" />
+                    <InitialsAvatar DisplayName="@_profile.DisplayName" SizePx="96" />
                 }
             </div>
 
             <div class="nn-profile-page__header-info">
-                <h1 class="nn-profile-page__display-name">@_player.DisplayName</h1>
+                <h1 class="nn-profile-page__display-name">@_profile.DisplayName</h1>
 
-                @if (_player.Visibility.RealName
-                    && (!string.IsNullOrWhiteSpace(_player.FirstName)
-                        || !string.IsNullOrWhiteSpace(_player.LastName)))
+                @if (_profile.HasRealName)
                 {
                     <p class="nn-profile-page__real-name">
                         @string.Join(" ", new[]
                         {
-                            _player.FirstName,
-                            _player.MiddleName,
-                            _player.LastName
+                            _profile.FirstName,
+                            _profile.MiddleName,
+                            _profile.LastName
                         }.Where(s => !string.IsNullOrWhiteSpace(s)))
                     </p>
                 }
 
                 <p class="nn-profile-page__member-since">
                     Member since
-                    <time datetime="@_player.CreatedAt.ToString("O")">
-                        @_player.CreatedAt.ToString("MMM yyyy")
+                    <time datetime="@_profile.CreatedAt.ToString("O")">
+                        @_profile.CreatedAt.ToString("MMM yyyy")
                     </time>
                 </p>
 
-                @if (_isOwnProfile)
+                @if (_profile.IsOwnProfile)
                 {
                     <a href="/players/me/edit"
                        class="btn btn-outline-primary btn-sm nn-profile-page__edit-btn">
@@ -91,29 +90,31 @@
             </div>
         </section>
 
-        @* ── 2. Contact info card (public fields only, hide from owner) ── *@
-        @if (!_isOwnProfile && (_player.Visibility.EmailAddress || _player.Visibility.PhoneNumber))
+        @* ── 2. Contact info card (only populated gated fields) ────────── *@
+        @if (!_profile.IsOwnProfile
+             && (!string.IsNullOrWhiteSpace(_profile.EmailAddress)
+                 || !string.IsNullOrWhiteSpace(_profile.PhoneNumber)))
         {
             <section class="nn-profile-page__card nn-profile-page__contact-card"
                      aria-label="Contact information">
                 <h2 class="nn-profile-page__card-title">Contact</h2>
 
                 <dl class="nn-profile-page__contact-list">
-                    @if (_player.Visibility.EmailAddress && !string.IsNullOrWhiteSpace(_player.EmailAddress))
+                    @if (!string.IsNullOrWhiteSpace(_profile.EmailAddress))
                     {
                         <div class="nn-profile-page__contact-row">
                             <dt class="nn-profile-page__contact-label">Email</dt>
                             <dd class="nn-profile-page__contact-value">
-                                <a href="mailto:@_player.EmailAddress">@_player.EmailAddress</a>
+                                <a href="mailto:@_profile.EmailAddress">@_profile.EmailAddress</a>
                             </dd>
                         </div>
                     }
-                    @if (_player.Visibility.PhoneNumber && !string.IsNullOrWhiteSpace(_player.PhoneNumber))
+                    @if (!string.IsNullOrWhiteSpace(_profile.PhoneNumber))
                     {
                         <div class="nn-profile-page__contact-row">
                             <dt class="nn-profile-page__contact-label">Phone</dt>
                             <dd class="nn-profile-page__contact-value">
-                                <a href="tel:@_player.PhoneNumber">@_player.PhoneNumber</a>
+                                <a href="tel:@_profile.PhoneNumber">@_profile.PhoneNumber</a>
                             </dd>
                         </div>
                     }
@@ -217,14 +218,19 @@
                 <ul class="nn-profile-page__games-list" role="list">
                     @foreach (var game in _recentGames)
                     {
-                        var href = game.IsInProgress && _isOwnProfile
+                        var href = game.IsInProgress && _profile.IsOwnProfile
                             ? $"/games/{game.GameId}/play"
                             : $"/games/{game.GameId}";
+
+                        var venueIsMasked = _maskedVenueIds.Contains(game.VenueId);
+                        var venueLabel = venueIsMasked
+                            ? "Private venue"
+                            : (_venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "\u2014");
 
                         <li class="nn-profile-page__game-row" role="listitem">
                             <a href="@href"
                                class="nn-profile-page__game-link"
-                               aria-label="@GameRowAriaLabel(game)">
+                               aria-label="@GameRowAriaLabel(game, venueLabel)">
 
                                 <time class="nn-profile-page__game-date"
                                       datetime="@game.WhenPlayed.ToString("O")"
@@ -232,8 +238,8 @@
                                     @game.WhenPlayed.ToLocalTime().ToString("MMM d, yyyy")
                                 </time>
 
-                                <span class="nn-profile-page__game-venue">
-                                    @(_venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "\u2014")
+                                <span class="nn-profile-page__game-venue @(venueIsMasked ? "nn-profile-page__game-venue--masked" : null)">
+                                    @venueLabel
                                 </span>
 
                                 <span class="nn-profile-page__game-score font-monospace">
@@ -261,14 +267,15 @@
 @code {
     [Parameter] public Guid PlayerId { get; set; }
 
-    private Player? _player;
+    private ViewerScopedPlayerProfile? _profile;
     private PlayerStats? _stats;
     private string? _avatarUrl;
     private List<Game> _recentGames = [];
     private Dictionary<Guid, string> _venueNames = new();
+    private HashSet<Guid> _maskedVenueIds = new();
     private List<Community> _visibleCommunities = [];
     private bool _loading = true;
-    private bool _isOwnProfile;
+    private Guid? _viewerId;
 
     protected override void OnInitialized()
     {
@@ -289,24 +296,23 @@
             PlayerId = viewerId;
         }
 
-        _isOwnProfile = viewerId != Guid.Empty && viewerId == PlayerId;
+        _viewerId = viewerId == Guid.Empty ? null : viewerId;
     }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _player = await PlayerRepository.GetByIdAsync(PlayerId);
+            _profile = await PlayerService.GetProfileForViewerAsync(PlayerId, _viewerId);
 
-            if (_player is null)
+            if (_profile is null)
             {
                 _loading = false;
                 return;
             }
 
-            // Avatar URL only when visibility flag is set
-            if (_player.Avatar is not null && _player.Visibility.Avatar)
-                _avatarUrl = $"/api/avatars/{_player.PlayerId}";
+            if (_profile.Avatar is not null)
+                _avatarUrl = $"/api/avatars/{_profile.PlayerId}";
 
             // Load stats — best-effort; page still renders without them
             try
@@ -318,21 +324,36 @@
                 Logger.LogWarning(ex, "Failed to load stats for player {PlayerId}.", PlayerId);
             }
 
-            // Load recent games
+            // Load recent games + resolve venue names, masking private
+            // venues the viewer is not the creator of (plan S3.6).
             try
             {
                 var games = await GameRepository.GetByPlayerAsync(PlayerId, skip: 0, limit: 5);
                 _recentGames = games.OrderByDescending(g => g.WhenPlayed).ToList();
 
-                // Best-effort venue name resolution
                 var uniqueVenueIds = _recentGames.Select(g => g.VenueId).Distinct();
                 foreach (var venueId in uniqueVenueIds)
                 {
                     try
                     {
                         var venue = await VenueService.GetAsync(venueId);
-                        if (venue is not null)
+                        if (venue is null) continue;
+
+                        // Private venues are visible only to their creator.
+                        // For every other viewer (including the target when
+                        // viewing their own profile but not the creator, and
+                        // any non-creator viewer), mask the venue's name and
+                        // drop the link.
+                        var viewerIsCreator = _viewerId is not null
+                            && venue.CreatedByPlayerId == _viewerId.Value;
+                        if (venue.Private && !viewerIsCreator)
+                        {
+                            _maskedVenueIds.Add(venueId);
+                        }
+                        else
+                        {
                             _venueNames[venueId] = venue.Name;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -354,15 +375,12 @@
             try
             {
                 var all = await CommunityService.ListCommunitiesForPlayerAsync(PlayerId);
-                if (_isOwnProfile)
+                if (_profile.IsOwnProfile)
                 {
                     _visibleCommunities = all.ToList();
                 }
                 else
                 {
-                    var viewer = HttpContextAccessor.HttpContext?.User?.FindFirst(ClaimNames.PlayerId)?.Value;
-                    Guid? viewerId = Guid.TryParse(viewer, out var vid) ? vid : null;
-
                     var filtered = new List<Community>();
                     foreach (var c in all)
                     {
@@ -371,9 +389,8 @@
                             filtered.Add(c);
                             continue;
                         }
-                        // Private: only include if the viewer is also a member.
-                        if (viewerId is not null
-                            && await CommunityService.IsMemberAsync(c.CommunityId, viewerId.Value))
+                        if (_viewerId is not null
+                            && await CommunityService.IsMemberAsync(c.CommunityId, _viewerId.Value))
                         {
                             filtered.Add(c);
                         }
@@ -389,7 +406,7 @@
         catch (Exception ex)
         {
             Logger.LogWarning(ex, "Failed to load public profile for player {PlayerId}.", PlayerId);
-            _player = null;
+            _profile = null;
         }
         finally
         {
@@ -429,10 +446,9 @@
         _                    => "nn-status-pill--muted"
     };
 
-    private string GameRowAriaLabel(Game game)
+    private static string GameRowAriaLabel(Game game, string venueLabel)
     {
-        var venueName = _venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "unknown venue";
-        return $"{StatusLabel(game.GameState)} game at {venueName} on "
+        return $"{StatusLabel(game.GameState)} game at {venueLabel} on "
              + $"{game.WhenPlayed.ToLocalTime():MMM d, yyyy}, score {game.TotalScore} out of 99";
     }
 }

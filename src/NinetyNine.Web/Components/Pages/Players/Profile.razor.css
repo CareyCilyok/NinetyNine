@@ -255,6 +255,12 @@
     white-space: nowrap;
 }
 
+/* Sprint 3 S3.6: private venues the viewer can't see. */
+.nn-profile-page__game-venue--masked {
+    font-style: italic;
+    color: var(--nn-text-muted, var(--nn-text-tertiary));
+}
+
 .nn-profile-page__game-score {
     font-size: 1rem;
     font-weight: 600;
