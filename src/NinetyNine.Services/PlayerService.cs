@@ -241,6 +241,7 @@ public sealed partial class PlayerService(
             CreatedAt = target.CreatedAt,
             IsOwnProfile = relationship == ViewerRelationship.Self,
             Relationship = relationship,
+            IsRetired = target.RetiredAt is not null,
             EmailAddress = Visible(vis.EmailAudience) ? NullIfBlank(target.EmailAddress) : null,
             PhoneNumber = Visible(vis.PhoneAudience) ? NullIfBlank(target.PhoneNumber) : null,
             FirstName = realNameVisible ? NullIfBlank(target.FirstName) : null,

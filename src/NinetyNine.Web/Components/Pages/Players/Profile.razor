@@ -40,6 +40,16 @@
             <a href="/stats" class="btn btn-outline-secondary">Back to leaderboard</a>
         </div>
     }
+    else if (_profile.IsRetired)
+    {
+        <div class="nn-profile-page__not-found">
+            <h1 class="nn-profile-page__not-found-title">@_profile.DisplayName</h1>
+            <p class="nn-profile-page__not-found-body">
+                This player is no longer active. Their game history is preserved.
+            </p>
+            <a href="/stats" class="btn btn-outline-secondary">Back to leaderboard</a>
+        </div>
+    }
     else
     {
         @* ── 1. Profile header card ────────────────────────────────────── *@

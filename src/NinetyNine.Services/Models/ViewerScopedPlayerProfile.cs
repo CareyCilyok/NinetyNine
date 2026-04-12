@@ -47,6 +47,12 @@ public sealed record ViewerScopedPlayerProfile
     /// </summary>
     public required ViewerRelationship Relationship { get; init; }
 
+    /// <summary>
+    /// True when the player's account has been retired (soft-deleted).
+    /// PII is erased; only DisplayName and game history survive.
+    /// </summary>
+    public bool IsRetired { get; init; }
+
     // ── Gated fields. null == not visible to the viewer ─────────────────
 
     /// <summary>Email address. Gated by <see cref="ProfileVisibility.EmailAudience"/>.</summary>

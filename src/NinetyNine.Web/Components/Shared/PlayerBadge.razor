@@ -1,17 +1,30 @@
-@* Player name + avatar combination, links to the player's public profile. *@
+@* Player name + avatar combination. Links to the player's profile
+   unless the player is retired (soft-deleted). *@
 
-<a href="/players/@PlayerId"
-   class="player-badge nn-badge"
-   aria-label="Open profile for @DisplayName">
-    <AvatarImage AvatarUrl="@AvatarUrl"
-                 DisplayName="@DisplayName"
-                 SizePx="@AvatarSizePx" />
-    <span class="player-badge-name nn-badge__name">@DisplayName</span>
-</a>
+@if (IsRetired)
+{
+    <span class="player-badge nn-badge nn-badge--retired"
+          aria-label="@DisplayName (no longer active)">
+        <InitialsAvatar DisplayName="@DisplayName" SizePx="@AvatarSizePx" />
+        <span class="player-badge-name nn-badge__name">@DisplayName</span>
+    </span>
+}
+else
+{
+    <a href="/players/@PlayerId"
+       class="player-badge nn-badge"
+       aria-label="Open profile for @DisplayName">
+        <AvatarImage AvatarUrl="@AvatarUrl"
+                     DisplayName="@DisplayName"
+                     SizePx="@AvatarSizePx" />
+        <span class="player-badge-name nn-badge__name">@DisplayName</span>
+    </a>
+}
 
 @code {
     [Parameter] public Guid PlayerId { get; set; }
     [Parameter] public string DisplayName { get; set; } = "";
     [Parameter] public string? AvatarUrl { get; set; }
     [Parameter] public int AvatarSizePx { get; set; } = 32;
+    [Parameter] public bool IsRetired { get; set; }
 }

@@ -53,6 +53,19 @@
     min-width: 0;
 }
 
+/* Retired players render as non-interactive plain text. */
+.nn-badge--retired {
+    cursor: default;
+    opacity: 0.7;
+}
+
+.nn-badge--retired:hover {
+    background-color: var(--nn-bg-secondary);
+    border-color: var(--nn-border-default);
+    box-shadow: none;
+    transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .nn-badge {
         transition: none;
