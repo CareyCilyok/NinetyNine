@@ -32,6 +32,9 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<INotificationDeliveryService, ConsoleNotificationDeliveryService>();
 
+        // Sprint 9 S9.3
+        services.AddScoped<IPollService, PollService>();
+
         return services;
     }
 }
