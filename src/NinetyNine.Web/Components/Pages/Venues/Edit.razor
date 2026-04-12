@@ -2,6 +2,8 @@
 @page "/venues/{VenueId:guid}/edit"
 @attribute [Authorize]
 @inject IVenueService VenueService
+@inject ICommunityService CommunityService
+@inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<Edit> Logger
 @using System.ComponentModel.DataAnnotations
@@ -124,8 +126,76 @@
                 </EditForm>
             </div>
 
+            @* ── Community affiliation (Sprint 3 S3.2) ───────────────
+               Separate form because authorization rules differ: this
+               flows through IVenueService.SetCommunityAffiliationAsync
+               which enforces "venue creator + current member of target
+               community". See docs/plans/friends-communities-v1.md
+               Sprint 3 S3.2. *@
             @if (!_isNew)
             {
+                <div class="nn-venue-edit__affiliation-section">
+                    <h2 class="nn-venue-edit__affiliation-heading">Community affiliation</h2>
+                    <p class="nn-venue-edit__affiliation-hint">
+                        Affiliate this venue with one of the communities you belong to. Pool
+                        players are the only ones who control communities — a venue is
+                        affiliated, never owned.
+                    </p>
+
+                    @if (!string.IsNullOrEmpty(_affiliationFlashSuccess))
+                    {
+                        <div class="alert alert-success" role="status">@_affiliationFlashSuccess</div>
+                    }
+                    @if (!string.IsNullOrEmpty(_affiliationFlashError))
+                    {
+                        <div class="alert alert-danger" role="alert">@_affiliationFlashError</div>
+                    }
+
+                    <EditForm Model="_affiliationModel"
+                              method="post"
+                              FormName="set-venue-affiliation"
+                              OnValidSubmit="HandleAffiliationSaveAsync">
+                        @* AntiforgeryToken auto-injected (DEF-003). *@
+                        <div class="nn-venue-edit__field">
+                            <label class="form-label nn-venue-edit__label" for="venue-community">
+                                Community
+                            </label>
+                            <InputSelect id="venue-community"
+                                         class="form-select"
+                                         @bind-Value="_affiliationModel.SelectedCommunityId">
+                                <option value="">&mdash; None &mdash;</option>
+                                @foreach (var c in _myCommunities)
+                                {
+                                    <option value="@c.CommunityId">@c.Name</option>
+                                }
+                            </InputSelect>
+                            @if (_myCommunities.Count == 0)
+                            {
+                                <div class="form-text nn-venue-edit__hint">
+                                    You are not a member of any community. Create or join one first at <a href="/communities">/communities</a>.
+                                </div>
+                            }
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary nn-venue-edit__submit"
+                                disabled="@_isSavingAffiliation"
+                                aria-busy="@_isSavingAffiliation.ToString().ToLowerInvariant()">
+                            @if (_isSavingAffiliation)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"
+                                      role="status"
+                                      aria-hidden="true"></span>
+                                <span>Saving&hellip;</span>
+                            }
+                            else
+                            {
+                                <span>Save affiliation</span>
+                            }
+                        </button>
+                    </EditForm>
+                </div>
+
                 <div class="nn-venue-edit__delete-section">
                     <h2 class="nn-venue-edit__delete-heading">Delete venue</h2>
                     <p class="nn-venue-edit__delete-warning">
@@ -175,6 +245,9 @@
 @code {
     [Parameter] public Guid? VenueId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "flash")]
+    public string? Flash { get; set; }
+
     // ── Save form model ─────────────────────────────────────────────────
     [SupplyParameterFromForm(FormName = "save-venue")]
     private SaveVenueModel _saveModel { get; set; } = new();
@@ -183,13 +256,37 @@
     [SupplyParameterFromForm(FormName = "delete-venue")]
     private DeleteVenueModel _deleteModel { get; set; } = new();
 
+    // ── Community affiliation form model ────────────────────────────────
+    [SupplyParameterFromForm(FormName = "set-venue-affiliation")]
+    private AffiliationModel _affiliationModel { get; set; } = new();
+
     // ── Page state ──────────────────────────────────────────────────────
     private bool _isNew;
     private bool _loading = true;
     private bool _notFound;
     private bool _isSaving;
     private bool _isDeleting;
+    private bool _isSavingAffiliation;
     private string _errorMessage = "";
+    private string _affiliationFlashSuccess = "";
+    private string _affiliationFlashError = "";
+
+    private Guid? _viewerId;
+    private List<Community> _myCommunities = [];
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _viewerId = id;
+
+        _affiliationFlashSuccess = Flash switch
+        {
+            "affiliation-saved" => "Community affiliation updated.",
+            _ => "",
+        };
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -218,6 +315,22 @@
                         _saveModel.Address     = venue.Address;
                         _saveModel.PhoneNumber = venue.PhoneNumber;
                         _saveModel.Private     = venue.Private;
+                    }
+
+                    // Load communities the viewer is a member of for the
+                    // affiliation picker. Pre-select the venue's current
+                    // affiliation (or None) unless the user's form post
+                    // already populated the field.
+                    if (_viewerId is not null)
+                    {
+                        _myCommunities = (await CommunityService
+                            .ListCommunitiesForPlayerAsync(_viewerId.Value)).ToList();
+
+                        if (string.IsNullOrEmpty(_affiliationModel.SelectedCommunityId))
+                        {
+                            _affiliationModel.SelectedCommunityId =
+                                venue.CommunityId?.ToString() ?? "";
+                        }
                     }
                 }
             }
@@ -257,6 +370,43 @@
         // NavigationException must escape uncaught — do NOT wrap in try/catch.
         // Blazor static-SSR converts it into the 302 redirect response.
         Navigation.NavigateTo("/venues");
+    }
+
+    // ── Community affiliation handler ───────────────────────────────────
+    private async Task HandleAffiliationSaveAsync()
+    {
+        if (_viewerId is null || VenueId is null) return;
+
+        _isSavingAffiliation = true;
+        _affiliationFlashSuccess = "";
+        _affiliationFlashError = "";
+
+        Guid? communityId = null;
+        if (!string.IsNullOrWhiteSpace(_affiliationModel.SelectedCommunityId))
+        {
+            if (!Guid.TryParse(_affiliationModel.SelectedCommunityId, out var parsed))
+            {
+                _affiliationFlashError = "Invalid community selection.";
+                _isSavingAffiliation = false;
+                return;
+            }
+            communityId = parsed;
+        }
+
+        var result = await VenueService.SetCommunityAffiliationAsync(
+            VenueId.Value, communityId, _viewerId.Value);
+
+        if (!result.Success)
+        {
+            _affiliationFlashError = result.ErrorMessage ?? "Could not update affiliation.";
+            _isSavingAffiliation = false;
+            return;
+        }
+
+        // Self-redirect so the updated state reloads cleanly through
+        // OnInitializedAsync and the flash-success message shows after a
+        // 302 round trip.
+        Navigation.NavigateTo($"/venues/{VenueId}/edit?flash=affiliation-saved");
     }
 
     // ── Delete handler ──────────────────────────────────────────────────
@@ -317,5 +467,14 @@
     private sealed class DeleteVenueModel
     {
         public string VenueId { get; set; } = "";
+    }
+
+    public sealed class AffiliationModel
+    {
+        /// <summary>
+        /// Guid-as-string so an empty selection round-trips as an empty
+        /// string rather than Guid.Empty.
+        /// </summary>
+        public string? SelectedCommunityId { get; set; }
     }
 }

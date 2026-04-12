@@ -146,6 +146,33 @@
     }
 }
 
+/* ── Community affiliation section (Sprint 3 S3.2) ────────────────── */
+
+.nn-venue-edit__affiliation-section {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-5);
+    box-shadow: var(--nn-shadow-md);
+    margin-top: var(--nn-space-5);
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-venue-edit__affiliation-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-venue-edit__affiliation-hint {
+    color: var(--nn-text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: var(--nn-space-4);
+}
+
 /* ── Reduced motion ──────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
     .nn-venue-edit__submit,

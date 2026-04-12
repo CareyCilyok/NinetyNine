@@ -1,5 +1,6 @@
 @page "/venues"
 @inject IVenueService VenueService
+@inject ICommunityService CommunityService
 @inject IHttpContextAccessor HttpContextAccessor
 @inject ILogger<List> Logger
 @using System.Security.Claims
@@ -59,6 +60,15 @@
                                     Private
                                 </span>
                             }
+                            @if (venue.CommunityId is not null
+                                 && _communityNames.TryGetValue(venue.CommunityId.Value, out var cname))
+                            {
+                                <a href="/communities/@venue.CommunityId"
+                                   class="nn-venues-page__community-chip"
+                                   title="Affiliated with @cname">
+                                    @cname
+                                </a>
+                            }
                         </div>
 
                         @if (!string.IsNullOrWhiteSpace(venue.Address))
@@ -106,6 +116,7 @@
 
 @code {
     private List<Venue> _venues = [];
+    private Dictionary<Guid, string> _communityNames = new();
     private bool _loading = true;
     private bool _isAuthenticated;
 
@@ -121,6 +132,18 @@
         {
             var venues = await VenueService.ListAsync(includePrivate: _isAuthenticated);
             _venues = venues.ToList();
+
+            // Preload community names for the affiliation chip (Sprint 3 S3.2).
+            // Small-N lookup — tens of communities max.
+            var ids = _venues
+                .Where(v => v.CommunityId is not null)
+                .Select(v => v.CommunityId!.Value)
+                .Distinct();
+            foreach (var id in ids)
+            {
+                var c = await CommunityService.GetForViewerAsync(id, viewerId: null);
+                if (c is not null) _communityNames[id] = c.Name;
+            }
         }
         catch (Exception ex)
         {

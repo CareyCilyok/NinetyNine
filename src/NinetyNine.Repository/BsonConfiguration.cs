@@ -93,6 +93,15 @@ public static class BsonConfiguration
             cm.SetIdMember(cm.GetMemberMap(v => v.VenueId));
             cm.GetMemberMap(v => v.VenueId)
               .SetSerializer(new GuidSerializer(BsonType.String));
+
+            // Venue.CommunityId and CreatedByPlayerId use the global
+            // default Guid serializer (binary UUID subtype 4). The Sprint 0
+            // venue seeder wrote them as binary before Sprint 3 existed,
+            // and rewriting every seeded venue to use string storage
+            // just to match Community._id would require a live migration
+            // pass first. C# Guid equality works regardless of the Mongo
+            // storage format, so `venue.CommunityId == community.CommunityId`
+            // still resolves correctly.
         });
     }
 
@@ -205,9 +214,13 @@ public static class BsonConfiguration
             cm.GetMemberMap(c => c.CreatedByPlayerId)
               .SetSerializer(new GuidSerializer(BsonType.String));
 
-            // Legacy schema-v1 `ownerType` / `ownerVenueId` fields on
-            // old docs are ignored by AutoMap's default extra-element
-            // handling.
+            // Legacy schema-v1 docs still have `ownerType: "Player"` and
+            // possibly `ownerVenueId: null` — properties the C# class
+            // no longer exposes. Tell the class map to ignore them so
+            // old docs still deserialize cleanly. Every community doc
+            // written after this release stops emitting the legacy
+            // fields automatically.
+            cm.SetIgnoreExtraElements(true);
         });
     }
 

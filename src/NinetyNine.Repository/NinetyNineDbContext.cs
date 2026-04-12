@@ -195,12 +195,15 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
             Builders<Community>.IndexKeys.Ascending(c => c.Visibility),
             new CreateIndexOptions { Name = "idx_communities_visibility" });
 
-        // 10. "Communities I own". No longer sparse — every community has
-        // a non-null OwnerPlayerId now that venue ownership was removed
-        // by the 2026-04-11 principle update.
+        // 10. "Communities I own". Kept sparse for compatibility with
+        // pre-principle-update dev DBs where the index was originally
+        // created sparse. Functionally identical now that OwnerPlayerId
+        // is non-nullable — sparse on an always-non-null field indexes
+        // every document. Removing `Sparse = true` would trigger
+        // MongoDB's "same name, different options" guard.
         var ownerPlayerIndex = new CreateIndexModel<Community>(
             Builders<Community>.IndexKeys.Ascending(c => c.OwnerPlayerId),
-            new CreateIndexOptions { Name = "idx_communities_ownerPlayerId" });
+            new CreateIndexOptions { Name = "idx_communities_ownerPlayerId", Sparse = true });
 
         // ── idx_communities_ownerVenueId is intentionally absent.
         // Venues cannot own communities; see the plan's 2026-04-11 fork

@@ -111,6 +111,26 @@
     white-space: nowrap;
 }
 
+.nn-venues-page__community-chip {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--nn-accent-teal);
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.10);
+    border: 1px solid var(--nn-accent-teal);
+    border-radius: var(--nn-radius-full);
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background-color var(--nn-transition-fast);
+}
+
+.nn-venues-page__community-chip:hover {
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.20);
+}
+
 /* ── Card address and phone lines ────────────────────────────────────── */
 .nn-venues-page__card-address,
 .nn-venues-page__card-phone {
