@@ -1,0 +1,131 @@
+@page "/matches/{MatchId:guid}"
+@inject IMatchService MatchService
+@inject IPlayerRepository PlayerRepository
+@inject IVenueService VenueService
+
+<PageTitle>Match &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-match-detail-page">
+    <div class="nn-match-detail-page__inner">
+        @if (_detail is null)
+        {
+            <div class="nn-match-detail-page__not-found">
+                <h1>Match not found</h1>
+                <a href="/players/me" class="btn btn-outline-secondary">Back to profile</a>
+            </div>
+        }
+        else
+        {
+            <header class="nn-match-detail-page__header">
+                <h1 class="nn-match-detail-page__title">
+                    @_playerNames.GetValueOrDefault(_detail.Match.PlayerIds[0], "—")
+                    vs
+                    @_playerNames.GetValueOrDefault(_detail.Match.PlayerIds[1], "—")
+                </h1>
+                <p class="nn-match-detail-page__meta">
+                    @FormatLabel(_detail.Match.Format, _detail.Match.Target)
+                    &middot; @_detail.Match.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")
+                    @if (!string.IsNullOrWhiteSpace(_venueName))
+                    {
+                        <span> &middot; @_venueName</span>
+                    }
+                    @if (_detail.Match.TableNumber is int tn)
+                    {
+                        <span> &middot; Table @tn</span>
+                    }
+                </p>
+
+                <div class="nn-match-detail-page__status">
+                    <span class="nn-match-detail-page__status-badge nn-match-detail-page__status-badge--@_detail.Match.Status.ToString().ToLowerInvariant()">
+                        @_detail.Match.Status
+                    </span>
+                    @if (_detail.Match.WinnerPlayerId is Guid winnerId)
+                    {
+                        <span class="nn-match-detail-page__winner">
+                            Winner: <strong>@_playerNames.GetValueOrDefault(winnerId, "—")</strong>
+                        </span>
+                    }
+                </div>
+
+                <div class="nn-match-detail-page__score">
+                    @foreach (var playerId in _detail.Match.PlayerIds)
+                    {
+                        var name = _playerNames.GetValueOrDefault(playerId, "—");
+                        var wins = _detail.Games.Count(g => g.PlayerId == playerId && g.GameState == GameState.Completed);
+                        <div class="nn-match-detail-page__player-score">
+                            <span class="nn-match-detail-page__player-name">@name</span>
+                            <span class="nn-match-detail-page__player-wins">@wins</span>
+                        </div>
+                    }
+                </div>
+            </header>
+
+            @if (_detail.Games.Count > 0)
+            {
+                <section class="nn-match-detail-page__games">
+                    <h2 class="nn-match-detail-page__section-title">Games</h2>
+                    @for (int i = 0; i < _detail.Games.Count; i++)
+                    {
+                        var game = _detail.Games[i];
+                        var breaker = _playerNames.GetValueOrDefault(game.PlayerId, "—");
+                        <article class="nn-match-detail-page__game">
+                            <header class="nn-match-detail-page__game-header">
+                                <h3>Game @(i + 1)</h3>
+                                <span class="nn-match-detail-page__game-breaker">@breaker broke</span>
+                                <span class="nn-match-detail-page__game-score">
+                                    @game.TotalScore/99
+                                    @if (game.IsPerfectGame)
+                                    {
+                                        <span class="nn-match-detail-page__perfect">99!</span>
+                                    }
+                                </span>
+                            </header>
+
+                            <div class="nn-match-detail-page__frames">
+                                @for (int f = 0; f < game.Frames.Count; f++)
+                                {
+                                    var frame = game.Frames[f];
+                                    <div class="nn-match-detail-page__frame">
+                                        <span class="nn-match-detail-page__frame-num">F@(f + 1)</span>
+                                        <span class="nn-match-detail-page__frame-score">@frame.FrameScore</span>
+                                    </div>
+                                }
+                            </div>
+                        </article>
+                    }
+                </section>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid MatchId { get; set; }
+
+    private MatchDetail? _detail;
+    private Dictionary<Guid, string> _playerNames = new();
+    private string? _venueName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _detail = await MatchService.GetMatchDetailAsync(MatchId);
+        if (_detail is null) return;
+
+        foreach (var playerId in _detail.Match.PlayerIds)
+        {
+            var p = await PlayerRepository.GetByIdAsync(playerId);
+            if (p is not null) _playerNames[playerId] = p.DisplayName;
+        }
+
+        var venue = await VenueService.GetAsync(_detail.Match.VenueId);
+        _venueName = venue?.Name;
+    }
+
+    private static string FormatLabel(MatchFormat format, int target) => format switch
+    {
+        MatchFormat.Single => "Single game",
+        MatchFormat.RaceTo => $"Race to {target}",
+        MatchFormat.BestOf => $"Best of {target}",
+        _ => format.ToString(),
+    };
+}
