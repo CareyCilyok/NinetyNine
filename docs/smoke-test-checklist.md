@@ -861,6 +861,49 @@ Result: __________  (PASS / FAIL / BLOCKED)
 
 - [ ] Navigate through all main pages — verify no breakage from the SignalR additions.
 
+### 25. Voting and polls (Sprint 9)
+
+*Sprint 9 adds a general-purpose polling system with quorum, supermajority, anonymous voting, and site-wide feature polls on the About page.*
+
+#### 25.1 — Create a community poll
+
+- [ ] As carey (Owner of Pocket Sports), navigate to the community detail page.
+- [ ] Click "Create poll" → `/communities/{id}/polls/new`.
+- [ ] Create an Advisory poll with 2 options and 7-day duration.
+- [ ] Verify: redirect to community detail with "Poll created." flash.
+- [ ] Verify: the poll appears in the "Polls" section.
+
+#### 25.2 — Vote on a poll
+
+- [ ] As carey, vote on the poll by selecting an option and clicking "Vote".
+- [ ] Verify: "Your vote has been recorded." flash.
+- [ ] Verify: after voting, results are NOT shown (bandwagon prevention — poll is still open).
+- [ ] Sign in as george in a second browser. Navigate to the same community.
+- [ ] Vote on the poll.
+- [ ] Verify: george sees "You've voted" note with close date.
+
+#### 25.3 — Poll results (after close)
+
+- [ ] Close the poll manually (via mongosh: set `status: "Closed"`, `closedAt: new Date()`) or wait for expiry.
+- [ ] Verify: both carey and george see the results with bar chart, vote counts, and quorum indicator.
+
+#### 25.4 — Feature poll on About page
+
+- [ ] Create a site-wide FeatureProposal poll (via mongosh or a proto-admin flow).
+- [ ] Navigate to `/about`.
+- [ ] Verify: the poll appears in the "Planned Features" section with vote form.
+- [ ] Vote on the feature poll.
+- [ ] Verify: vote recorded; results shown after close.
+
+#### 25.5 — Authorization
+
+- [ ] As a plain Member (not Owner or Admin), verify: cannot create a MemberRemoval poll (only Advisory).
+- [ ] As a non-member, verify: cannot vote on a community poll.
+
+#### 25.6 — No regression
+
+- [ ] Navigate through all main pages — verify no breakage from the polling additions.
+
 ---
 
 ## Cross-Browser Results Table
@@ -893,6 +936,7 @@ Run the complete checklist (sections 1–15) three times — once per browser �
 | 22. Sprint 6 tech debt + About page | | | |
 | 23. Sprint 7 user lifecycle | | | |
 | 24. Sprint 8 SignalR real-time | | | |
+| 25. Sprint 9 voting and polls | | | |
 | **Overall** | | | |
 
 Cell values: **PASS** / **FAIL** / **SKIP** / **BLOCKED**
