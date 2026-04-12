@@ -1,0 +1,77 @@
+.nn-activity-page {
+    display: flex;
+    justify-content: center;
+    padding: var(--nn-space-6) var(--nn-space-4);
+}
+
+.nn-activity-page__inner {
+    width: 100%;
+    max-width: 48rem;
+}
+
+.nn-activity-page__header {
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-activity-page__title {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin: 0;
+}
+
+.nn-activity-page__subtitle {
+    font-size: 0.875rem;
+    color: var(--nn-text-tertiary);
+    margin-top: var(--nn-space-1);
+}
+
+.nn-activity-page__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-1);
+}
+
+.nn-activity-page__item {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+    padding: var(--nn-space-3) var(--nn-space-4);
+}
+
+.nn-activity-page__row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--nn-space-3);
+    flex-wrap: wrap;
+}
+
+.nn-activity-page__type {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--nn-accent-teal);
+    flex-shrink: 0;
+}
+
+.nn-activity-page__message {
+    font-size: 0.9375rem;
+    color: var(--nn-text-primary);
+    flex: 1;
+}
+
+.nn-activity-page__time {
+    font-size: 0.8125rem;
+    color: var(--nn-text-tertiary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.nn-activity-page__load-more {
+    display: block;
+    margin: var(--nn-space-4) auto 0;
+}

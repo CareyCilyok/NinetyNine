@@ -1,0 +1,137 @@
+@page "/settings/activity"
+@attribute [Authorize]
+@inject INotificationService NotificationService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<Activity> Logger
+
+<PageTitle>Activity &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-activity-page">
+    <div class="nn-activity-page__inner">
+        <header class="nn-activity-page__header">
+            <h1 class="nn-activity-page__title">Activity</h1>
+            <p class="nn-activity-page__subtitle">Events related to your account.</p>
+        </header>
+
+        @if (_loading)
+        {
+            <div class="nn-activity-page__loading" aria-live="polite" aria-busy="true">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Loading&hellip;
+            </div>
+        }
+        else if (_notifications.Count == 0)
+        {
+            <div class="nn-empty-state nn-activity-page__empty">
+                <p class="nn-empty-state__title">No activity yet</p>
+                <p class="nn-empty-state__description">
+                    Events like friend requests, community invitations, and ownership transfers will appear here.
+                </p>
+            </div>
+        }
+        else
+        {
+            <ul class="nn-activity-page__list" role="list">
+                @foreach (var n in _notifications)
+                {
+                    <li class="nn-activity-page__item" role="listitem">
+                        <div class="nn-activity-page__row">
+                            <span class="nn-activity-page__type">@FormatType(n.Type)</span>
+                            <span class="nn-activity-page__message">@n.Message</span>
+                            <time class="nn-activity-page__time"
+                                  datetime="@n.CreatedAt.ToString("O")"
+                                  title="@n.CreatedAt.ToLocalTime().ToString("f")">
+                                @n.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                            </time>
+                        </div>
+                    </li>
+                }
+            </ul>
+
+            @if (_hasMore)
+            {
+                <EditForm Model="_pageModel" method="post"
+                          OnValidSubmit="HandleLoadMoreAsync"
+                          FormName="load-more-activity">
+                    <input type="hidden" name="_pageModel.Skip" value="@(_skip + PageSize)" />
+                    <button type="submit" class="btn btn-ghost nn-activity-page__load-more">
+                        Load more
+                    </button>
+                </EditForm>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private const int PageSize = 25;
+
+    [SupplyParameterFromForm(FormName = "load-more-activity")]
+    private PageModel _pageModel { get; set; } = new();
+
+    private List<Notification> _notifications = [];
+    private bool _loading = true;
+    private bool _hasMore;
+    private int _skip;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var viewerId))
+        {
+            Navigation.NavigateTo("/login?ReturnUrl=/settings/activity", forceLoad: true);
+            return;
+        }
+
+        await LoadPageAsync(viewerId, 0);
+    }
+
+    private async Task HandleLoadMoreAsync()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var viewerId)) return;
+
+        await LoadPageAsync(viewerId, _pageModel.Skip);
+    }
+
+    private async Task LoadPageAsync(Guid viewerId, int skip)
+    {
+        try
+        {
+            var results = await NotificationService.ListAsync(viewerId, skip: skip, limit: PageSize + 1);
+            _hasMore = results.Count > PageSize;
+            var page = _hasMore ? results.Take(PageSize).ToList() : results.ToList();
+
+            if (skip == 0)
+                _notifications = page;
+            else
+                _notifications.AddRange(page);
+
+            _skip = skip;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load activity.");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string FormatType(string type) => type switch
+    {
+        "FriendRequestReceived" => "Friend request",
+        "CommunityInvitationReceived" => "Community invite",
+        "OwnershipTransferPending" => "Ownership transfer",
+        _ => type,
+    };
+
+    private sealed class PageModel
+    {
+        public int Skip { get; set; }
+    }
+}
