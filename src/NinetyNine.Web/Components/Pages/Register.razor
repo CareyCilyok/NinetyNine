@@ -1,5 +1,6 @@
 @page "/register"
 @inject IAuthService AuthService
+@inject IPlayerService PlayerService
 @inject NavigationManager Navigation
 @inject ILogger<Register> Logger
 @using System.ComponentModel.DataAnnotations
@@ -53,8 +54,23 @@
                                @bind-Value="_model.DisplayName"
                                autocomplete="username" required
                                aria-describedby="display-name-hint" />
-                    <div id="display-name-hint" class="form-text">2&ndash;32 characters. Letters, numbers, _ and - only.</div>
+                    <div id="display-name-hint" class="form-text">
+                        2&ndash;32 characters. Letters, numbers, _ and - only.
+                        Your display name appears in game history. If you ever delete
+                        your account, this name is retired &mdash; no one else can use it.
+                    </div>
                     <ValidationMessage For="() => _model.DisplayName" />
+                    @if (_nameSuggestions.Count > 0)
+                    {
+                        <div class="nn-auth-card__suggestions" role="status">
+                            <span class="form-text">That name is taken. Try one of these:</span>
+                            @foreach (var suggestion in _nameSuggestions)
+                            {
+                                <a href="/register?suggestedName=@suggestion"
+                                   class="nn-auth-card__suggestion-link">@suggestion</a>
+                            }
+                        </div>
+                    }
                 </div>
 
                 <div class="form-group">
@@ -68,15 +84,6 @@
                         At least 10 characters with uppercase, lowercase, digit, and symbol.
                     </div>
                     <ValidationMessage For="() => _model.Password" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="confirm-password">Confirm password</label>
-                    <InputText id="confirm-password" type="password"
-                               class="form-control"
-                               @bind-Value="_model.ConfirmPassword"
-                               autocomplete="new-password" required />
-                    <ValidationMessage For="() => _model.ConfirmPassword" />
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100" disabled="@_isSubmitting">
@@ -102,24 +109,45 @@
     [SupplyParameterFromForm(FormName = "register")]
     private RegisterModel _model { get; set; } = new();
 
+    [SupplyParameterFromQuery(Name = "suggestedName")]
+    public string? SuggestedName { get; set; }
+
     private string _errorMessage = "";
     private string _successMessage = "";
     private bool _isSubmitting;
+    private List<string> _nameSuggestions = [];
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrWhiteSpace(SuggestedName))
+            _model.DisplayName = SuggestedName;
+    }
 
     private async Task HandleSubmitAsync()
     {
         _isSubmitting = true;
         _errorMessage = "";
+        _nameSuggestions = [];
 
         try
         {
             var verifyUrlBase = Navigation.BaseUri.TrimEnd('/');
 
+            // Pre-check display name availability so we can offer
+            // suggestions without revealing whether the email exists.
+            var nameAvailable = await PlayerService.IsDisplayNameAvailableAsync(_model.DisplayName);
+            if (!nameAvailable)
+            {
+                _errorMessage = "That display name is already taken.";
+                _nameSuggestions = GenerateNameSuggestions(_model.DisplayName);
+                return;
+            }
+
             var result = await AuthService.RegisterAsync(
                 _model.Email,
                 _model.DisplayName,
                 _model.Password,
-                _model.ConfirmPassword,
+                _model.Password, // confirm = password (field removed per S7.1)
                 verifyUrlBase);
 
             if (result.Success)
@@ -138,6 +166,19 @@
         }
     }
 
+    private static List<string> GenerateNameSuggestions(string preferred)
+    {
+        var suggestions = new List<string>();
+        var suffixes = new[] { "_99", "_pool", $"_{Random.Shared.Next(10, 100)}" };
+        foreach (var suffix in suffixes)
+        {
+            var candidate = preferred + suffix;
+            if (candidate.Length <= 32)
+                suggestions.Add(candidate);
+        }
+        return suggestions;
+    }
+
     private sealed class RegisterModel
     {
         [Required(ErrorMessage = "Email is required.")]
@@ -152,9 +193,5 @@
         [Required(ErrorMessage = "Password is required.")]
         [StringLength(128, MinimumLength = 10, ErrorMessage = "Password must be at least 10 characters.")]
         public string Password { get; set; } = "";
-
-        [Required(ErrorMessage = "Please confirm your password.")]
-        [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
-        public string ConfirmPassword { get; set; } = "";
     }
 }

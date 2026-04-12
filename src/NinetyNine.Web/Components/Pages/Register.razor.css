@@ -65,6 +65,31 @@
     color: var(--nn-text-tertiary);
 }
 
+/* Sprint 7 S7.1: display-name suggestions */
+.nn-auth-card__suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--nn-space-2);
+    margin-top: var(--nn-space-2);
+}
+
+.nn-auth-card__suggestion-link {
+    display: inline-block;
+    padding: var(--nn-space-1) var(--nn-space-3);
+    background: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    font-size: 0.875rem;
+    color: var(--nn-accent-teal);
+    text-decoration: none;
+}
+
+.nn-auth-card__suggestion-link:hover {
+    background: var(--nn-bg-secondary);
+    border-color: var(--nn-accent-teal);
+}
+
 .btn.w-100 {
     width: 100%;
     margin-top: var(--nn-space-2);
