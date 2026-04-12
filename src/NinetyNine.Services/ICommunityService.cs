@@ -50,14 +50,43 @@ public interface ICommunityService
         CancellationToken ct = default);
 
     /// <summary>
-    /// Transfer ownership to another current member. Owner-only.
-    /// The target must already be a member; v1.0 flips roles atomically
-    /// (old owner becomes Member, new owner becomes Owner).
+    /// Initiate an ownership transfer to another current member. Owner-only.
+    /// Creates a Pending <see cref="OwnershipTransfer"/> with a 7-day
+    /// expiry. Only one pending transfer per community is allowed.
+    /// The target must accept via <see cref="RespondToTransferAsync"/>.
+    /// <para>Sprint 4 S4.3 replaced the immediate-swap v1.0 flow.</para>
     /// </summary>
-    Task<ServiceResult> TransferOwnershipAsync(
+    Task<ServiceResult<OwnershipTransfer>> TransferOwnershipAsync(
         Guid communityId,
         Guid newOwnerPlayerId,
         Guid byPlayerId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// The transfer target accepts or declines. On accept, roles swap
+    /// atomically (compensating-idempotent). On decline, the transfer
+    /// is marked Declined and the original owner remains.
+    /// </summary>
+    Task<ServiceResult> RespondToTransferAsync(
+        Guid transferId,
+        Guid byPlayerId,
+        bool accept,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns any pending ownership transfer for the given community,
+    /// or null if none exists.
+    /// </summary>
+    Task<OwnershipTransfer?> GetPendingTransferAsync(
+        Guid communityId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all pending ownership transfers where the given player
+    /// is the proposed new owner.
+    /// </summary>
+    Task<IReadOnlyList<OwnershipTransfer>> ListPendingTransfersForPlayerAsync(
+        Guid playerId,
         CancellationToken ct = default);
 
     // ── Invitations (community → player) ────────────────────────────

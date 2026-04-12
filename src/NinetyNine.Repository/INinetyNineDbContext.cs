@@ -20,5 +20,8 @@ public interface INinetyNineDbContext
     IMongoCollection<CommunityInvitation> CommunityInvitations { get; }
     IMongoCollection<CommunityJoinRequest> CommunityJoinRequests { get; }
 
+    // Sprint 4 S4.3
+    IMongoCollection<OwnershipTransfer> OwnershipTransfers { get; }
+
     IMongoDatabase Database { get; }
 }

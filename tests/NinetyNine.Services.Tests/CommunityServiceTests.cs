@@ -35,8 +35,9 @@ public class CommunityServiceTests(MongoFixture fixture)
         var joins = new CommunityJoinRequestRepository(ctx, NullLogger<CommunityJoinRequestRepository>.Instance);
         var players = new PlayerRepository(ctx, NullLogger<PlayerRepository>.Instance);
         var venues = new VenueRepository(ctx, NullLogger<VenueRepository>.Instance);
+        var xfers = new OwnershipTransferRepository(ctx, NullLogger<OwnershipTransferRepository>.Instance);
         var svc = new CommunityService(
-            communities, members, invites, joins, players, venues,
+            communities, members, invites, joins, players, venues, xfers,
             NullLogger<CommunityService>.Instance);
         return (svc, players, venues, members);
     }
@@ -208,7 +209,7 @@ public class CommunityServiceTests(MongoFixture fixture)
     }
 
     [Fact]
-    public async Task TransferOwnership_FlipsRoles()
+    public async Task TransferOwnership_TwoPhase_InitiateAndAccept()
     {
         var svc = CreateService(out var repo);
         var owner = await CreatePlayer(repo);
@@ -220,12 +221,67 @@ public class CommunityServiceTests(MongoFixture fixture)
 
         (await svc.JoinPublicAsync(c.CommunityId, successor.PlayerId)).Success.Should().BeTrue();
 
-        var transfer = await svc.TransferOwnershipAsync(
+        // Phase 1: initiate
+        var initiate = await svc.TransferOwnershipAsync(
             c.CommunityId, successor.PlayerId, owner.PlayerId);
-        transfer.Success.Should().BeTrue();
+        initiate.Success.Should().BeTrue();
+        initiate.Value!.Status.Should().Be(OwnershipTransferStatus.Pending);
+
+        // Phase 2: accept
+        var accept = await svc.RespondToTransferAsync(
+            initiate.Value.TransferId, successor.PlayerId, accept: true);
+        accept.Success.Should().BeTrue();
 
         var refreshed = (await svc.GetForViewerAsync(c.CommunityId, successor.PlayerId))!;
         refreshed.OwnerPlayerId.Should().Be(successor.PlayerId);
+    }
+
+    [Fact]
+    public async Task TransferOwnership_Decline_LeavesOwnerInPlace()
+    {
+        var svc = CreateService(out var repo);
+        var owner = await CreatePlayer(repo);
+        var successor = await CreatePlayer(repo);
+
+        var c = (await svc.CreatePlayerOwnedAsync(
+            owner.PlayerId, UniqueName("DeclineXfer"), UniqueSlug("dxfer"),
+            null, CommunityVisibility.Public)).Value!;
+
+        (await svc.JoinPublicAsync(c.CommunityId, successor.PlayerId)).Success.Should().BeTrue();
+
+        var initiate = await svc.TransferOwnershipAsync(
+            c.CommunityId, successor.PlayerId, owner.PlayerId);
+        initiate.Success.Should().BeTrue();
+
+        var decline = await svc.RespondToTransferAsync(
+            initiate.Value!.TransferId, successor.PlayerId, accept: false);
+        decline.Success.Should().BeTrue();
+
+        var refreshed = (await svc.GetForViewerAsync(c.CommunityId, owner.PlayerId))!;
+        refreshed.OwnerPlayerId.Should().Be(owner.PlayerId);
+    }
+
+    [Fact]
+    public async Task TransferOwnership_OnlyOnePendingPerCommunity()
+    {
+        var svc = CreateService(out var repo);
+        var owner = await CreatePlayer(repo);
+        var a = await CreatePlayer(repo);
+        var b = await CreatePlayer(repo);
+
+        var c = (await svc.CreatePlayerOwnedAsync(
+            owner.PlayerId, UniqueName("DupXfer"), UniqueSlug("dupxfer"),
+            null, CommunityVisibility.Public)).Value!;
+
+        (await svc.JoinPublicAsync(c.CommunityId, a.PlayerId)).Success.Should().BeTrue();
+        (await svc.JoinPublicAsync(c.CommunityId, b.PlayerId)).Success.Should().BeTrue();
+
+        var first = await svc.TransferOwnershipAsync(c.CommunityId, a.PlayerId, owner.PlayerId);
+        first.Success.Should().BeTrue();
+
+        var second = await svc.TransferOwnershipAsync(c.CommunityId, b.PlayerId, owner.PlayerId);
+        second.Success.Should().BeFalse();
+        second.ErrorCode.Should().Be("TransferAlreadyPending");
     }
 
     // ── Invitations ─────────────────────────────────────────────────

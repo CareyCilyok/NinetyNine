@@ -54,6 +54,9 @@ public static class DependencyInjection
         services.AddScoped<ICommunityInvitationRepository, CommunityInvitationRepository>();
         services.AddScoped<ICommunityJoinRequestRepository, CommunityJoinRequestRepository>();
 
+        // Sprint 4 S4.3
+        services.AddScoped<IOwnershipTransferRepository, OwnershipTransferRepository>();
+
         return services;
     }
 }

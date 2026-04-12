@@ -19,8 +19,10 @@ public sealed class CommunityService(
     ICommunityJoinRequestRepository joinRequests,
     IPlayerRepository players,
     IVenueRepository venues,
+    IOwnershipTransferRepository transfers,
     ILogger<CommunityService> logger) : ICommunityService
 {
+    private static readonly TimeSpan TransferExpiryWindow = TimeSpan.FromDays(7);
     // Locked in the plan's Sprint 2 S2.1 acceptance criteria.
     private const int MaxCommunitiesPerOwner = 10;
     private const int MaxInvitesPerInviterPerTargetPerYear = 5;
@@ -204,7 +206,7 @@ public sealed class CommunityService(
         return ServiceResult.Ok();
     }
 
-    public async Task<ServiceResult> TransferOwnershipAsync(
+    public async Task<ServiceResult<OwnershipTransfer>> TransferOwnershipAsync(
         Guid communityId,
         Guid newOwnerPlayerId,
         Guid byPlayerId,
@@ -212,55 +214,131 @@ public sealed class CommunityService(
     {
         var community = await communities.GetByIdAsync(communityId, ct);
         if (community is null)
-            return ServiceResult.Fail("CommunityNotFound", "Community not found.");
+            return ServiceResult<OwnershipTransfer>.Fail(
+                "CommunityNotFound", "Community not found.");
 
         if (!IsOwner(community, byPlayerId))
-            return ServiceResult.Fail(
+            return ServiceResult<OwnershipTransfer>.Fail(
                 "NotAuthorized", "Only the current owner can transfer ownership.");
 
         if (newOwnerPlayerId == byPlayerId)
-            return ServiceResult.Fail(
+            return ServiceResult<OwnershipTransfer>.Fail(
                 "SameOwner", "You are already the owner.");
 
         var newOwnerMembership = await members.GetMembershipAsync(communityId, newOwnerPlayerId, ct);
         if (newOwnerMembership is null)
-            return ServiceResult.Fail(
+            return ServiceResult<OwnershipTransfer>.Fail(
                 "NotAMember", "The target player is not a member of this community.");
 
-        // Flip roles: old owner → Member, new owner → Owner. We can't do
-        // these atomically without a transaction, so accept the brief
-        // window where both are Owner — unique index is only on
-        // (community, player), not on (community, role=Owner), so this
-        // is safe. If the second update fails, a retry replays both ops
-        // idempotently.
-        await members.RemoveAsync(communityId, byPlayerId, ct);
-        await members.AddAsync(new CommunityMembership
-        {
-            CommunityId = communityId,
-            PlayerId = byPlayerId,
-            Role = CommunityRole.Member,
-            JoinedAt = DateTime.UtcNow,
-        }, ct);
+        var existing = await transfers.GetPendingByCommunityAsync(communityId, ct);
+        if (existing is not null)
+            return ServiceResult<OwnershipTransfer>.Fail(
+                "TransferAlreadyPending",
+                "A transfer is already pending for this community. Cancel or wait for it to expire.");
 
-        await members.RemoveAsync(communityId, newOwnerPlayerId, ct);
-        await members.AddAsync(new CommunityMembership
+        var transfer = new OwnershipTransfer
         {
             CommunityId = communityId,
-            PlayerId = newOwnerPlayerId,
+            FromPlayerId = byPlayerId,
+            ToPlayerId = newOwnerPlayerId,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow + TransferExpiryWindow,
+        };
+
+        await transfers.CreateAsync(transfer, ct);
+        return ServiceResult<OwnershipTransfer>.Ok(transfer);
+    }
+
+    public async Task<ServiceResult> RespondToTransferAsync(
+        Guid transferId,
+        Guid byPlayerId,
+        bool accept,
+        CancellationToken ct = default)
+    {
+        var transfer = await transfers.GetByIdAsync(transferId, ct);
+        if (transfer is null)
+            return ServiceResult.Fail("TransferNotFound", "Transfer request not found.");
+
+        if (transfer.Status != OwnershipTransferStatus.Pending)
+            return ServiceResult.Fail(
+                "TransferNotPending", "That transfer is no longer pending.");
+
+        if (DateTime.UtcNow > transfer.ExpiresAt)
+        {
+            transfer.Status = OwnershipTransferStatus.Expired;
+            await transfers.UpdateAsync(transfer, ct);
+            return ServiceResult.Fail("TransferExpired", "That transfer has expired.");
+        }
+
+        if (transfer.ToPlayerId != byPlayerId)
+            return ServiceResult.Fail(
+                "NotAuthorized", "Only the proposed new owner can respond.");
+
+        if (!accept)
+        {
+            transfer.Status = OwnershipTransferStatus.Declined;
+            transfer.RespondedAt = DateTime.UtcNow;
+            await transfers.UpdateAsync(transfer, ct);
+            return ServiceResult.Ok();
+        }
+
+        // Accept: swap roles (compensating-idempotent).
+        var community = await communities.GetByIdAsync(transfer.CommunityId, ct);
+        if (community is null)
+            return ServiceResult.Fail("CommunityNotFound", "Community no longer exists.");
+
+        var fromMembership = await members.GetMembershipAsync(transfer.CommunityId, transfer.FromPlayerId, ct);
+        var toMembership = await members.GetMembershipAsync(transfer.CommunityId, transfer.ToPlayerId, ct);
+        if (toMembership is null)
+            return ServiceResult.Fail(
+                "NotAMember", "You are no longer a member of this community.");
+
+        // Old owner → Member
+        if (fromMembership is not null)
+        {
+            await members.RemoveAsync(transfer.CommunityId, transfer.FromPlayerId, ct);
+            await members.AddAsync(new CommunityMembership
+            {
+                CommunityId = transfer.CommunityId,
+                PlayerId = transfer.FromPlayerId,
+                Role = CommunityRole.Member,
+                JoinedAt = fromMembership.JoinedAt,
+                InvitedByPlayerId = fromMembership.InvitedByPlayerId,
+            }, ct);
+        }
+
+        // New owner → Owner
+        await members.RemoveAsync(transfer.CommunityId, transfer.ToPlayerId, ct);
+        await members.AddAsync(new CommunityMembership
+        {
+            CommunityId = transfer.CommunityId,
+            PlayerId = transfer.ToPlayerId,
             Role = CommunityRole.Owner,
-            JoinedAt = newOwnerMembership.JoinedAt,
-            InvitedByPlayerId = newOwnerMembership.InvitedByPlayerId,
+            JoinedAt = toMembership.JoinedAt,
+            InvitedByPlayerId = toMembership.InvitedByPlayerId,
         }, ct);
 
-        community.OwnerPlayerId = newOwnerPlayerId;
+        community.OwnerPlayerId = transfer.ToPlayerId;
         await communities.UpdateAsync(community, ct);
 
+        transfer.Status = OwnershipTransferStatus.Accepted;
+        transfer.RespondedAt = DateTime.UtcNow;
+        await transfers.UpdateAsync(transfer, ct);
+
         logger.LogInformation(
-            "Transferred community {CommunityId} ownership {Old} → {New}",
-            communityId, byPlayerId, newOwnerPlayerId);
+            "Ownership transfer {TransferId} accepted: community {CommunityId} {From} → {To}",
+            transfer.TransferId, transfer.CommunityId, transfer.FromPlayerId, transfer.ToPlayerId);
 
         return ServiceResult.Ok();
     }
+
+    public Task<OwnershipTransfer?> GetPendingTransferAsync(
+        Guid communityId, CancellationToken ct = default)
+        => transfers.GetPendingByCommunityAsync(communityId, ct);
+
+    public Task<IReadOnlyList<OwnershipTransfer>> ListPendingTransfersForPlayerAsync(
+        Guid playerId, CancellationToken ct = default)
+        => transfers.ListPendingForTargetAsync(playerId, ct);
 
     // ── Invitations ─────────────────────────────────────────────────
 

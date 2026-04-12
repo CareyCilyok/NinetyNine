@@ -58,6 +58,9 @@ public static class BsonConfiguration
         RegisterCommunityMembershipClassMap();
         RegisterCommunityInvitationClassMap();
         RegisterCommunityJoinRequestClassMap();
+
+        // Sprint 4 S4.3
+        RegisterOwnershipTransferClassMap();
     }
 
     private static void RegisterPlayerClassMap()
@@ -280,6 +283,25 @@ public static class BsonConfiguration
             cm.GetMemberMap(r => r.DecidedByPlayerId)
               .SetSerializer(new NullableSerializer<Guid>(
                   new GuidSerializer(BsonType.String)));
+        });
+    }
+
+    private static void RegisterOwnershipTransferClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(OwnershipTransfer))) return;
+
+        BsonClassMap.RegisterClassMap<OwnershipTransfer>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(t => t.TransferId));
+            cm.GetMemberMap(t => t.TransferId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(t => t.CommunityId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(t => t.FromPlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(t => t.ToPlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
         });
     }
 

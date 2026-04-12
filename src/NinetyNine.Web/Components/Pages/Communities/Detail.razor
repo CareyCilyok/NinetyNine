@@ -228,6 +228,71 @@
                 </section>
             }
 
+            @* ── Pending ownership transfer notice (for the target) ──── *@
+            @if (_pendingTransfer is not null && _pendingTransfer.ToPlayerId == _viewerId)
+            {
+                <div class="alert alert-warning nn-community-detail__transfer-notice" role="alert">
+                    <p>
+                        @(_transferFromName ?? "The current owner") wants to hand you ownership
+                        of @_community.Name.
+                    </p>
+                    <div class="nn-community-detail__transfer-actions">
+                        <EditForm Model="_transferResponseModel" method="post"
+                                  OnValidSubmit="HandleAcceptTransferAsync"
+                                  FormName="accept-transfer">
+                            <input type="hidden"
+                                   name="_transferResponseModel.TransferId"
+                                   value="@_pendingTransfer.TransferId" />
+                            <button type="submit" class="btn btn-primary btn-sm">Accept ownership</button>
+                        </EditForm>
+                        <EditForm Model="_transferResponseModel" method="post"
+                                  OnValidSubmit="HandleDeclineTransferAsync"
+                                  FormName="decline-transfer">
+                            <input type="hidden"
+                                   name="_transferResponseModel.TransferId"
+                                   value="@_pendingTransfer.TransferId" />
+                            <button type="submit" class="btn btn-ghost btn-sm">No thanks</button>
+                        </EditForm>
+                    </div>
+                </div>
+            }
+
+            @* ── Owner: transfer ownership ───────────────────────────── *@
+            @if (_isOwner)
+            {
+                <section class="nn-community-detail__section"
+                         aria-label="Transfer ownership">
+                    <h2 class="nn-community-detail__section-title">Transfer ownership</h2>
+                    @if (_pendingTransfer is not null)
+                    {
+                        <p class="nn-community-detail__section-empty">
+                            Ownership transfer pending — waiting for
+                            @(_transferToName ?? "the target") to respond.
+                            Expires @_pendingTransfer.ExpiresAt.ToString("MMM d, yyyy").
+                        </p>
+                    }
+                    else
+                    {
+                        <EditForm Model="_transferModel" method="post"
+                                  OnValidSubmit="HandleInitiateTransferAsync"
+                                  FormName="initiate-transfer">
+                            <div class="nn-community-detail__invite-row">
+                                <InputText id="transfer-display-name"
+                                           class="form-control"
+                                           @bind-Value="_transferModel.DisplayName"
+                                           placeholder="Display name of new owner"
+                                           autocomplete="off"
+                                           aria-label="New owner display name" />
+                                <button type="submit" class="btn btn-primary">Send request</button>
+                            </div>
+                            <p class="nn-community-detail__section-empty">
+                                The member must accept within 7 days.
+                            </p>
+                        </EditForm>
+                    }
+                </section>
+            }
+
             @* ── Venues tab (empty placeholder — filled by Sprint 3) ── *@
             <section class="nn-community-detail__section" aria-label="Affiliated venues">
                 <h2 class="nn-community-detail__section-title">Venues</h2>
@@ -260,12 +325,21 @@
     [SupplyParameterFromForm]
     private RoleChangeModel _roleChangeModel { get; set; } = new();
 
+    [SupplyParameterFromForm(FormName = "initiate-transfer")]
+    private TransferModel _transferModel { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    private TransferResponseModel _transferResponseModel { get; set; } = new();
+
     private Guid? _viewerId;
     private Community? _community;
     private bool _notFound;
     private bool _isMember;
     private bool _isOwner;
     private bool _isOwnerOrAdmin;
+    private OwnershipTransfer? _pendingTransfer;
+    private string? _transferFromName;
+    private string? _transferToName;
     private List<CommunityMemberView> _members = [];
     private long _memberCount;
     private List<CommunityJoinRequest> _pendingJoinRequests = [];
@@ -288,6 +362,9 @@
             "approved" => "Join request approved.",
             "denied" => "Join request denied.",
             "role-changed" => "Role updated.",
+            "transfer-sent" => "Ownership transfer request sent.",
+            "transfer-accepted" => "You are now the owner.",
+            "transfer-declined" => "Ownership transfer declined.",
             _ => "",
         };
     }
@@ -333,6 +410,16 @@
                 var p = await PlayerRepository.GetByIdAsync(req.PlayerId);
                 if (p is not null) _joinRequesters[req.PlayerId] = p;
             }
+        }
+
+        // Load pending ownership transfer (visible to owner + target).
+        _pendingTransfer = await CommunityService.GetPendingTransferAsync(CommunityId);
+        if (_pendingTransfer is not null)
+        {
+            var from = await PlayerRepository.GetByIdAsync(_pendingTransfer.FromPlayerId);
+            _transferFromName = from?.DisplayName;
+            var to = await PlayerRepository.GetByIdAsync(_pendingTransfer.ToPlayerId);
+            _transferToName = to?.DisplayName;
         }
     }
 
@@ -473,5 +560,75 @@
         }
 
         Navigation.NavigateTo($"/communities/{CommunityId}?flash=role-changed");
+    }
+
+    private sealed class TransferModel
+    {
+        public string? DisplayName { get; set; }
+    }
+
+    private sealed class TransferResponseModel
+    {
+        public Guid TransferId { get; set; }
+    }
+
+    private async Task HandleInitiateTransferAsync()
+    {
+        if (_viewerId is null || string.IsNullOrWhiteSpace(_transferModel.DisplayName))
+        {
+            _flashError = "Enter the display name of the new owner.";
+            return;
+        }
+
+        var target = await PlayerRepository.GetByDisplayNameAsync(_transferModel.DisplayName.Trim());
+        if (target is null)
+        {
+            _flashError = "No player with that display name.";
+            await ReloadAsync();
+            return;
+        }
+
+        var result = await CommunityService.TransferOwnershipAsync(
+            CommunityId, target.PlayerId, _viewerId.Value);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not initiate the transfer.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=transfer-sent");
+    }
+
+    private async Task HandleAcceptTransferAsync()
+    {
+        if (_viewerId is null || _transferResponseModel.TransferId == Guid.Empty) return;
+
+        var result = await CommunityService.RespondToTransferAsync(
+            _transferResponseModel.TransferId, _viewerId.Value, accept: true);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not accept the transfer.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=transfer-accepted");
+    }
+
+    private async Task HandleDeclineTransferAsync()
+    {
+        if (_viewerId is null || _transferResponseModel.TransferId == Guid.Empty) return;
+
+        var result = await CommunityService.RespondToTransferAsync(
+            _transferResponseModel.TransferId, _viewerId.Value, accept: false);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not decline the transfer.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=transfer-declined");
     }
 }

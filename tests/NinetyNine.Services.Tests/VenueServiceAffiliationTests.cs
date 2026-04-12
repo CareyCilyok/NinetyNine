@@ -32,8 +32,9 @@ public class VenueServiceAffiliationTests(MongoFixture fixture)
             venues, communities, members,
             NullLogger<VenueService>.Instance);
 
+        var xfers = new OwnershipTransferRepository(ctx, NullLogger<OwnershipTransferRepository>.Instance);
         var communityService = new CommunityService(
-            communities, members, invites, joins, players, venues,
+            communities, members, invites, joins, players, venues, xfers,
             NullLogger<CommunityService>.Instance);
 
         return (venueService, players, venues, communityService);

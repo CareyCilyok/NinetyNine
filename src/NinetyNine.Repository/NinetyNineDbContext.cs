@@ -49,6 +49,10 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
     public IMongoCollection<CommunityJoinRequest> CommunityJoinRequests =>
         _database.GetCollection<CommunityJoinRequest>("community_join_requests");
 
+    // Sprint 4 S4.3
+    public IMongoCollection<OwnershipTransfer> OwnershipTransfers =>
+        _database.GetCollection<OwnershipTransfer>("ownership_transfers");
+
     public IMongoDatabase Database => _database;
 
     /// <summary>
