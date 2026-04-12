@@ -81,6 +81,32 @@ public class Player
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // ── Soft delete / retirement (Sprint 7 S7.2) ───────────────────
+
+    /// <summary>
+    /// UTC timestamp when the player's account was retired (soft-deleted).
+    /// Null for active players. When set, PII has been erased and the
+    /// display name is retired (no other player can claim it). Game
+    /// records survive with the original PlayerId.
+    /// </summary>
+    public DateTime? RetiredAt { get; set; }
+
+    /// <summary>
+    /// HMAC-SHA256 hash of the player's email address, computed at
+    /// deletion time using an application-level key. Used for O(1)
+    /// re-registration prevention. Null for active players.
+    /// </summary>
+    public string? EmailHash { get; set; }
+
+    /// <summary>
+    /// UTC timestamp when deletion will execute (7-day cooldown).
+    /// Set by <c>IPlayerService.InitiateDeleteAsync</c>, cleared by
+    /// <c>CancelDeleteAsync</c>. The expiration sweep in DataSeeder
+    /// calls <c>ExecuteDeleteAsync</c> for players past this date.
+    /// Null when no deletion is scheduled.
+    /// </summary>
+    public DateTime? DeletionScheduledAt { get; set; }
+
     /// <summary>
     /// Schema evolution marker. Values:
     /// <list type="bullet">
