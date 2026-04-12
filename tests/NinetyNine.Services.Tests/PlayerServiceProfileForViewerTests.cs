@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using NinetyNine.Model;
 using NinetyNine.Repository.Repositories;
@@ -37,9 +38,13 @@ public class PlayerServiceProfileForViewerTests(MongoFixture fixture)
         var members = new CommunityMemberRepository(ctx, NullLogger<CommunityMemberRepository>.Instance);
         var communities = new CommunityRepository(ctx, NullLogger<CommunityRepository>.Instance);
 
+        var blocks = new PlayerBlockRepository(ctx, NullLogger<PlayerBlockRepository>.Instance);
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Security:EmailHashKey"] = "test-key" })
+            .Build();
         var svc = new PlayerService(
             players, avatarStore, avatarSvc,
-            friends, members,
+            friends, members, communities, blocks, config,
             NullLogger<PlayerService>.Instance);
 
         return (svc, players, friends, members, communities);

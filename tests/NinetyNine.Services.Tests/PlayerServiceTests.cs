@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using NinetyNine.Model;
 using NinetyNine.Repository;
@@ -20,8 +21,14 @@ public class PlayerServiceTests(MongoFixture fixture)
         var avatarSvc = new AvatarService(avatarStore, NullLogger<AvatarService>.Instance);
         var friends = new FriendshipRepository(ctx, NullLogger<FriendshipRepository>.Instance);
         var members = new CommunityMemberRepository(ctx, NullLogger<CommunityMemberRepository>.Instance);
+        var communities = new CommunityRepository(ctx, NullLogger<CommunityRepository>.Instance);
+        var blocks = new PlayerBlockRepository(ctx, NullLogger<PlayerBlockRepository>.Instance);
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Security:EmailHashKey"] = "test-key" })
+            .Build();
         return new PlayerService(playerRepo, avatarStore, avatarSvc,
-            friends, members, NullLogger<PlayerService>.Instance);
+            friends, members, communities, blocks, config,
+            NullLogger<PlayerService>.Instance);
     }
 
     private IPlayerService CreateService() => CreateService(out _);

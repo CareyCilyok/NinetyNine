@@ -64,7 +64,7 @@ public sealed class StatisticsService(
             var games = group.ToList();
             var playerId = group.Key;
             var player = await playerRepository.GetByIdAsync(playerId, ct);
-            if (player is null) continue;
+            if (player is null || player.RetiredAt is not null) continue;
 
             string? avatarUrl = player.Avatar is not null
                 ? $"/api/avatars/{playerId}"
@@ -144,7 +144,7 @@ public sealed class StatisticsService(
             var games = group.ToList();
             var playerId = group.Key;
             var player = await playerRepository.GetByIdAsync(playerId, ct);
-            if (player is null) continue;
+            if (player is null || player.RetiredAt is not null) continue;
 
             string? avatarUrl = player.Avatar is not null
                 ? $"/api/avatars/{playerId}"

@@ -64,4 +64,40 @@ public interface IPlayerService
         Guid targetId,
         Guid? viewerId,
         CancellationToken ct = default);
+
+    // ── Account deletion (Sprint 7 S7.3) ───────────────────────────
+
+    /// <summary>
+    /// Schedules the player's account for deletion after a 7-day
+    /// cooldown. Returns error if the player owns communities that
+    /// have not been transferred.
+    /// </summary>
+    Task<ServiceResult> InitiateDeleteAsync(
+        Guid playerId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Cancels a pending deletion during the 7-day cooldown window.
+    /// </summary>
+    Task<ServiceResult> CancelDeleteAsync(
+        Guid playerId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Executes the deletion: erases PII, retires the display name,
+    /// removes friendships/memberships/blocks, and sets RetiredAt.
+    /// Called by the DataSeeder expiration sweep after the cooldown.
+    /// </summary>
+    Task<ServiceResult> ExecuteDeleteAsync(
+        Guid playerId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns owned communities that block deletion (no transfer
+    /// target). Used by the deletion UI to show which communities
+    /// need ownership transfer first.
+    /// </summary>
+    Task<IReadOnlyList<Community>> ListOwnedCommunitiesBlockingDeletionAsync(
+        Guid playerId,
+        CancellationToken ct = default);
 }
