@@ -34,7 +34,8 @@ public class VenueServiceAffiliationTests(MongoFixture fixture)
 
         var xfers = new OwnershipTransferRepository(ctx, NullLogger<OwnershipTransferRepository>.Instance);
         var notifications = new NotificationRepository(ctx, NullLogger<NotificationRepository>.Instance);
-        var notifSvc = new NotificationService(notifications, NullLogger<NotificationService>.Instance);
+        var delivery = new ConsoleNotificationDeliveryService(NullLogger<ConsoleNotificationDeliveryService>.Instance);
+        var notifSvc = new NotificationService(notifications, players, delivery, NullLogger<NotificationService>.Instance);
         var communityService = new CommunityService(
             communities, members, invites, joins, players, venues, xfers, notifSvc,
             NullLogger<CommunityService>.Instance);

@@ -37,7 +37,8 @@ public class CommunityServiceTests(MongoFixture fixture)
         var venues = new VenueRepository(ctx, NullLogger<VenueRepository>.Instance);
         var xfers = new OwnershipTransferRepository(ctx, NullLogger<OwnershipTransferRepository>.Instance);
         var notifications = new NotificationRepository(ctx, NullLogger<NotificationRepository>.Instance);
-        var notifSvc = new NotificationService(notifications, NullLogger<NotificationService>.Instance);
+        var delivery = new ConsoleNotificationDeliveryService(NullLogger<ConsoleNotificationDeliveryService>.Instance);
+        var notifSvc = new NotificationService(notifications, players, delivery, NullLogger<NotificationService>.Instance);
         var svc = new CommunityService(
             communities, members, invites, joins, players, venues, xfers, notifSvc,
             NullLogger<CommunityService>.Instance);

@@ -22,7 +22,8 @@ public class FriendServiceTests(MongoFixture fixture)
         var requests = new FriendRequestRepository(ctx, NullLogger<FriendRequestRepository>.Instance);
         playerRepo = new PlayerRepository(ctx, NullLogger<PlayerRepository>.Instance);
         var notifications = new NotificationRepository(ctx, NullLogger<NotificationRepository>.Instance);
-        var notifSvc = new NotificationService(notifications, NullLogger<NotificationService>.Instance);
+        var delivery = new ConsoleNotificationDeliveryService(NullLogger<ConsoleNotificationDeliveryService>.Instance);
+        var notifSvc = new NotificationService(notifications, playerRepo, delivery, NullLogger<NotificationService>.Instance);
         return new FriendService(friendships, requests, playerRepo, notifSvc, NullLogger<FriendService>.Instance);
     }
 
