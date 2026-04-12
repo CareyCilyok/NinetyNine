@@ -53,6 +53,10 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
     public IMongoCollection<OwnershipTransfer> OwnershipTransfers =>
         _database.GetCollection<OwnershipTransfer>("ownership_transfers");
 
+    // Sprint 5 S5.2
+    public IMongoCollection<Notification> Notifications =>
+        _database.GetCollection<Notification>("notifications");
+
     public IMongoDatabase Database => _database;
 
     /// <summary>

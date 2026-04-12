@@ -1,0 +1,116 @@
+@page "/notifications"
+@attribute [Authorize]
+@inject INotificationService NotificationService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject ILogger<Notifications> Logger
+
+<PageTitle>Notifications &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-notifications-page">
+    <div class="nn-notifications-page__inner">
+        <header class="nn-notifications-page__header">
+            <h1 class="nn-notifications-page__title">Notifications</h1>
+        </header>
+
+        @if (_loading)
+        {
+            <div class="nn-notifications-page__loading" aria-live="polite" aria-busy="true">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Loading&hellip;
+            </div>
+        }
+        else if (_notifications.Count == 0)
+        {
+            <div class="nn-empty-state nn-notifications-page__empty">
+                <img src="/icons/phosphor/regular/bell.svg"
+                     alt=""
+                     class="nn-icon nn-icon-xl nn-empty-state__icon"
+                     aria-hidden="true" />
+                <p class="nn-empty-state__title">No notifications</p>
+                <p class="nn-empty-state__description">
+                    You're all caught up.
+                </p>
+            </div>
+        }
+        else
+        {
+            <ul class="nn-notifications-page__list" role="list">
+                @foreach (var n in _notifications)
+                {
+                    var isUnread = n.ReadAt is null;
+                    <li class="nn-notifications-page__item @(isUnread ? "nn-notifications-page__item--unread" : null)"
+                        role="listitem">
+                        @if (!string.IsNullOrWhiteSpace(n.LinkUrl))
+                        {
+                            <a href="@n.LinkUrl" class="nn-notifications-page__link">
+                                <span class="nn-notifications-page__message">@n.Message</span>
+                                <time class="nn-notifications-page__time"
+                                      datetime="@n.CreatedAt.ToString("O")"
+                                      title="@n.CreatedAt.ToLocalTime().ToString("f")">
+                                    @RelativeTime(n.CreatedAt)
+                                </time>
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="nn-notifications-page__link">
+                                <span class="nn-notifications-page__message">@n.Message</span>
+                                <time class="nn-notifications-page__time"
+                                      datetime="@n.CreatedAt.ToString("O")"
+                                      title="@n.CreatedAt.ToLocalTime().ToString("f")">
+                                    @RelativeTime(n.CreatedAt)
+                                </time>
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Notification> _notifications = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var viewerId))
+        {
+            Navigation.NavigateTo("/login?ReturnUrl=/notifications", forceLoad: true);
+            return;
+        }
+
+        try
+        {
+            _notifications = (await NotificationService.ListAsync(viewerId, skip: 0, limit: 50)).ToList();
+
+            // Mark all as read on view.
+            await NotificationService.MarkAllReadAsync(viewerId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load notifications.");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string RelativeTime(DateTime utc)
+    {
+        var diff = DateTime.UtcNow - utc;
+
+        return diff.TotalSeconds < 60      ? "Just now"
+             : diff.TotalMinutes < 60      ? $"{(int)diff.TotalMinutes}m ago"
+             : diff.TotalHours < 24        ? $"{(int)diff.TotalHours}h ago"
+             : diff.TotalDays < 2          ? "Yesterday"
+             : diff.TotalDays < 7          ? $"{(int)diff.TotalDays} days ago"
+             : diff.TotalDays < 30         ? $"{(int)(diff.TotalDays / 7)} weeks ago"
+             : $"{(int)(diff.TotalDays / 30)} months ago";
+    }
+}

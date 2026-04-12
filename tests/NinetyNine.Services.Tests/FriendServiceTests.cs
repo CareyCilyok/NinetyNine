@@ -21,7 +21,9 @@ public class FriendServiceTests(MongoFixture fixture)
         var friendships = new FriendshipRepository(ctx, NullLogger<FriendshipRepository>.Instance);
         var requests = new FriendRequestRepository(ctx, NullLogger<FriendRequestRepository>.Instance);
         playerRepo = new PlayerRepository(ctx, NullLogger<PlayerRepository>.Instance);
-        return new FriendService(friendships, requests, playerRepo, NullLogger<FriendService>.Instance);
+        var notifications = new NotificationRepository(ctx, NullLogger<NotificationRepository>.Instance);
+        var notifSvc = new NotificationService(notifications, NullLogger<NotificationService>.Instance);
+        return new FriendService(friendships, requests, playerRepo, notifSvc, NullLogger<FriendService>.Instance);
     }
 
     private static async Task<Player> CreatePlayer(IPlayerRepository repo, string? displayName = null)

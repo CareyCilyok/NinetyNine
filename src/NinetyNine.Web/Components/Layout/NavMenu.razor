@@ -116,6 +116,26 @@
 
     <li class="nn-nav__item">
         <NavLink class="nn-nav__link"
+                 href="notifications"
+                 Match="NavLinkMatch.All"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/bell.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">Notifications</span>
+            @if (UnreadNotificationCount > 0)
+            {
+                <span class="nn-nav__badge"
+                      aria-label="@($"{UnreadNotificationCount} unread notification(s)")">
+                    @UnreadNotificationCount
+                </span>
+            }
+        </NavLink>
+    </li>
+
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
                  href="players/me"
                  Match="NavLinkMatch.Prefix"
                  @onclick="HandleNavigate">
@@ -143,6 +163,9 @@
     /// </summary>
     [CascadingParameter(Name = "PendingFriendRequestCount")]
     public int PendingFriendRequestCount { get; set; }
+
+    [CascadingParameter(Name = "UnreadNotificationCount")]
+    public long UnreadNotificationCount { get; set; }
 
     private async Task HandleNavigate()
     {

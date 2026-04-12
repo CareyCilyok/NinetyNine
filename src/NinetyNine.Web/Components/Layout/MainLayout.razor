@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @inject IFriendService FriendService
 @inject ICommunityInvitationRepository InvitationRepository
+@inject INotificationService NotificationService
 @inject IHttpContextAccessor HttpContextAccessor
 
 @*
@@ -24,6 +25,7 @@
 *@
 
 <CascadingValue Value="_pendingFriendRequestCount" Name="PendingFriendRequestCount">
+<CascadingValue Value="_unreadNotificationCount" Name="UnreadNotificationCount">
 <div class="nn-layout @(_sidebarOpen ? "nn-layout--sidebar-open" : string.Empty)">
 
     @* Hamburger — visible only on mobile via scoped CSS. *@
@@ -83,6 +85,7 @@
     </main>
 </div>
 </CascadingValue>
+</CascadingValue>
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
@@ -93,6 +96,7 @@
 @code {
     private bool _sidebarOpen;
     private int _pendingFriendRequestCount;
+    private long _unreadNotificationCount;
 
     private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 
@@ -111,5 +115,6 @@
         var incomingInvites = await InvitationRepository.ListByInviteeAsync(
             viewerId, CommunityInvitationStatus.Pending);
         _pendingFriendRequestCount = incomingFriends.Count + incomingInvites.Count;
+        _unreadNotificationCount = await NotificationService.CountUnreadAsync(viewerId);
     }
 }

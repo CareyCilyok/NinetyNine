@@ -20,6 +20,7 @@ public sealed class FriendService(
     IFriendshipRepository friendships,
     IFriendRequestRepository requests,
     IPlayerRepository players,
+    INotificationService notificationService,
     ILogger<FriendService> logger) : IFriendService
 {
     // Rate-limit thresholds — locked in the plan's Sprint 1 S1.1 acceptance criteria.
@@ -132,6 +133,15 @@ public sealed class FriendService(
         logger.LogInformation(
             "Friend request {RequestId} sent from {From} to {To}",
             request.RequestId, fromPlayerId, toPlayerId);
+
+        var sender = await players.GetByIdAsync(fromPlayerId, ct);
+        var senderName = sender?.DisplayName ?? "Someone";
+        await notificationService.NotifyAsync(
+            toPlayerId,
+            "FriendRequestReceived",
+            $"{senderName} sent you a friend request.",
+            "/friends",
+            ct);
 
         return ServiceResult<FriendRequest>.Ok(request);
     }

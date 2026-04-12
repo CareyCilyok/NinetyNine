@@ -57,6 +57,9 @@ public static class DependencyInjection
         // Sprint 4 S4.3
         services.AddScoped<IOwnershipTransferRepository, OwnershipTransferRepository>();
 
+        // Sprint 5 S5.2
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+
         return services;
     }
 }

@@ -28,6 +28,9 @@ public static class DependencyInjection
         services.AddScoped<IFriendService, FriendService>();
         services.AddScoped<ICommunityService, CommunityService>();
 
+        // Sprint 5 S5.2
+        services.AddScoped<INotificationService, NotificationService>();
+
         return services;
     }
 }

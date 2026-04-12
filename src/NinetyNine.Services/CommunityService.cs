@@ -20,6 +20,7 @@ public sealed class CommunityService(
     IPlayerRepository players,
     IVenueRepository venues,
     IOwnershipTransferRepository transfers,
+    INotificationService notificationService,
     ILogger<CommunityService> logger) : ICommunityService
 {
     private static readonly TimeSpan TransferExpiryWindow = TimeSpan.FromDays(7);
@@ -246,6 +247,15 @@ public sealed class CommunityService(
         };
 
         await transfers.CreateAsync(transfer, ct);
+
+        var ownerPlayer = await players.GetByIdAsync(byPlayerId, ct);
+        await notificationService.NotifyAsync(
+            newOwnerPlayerId,
+            "OwnershipTransferPending",
+            $"{ownerPlayer?.DisplayName ?? "The current owner"} wants to hand you ownership of {community.Name}.",
+            $"/communities/{communityId}",
+            ct);
+
         return ServiceResult<OwnershipTransfer>.Ok(transfer);
     }
 
@@ -401,6 +411,14 @@ public sealed class CommunityService(
             return ServiceResult<CommunityInvitation>.Fail(
                 "InviteAlreadyPending", "An invitation is already pending for that player.");
         }
+
+        var inviter = await players.GetByIdAsync(byPlayerId, ct);
+        await notificationService.NotifyAsync(
+            invitedPlayerId,
+            "CommunityInvitationReceived",
+            $"{inviter?.DisplayName ?? "Someone"} invited you to join {community.Name}.",
+            $"/friends",
+            ct);
 
         return ServiceResult<CommunityInvitation>.Ok(invitation);
     }

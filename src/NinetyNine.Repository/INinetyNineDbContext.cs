@@ -23,5 +23,8 @@ public interface INinetyNineDbContext
     // Sprint 4 S4.3
     IMongoCollection<OwnershipTransfer> OwnershipTransfers { get; }
 
+    // Sprint 5 S5.2
+    IMongoCollection<Notification> Notifications { get; }
+
     IMongoDatabase Database { get; }
 }
