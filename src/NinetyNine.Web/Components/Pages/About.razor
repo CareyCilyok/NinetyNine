@@ -1,0 +1,139 @@
+@page "/about"
+
+<PageTitle>About &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-about-page">
+    <div class="nn-about-page__inner">
+
+        <h1 class="nn-about-page__title">About NinetyNine</h1>
+
+        @* ── What is Ninety-Nine ──────────────────────────────────── *@
+        <section class="nn-about-page__section" aria-label="What is Ninety-Nine">
+            <h2 class="nn-about-page__heading">What is Ninety-Nine?</h2>
+            <p>
+                Ninety-Nine is a competitive solitaire pool game &mdash; one player,
+                one table, nine racks. Each rack is a fresh set of nine balls, and
+                your job is to pocket as many as you can while keeping score over
+                nine frames, just like you would in bowling. A game takes about
+                twenty minutes, fits into any practice session or league night, and
+                produces a single score you can compare against yourself and anyone
+                else who plays. The format works on any table from a seven-foot bar
+                box to a nine-footer &mdash; you don&rsquo;t need a matched opponent
+                or a particular room, just a table and a rack.
+            </p>
+            <p>
+                Pool players like it because the score doesn&rsquo;t lie. A good
+                session in a casual practice set can feel great in the moment, but
+                Ninety-Nine makes you commit a number to it. That score lives in the
+                record, and improving it requires every part of the game: a consistent
+                break, clean shotmaking, and the discipline to keep running balls when
+                the rack cooperates.
+            </p>
+        </section>
+
+        @* ── How to Play ──────────────────────────────────────────── *@
+        <section class="nn-about-page__section" aria-label="How to play">
+            <details class="nn-about-page__details">
+                <summary class="nn-about-page__summary">
+                    <h2 class="nn-about-page__heading nn-about-page__heading--inline">How to Play</h2>
+                </summary>
+
+                <div class="nn-about-page__rules">
+                    <h3>Equipment</h3>
+                    <p>Any pool table, a standard set of nine balls (1 through 9), and a rack.</p>
+
+                    <h3>Game structure</h3>
+                    <p>
+                        A game is exactly <strong>9 frames</strong>. Each frame is one rack of
+                        nine balls. You break, run whatever you can, record your score, re-rack,
+                        and do it again.
+                    </p>
+
+                    <h3>Scoring per frame</h3>
+                    <p>A frame score has two components:</p>
+                    <ul>
+                        <li>
+                            <strong>Break bonus</strong> &mdash; 1 point if you legally pocket at least
+                            one ball on the break. 0 if you pocket nothing, or if you scratch on the
+                            break (scratching cancels the break bonus).
+                        </li>
+                        <li>
+                            <strong>Ball count</strong> &mdash; the total points for all balls pocketed
+                            in the frame. Balls 1&ndash;8 are worth 1 point each. The 9-ball is worth
+                            2 points. Maximum ball count: <strong>10</strong>.
+                        </li>
+                    </ul>
+                    <p>
+                        <strong>Frame score = break bonus + ball count. Maximum per frame: 11.</strong>
+                    </p>
+                    <p>
+                        <strong>Maximum game score: 9 frames &times; 11 = 99.</strong>
+                    </p>
+
+                    <h3>Perfect scores</h3>
+                    <p>
+                        A <strong>perfect frame</strong> is 11 points: you pocketed at least one ball
+                        on a legal break (1), then ran every ball including the 9 (10).
+                        A <strong>perfect game</strong> is 99 &mdash; nine perfect frames in a row.
+                    </p>
+
+                    <h3>Example frame</h3>
+                    <p>
+                        You break and drop the 1 and 3. Break bonus: <strong>1</strong>.
+                        You then run the 2, 4, 5, and 7, but miss the 6 and leave
+                        the 8 and 9. Balls pocketed: 1, 3, 2, 4, 5, 7 &mdash; six balls
+                        at 1 point each. Ball count: <strong>6</strong>.
+                        Frame score: 1 + 6 = <strong>7</strong>.
+                    </p>
+                </div>
+            </details>
+        </section>
+
+        @* ── Philosophy ───────────────────────────────────────────── *@
+        <section class="nn-about-page__section" aria-label="Philosophy">
+            <h2 class="nn-about-page__heading">Philosophy</h2>
+            <p>
+                NinetyNine is run by players, for players. Nobody here answers to a
+                sponsor, a venue owner, or an algorithm. The score you shoot is yours
+                &mdash; tracked honestly, shared only on your terms.
+            </p>
+        </section>
+
+        @* ── Planned features ─────────────────────────────────────── *@
+        <section class="nn-about-page__section" aria-label="Planned features">
+            <h2 class="nn-about-page__heading">Planned Features</h2>
+            <p class="nn-about-page__hint">
+                What&rsquo;s coming next, in rough priority order. No ship dates &mdash;
+                just what we&rsquo;re working on.
+            </p>
+            <ul class="nn-about-page__feature-list">
+                <li>Voting and polls &mdash; community decisions made by pool players, not admins</li>
+                <li>Multi-player matches &mdash; head-to-head scoring with frame comparison</li>
+                <li>Real-time updates &mdash; live leaderboard and notification changes</li>
+                <li>New pool game formats &mdash; proposed and voted on by the community</li>
+            </ul>
+        </section>
+
+        @* ── Privacy ──────────────────────────────────────────────── *@
+        <section class="nn-about-page__section" aria-label="Privacy">
+            <h2 class="nn-about-page__heading">Privacy</h2>
+            <p>
+                Your scores, your games, your profile &mdash; you decide who sees them.
+                NinetyNine uses a four-tier audience model: Private, Friends,
+                Communities, and Public. Every piece of information on your profile
+                has its own setting, and none of it defaults to open. We don&rsquo;t
+                sell your data, we don&rsquo;t share it with venues, and we
+                don&rsquo;t surface it to anyone outside the audience you chose.
+            </p>
+        </section>
+
+        @* ── Who built this ───────────────────────────────────────── *@
+        <section class="nn-about-page__section" aria-label="Who built this">
+            <h2 class="nn-about-page__heading">Who Built This</h2>
+            <p>
+                NinetyNine is built by pool players who wanted a better scorebook.
+            </p>
+        </section>
+
+    </div>
+</div>

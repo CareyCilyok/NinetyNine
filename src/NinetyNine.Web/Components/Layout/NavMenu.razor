@@ -146,6 +146,19 @@
             <span class="nn-nav__label">Profile</span>
         </NavLink>
     </li>
+
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
+                 href="about"
+                 Match="NavLinkMatch.All"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/info.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">About</span>
+        </NavLink>
+    </li>
 </ul>
 
 @code {

@@ -1,0 +1,132 @@
+.nn-about-page {
+    display: flex;
+    justify-content: center;
+    padding: var(--nn-space-6) var(--nn-space-4);
+}
+
+.nn-about-page__inner {
+    width: 100%;
+    max-width: 44rem;
+}
+
+.nn-about-page__title {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin: 0 0 var(--nn-space-6);
+}
+
+.nn-about-page__section {
+    margin-bottom: var(--nn-space-6);
+}
+
+.nn-about-page__heading {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin: 0 0 var(--nn-space-3);
+}
+
+.nn-about-page__heading--inline {
+    display: inline;
+    margin: 0;
+}
+
+.nn-about-page__section p {
+    font-size: 0.9375rem;
+    color: var(--nn-text-secondary);
+    line-height: 1.6;
+    margin: 0 0 var(--nn-space-3);
+}
+
+.nn-about-page__section p:last-child {
+    margin-bottom: 0;
+}
+
+/* Collapsible rules section */
+.nn-about-page__details {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-lg);
+    overflow: hidden;
+}
+
+.nn-about-page__summary {
+    padding: var(--nn-space-4) var(--nn-space-5);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.nn-about-page__summary::-webkit-details-marker {
+    display: none;
+}
+
+.nn-about-page__summary::before {
+    content: "\25B6";
+    display: inline-block;
+    margin-right: var(--nn-space-2);
+    font-size: 0.75rem;
+    color: var(--nn-text-tertiary);
+    transition: transform 0.15s ease;
+}
+
+.nn-about-page__details[open] > .nn-about-page__summary::before {
+    transform: rotate(90deg);
+}
+
+.nn-about-page__rules {
+    padding: 0 var(--nn-space-5) var(--nn-space-5);
+}
+
+.nn-about-page__rules h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin: var(--nn-space-4) 0 var(--nn-space-2);
+}
+
+.nn-about-page__rules h3:first-child {
+    margin-top: 0;
+}
+
+.nn-about-page__rules p,
+.nn-about-page__rules li {
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+    line-height: 1.6;
+}
+
+.nn-about-page__rules ul {
+    padding-left: var(--nn-space-5);
+    margin: var(--nn-space-2) 0 var(--nn-space-3);
+}
+
+.nn-about-page__rules li {
+    margin-bottom: var(--nn-space-2);
+}
+
+/* Planned features list */
+.nn-about-page__hint {
+    font-size: 0.8125rem;
+    color: var(--nn-text-tertiary);
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-about-page__feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-2);
+}
+
+.nn-about-page__feature-list li {
+    font-size: 0.9375rem;
+    color: var(--nn-text-secondary);
+    padding: var(--nn-space-2) var(--nn-space-3);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+}
