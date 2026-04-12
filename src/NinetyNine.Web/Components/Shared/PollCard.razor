@@ -1,0 +1,124 @@
+@* Displays a single poll with vote form (if open and viewer hasn't
+   voted) and results (after voting or when closed). Bandwagon
+   prevention: results hidden until the viewer has voted.
+   See docs/plans/v2-roadmap.md Sprint 9 S9.4. *@
+
+<div class="nn-poll-card">
+    <div class="nn-poll-card__header">
+        <h3 class="nn-poll-card__title">@Poll.Title</h3>
+        <span class="nn-poll-card__status nn-poll-card__status--@Poll.Status.ToString().ToLowerInvariant()">
+            @Poll.Status
+        </span>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Poll.Description))
+    {
+        <p class="nn-poll-card__description">@Poll.Description</p>
+    }
+
+    @if (Poll.Status == PollStatus.Open && !HasVoted)
+    {
+        @* Vote form — static SSR post *@
+        <EditForm Model="_voteModel" method="post"
+                  OnValidSubmit="HandleVoteAsync"
+                  FormName="@($"vote-{Poll.PollId}")">
+            <input type="hidden" name="_voteModel.PollId" value="@Poll.PollId" />
+            <fieldset class="nn-poll-card__options" role="radiogroup" aria-label="Poll options">
+                @foreach (var opt in Poll.Options)
+                {
+                    var inputId = $"poll-{Poll.PollId}-opt-{opt.Index}";
+                    <label class="nn-poll-card__option" for="@inputId">
+                        <input type="radio" id="@inputId"
+                               name="_voteModel.OptionIndex"
+                               value="@opt.Index"
+                               class="nn-poll-card__radio" />
+                        <span>@opt.Label</span>
+                    </label>
+                }
+            </fieldset>
+            <button type="submit" class="btn btn-primary btn-sm nn-poll-card__vote-btn">
+                Vote
+            </button>
+        </EditForm>
+    }
+    else if (Poll.Result is not null)
+    {
+        @* Results display *@
+        <div class="nn-poll-card__results">
+            @foreach (var opt in Poll.Options)
+            {
+                var count = opt.Index < Poll.Result.VoteCounts.Length
+                    ? Poll.Result.VoteCounts[opt.Index] : 0;
+                var pct = Poll.Result.TotalVotes > 0
+                    ? (double)count / Poll.Result.TotalVotes * 100 : 0;
+                var isWinner = Poll.Result.WinningOptionIndex == opt.Index;
+
+                <div class="nn-poll-card__result-row @(isWinner ? "nn-poll-card__result-row--winner" : null)">
+                    <span class="nn-poll-card__result-label">@opt.Label</span>
+                    <div class="nn-poll-card__result-bar-track">
+                        <progress class="nn-poll-card__result-bar"
+                                  value="@count"
+                                  max="@Poll.Result.TotalVotes"
+                                  aria-label="@($"{opt.Label}: {count} votes ({pct:F0}%)")">
+                            @pct.ToString("F0")%
+                        </progress>
+                    </div>
+                    <span class="nn-poll-card__result-count">@count</span>
+                </div>
+            }
+            <p class="nn-poll-card__quorum">
+                @Poll.Result.TotalVotes of @Poll.EligibleVoterCount voted
+                @if (Poll.Result.QuorumMet)
+                {
+                    <span> — quorum met</span>
+                }
+                else
+                {
+                    var needed = (int)Math.Ceiling(Poll.EligibleVoterCount * Poll.QuorumThreshold);
+                    <span> — @needed needed for quorum</span>
+                }
+            </p>
+        </div>
+    }
+    else if (Poll.Status == PollStatus.Open && HasVoted)
+    {
+        <p class="nn-poll-card__voted-note">
+            You've voted. Results will be shown when the poll closes
+            on @Poll.ExpiresAt.ToString("MMM d, yyyy").
+        </p>
+    }
+
+    <p class="nn-poll-card__meta">
+        @if (Poll.Status == PollStatus.Open)
+        {
+            <span>Expires @Poll.ExpiresAt.ToString("MMM d, yyyy")</span>
+        }
+        else
+        {
+            <span>Closed @(Poll.ClosedAt?.ToString("MMM d, yyyy") ?? "")</span>
+        }
+    </p>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Poll Poll { get; set; } = default!;
+    [Parameter] public bool HasVoted { get; set; }
+    [Parameter] public EventCallback<(Guid PollId, int OptionIndex)> OnVote { get; set; }
+
+    [SupplyParameterFromForm]
+    private VoteModel _voteModel { get; set; } = new();
+
+    private async Task HandleVoteAsync()
+    {
+        if (OnVote.HasDelegate && _voteModel.PollId != Guid.Empty)
+        {
+            await OnVote.InvokeAsync((_voteModel.PollId, _voteModel.OptionIndex));
+        }
+    }
+
+    private sealed class VoteModel
+    {
+        public Guid PollId { get; set; }
+        public int OptionIndex { get; set; }
+    }
+}

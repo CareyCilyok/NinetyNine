@@ -4,6 +4,8 @@
 @inject ICommunityJoinRequestRepository JoinRequestRepository
 @inject IPlayerRepository PlayerRepository
 @inject IVenueService VenueService
+@inject IPollService PollService
+@inject IVoteRepository VoteRepository
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<Detail> Logger
@@ -294,6 +296,34 @@
                 </section>
             }
 
+            @* ── Active polls (Sprint 9 S9.4) ────────────────────── *@
+            @if (_activePolls.Count > 0 || _isOwnerOrAdmin)
+            {
+                <section class="nn-community-detail__section" aria-label="Polls">
+                    <div class="nn-community-detail__section-header">
+                        <h2 class="nn-community-detail__section-title">Polls</h2>
+                        @if (_isOwnerOrAdmin)
+                        {
+                            <a href="/communities/@CommunityId/polls/new"
+                               class="btn btn-ghost btn-sm">Create poll</a>
+                        }
+                    </div>
+                    @if (_activePolls.Count == 0)
+                    {
+                        <p class="nn-community-detail__section-empty">No active polls.</p>
+                    }
+                    else
+                    {
+                        @foreach (var poll in _activePolls)
+                        {
+                            <PollCard Poll="poll"
+                                      HasVoted="@_votedPollIds.Contains(poll.PollId)"
+                                      OnVote="HandlePollVoteAsync" />
+                        }
+                    }
+                </section>
+            }
+
             @* ── Affiliated venues ────────────────────────────────── *@
             <section class="nn-community-detail__section" aria-label="Affiliated venues">
                 <h2 class="nn-community-detail__section-title">Venues</h2>
@@ -362,6 +392,8 @@
     private string? _transferFromName;
     private string? _transferToName;
     private List<Venue> _affiliatedVenues = [];
+    private List<Poll> _activePolls = [];
+    private HashSet<Guid> _votedPollIds = new();
     private List<CommunityMemberView> _members = [];
     private long _memberCount;
     private List<CommunityJoinRequest> _pendingJoinRequests = [];
@@ -387,6 +419,8 @@
             "transfer-sent" => "Ownership transfer request sent.",
             "transfer-accepted" => "You are now the owner.",
             "transfer-declined" => "Ownership transfer declined.",
+            "voted" => "Your vote has been recorded.",
+            "poll-created" => "Poll created.",
             _ => "",
         };
     }
@@ -450,6 +484,19 @@
             .Where(v => v.CommunityId == CommunityId)
             .OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        // Load active polls.
+        _activePolls = (await PollService.ListCommunityPollsAsync(CommunityId, PollStatus.Open)).ToList();
+        _votedPollIds = new HashSet<Guid>();
+        if (_viewerId is not null)
+        {
+            foreach (var poll in _activePolls)
+            {
+                var vote = await VoteRepository.GetByPollAndPlayerAsync(poll.PollId, _viewerId.Value);
+                if (vote is not null)
+                    _votedPollIds.Add(poll.PollId);
+            }
+        }
     }
 
     private async Task HandleInviteAsync()
@@ -643,6 +690,21 @@
         }
 
         Navigation.NavigateTo($"/communities/{CommunityId}?flash=transfer-accepted");
+    }
+
+    private async Task HandlePollVoteAsync((Guid PollId, int OptionIndex) args)
+    {
+        if (_viewerId is null) return;
+
+        var result = await PollService.CastVoteAsync(args.PollId, _viewerId.Value, args.OptionIndex);
+        if (!result.Success)
+        {
+            _flashError = result.ErrorMessage ?? "Could not cast vote.";
+            await ReloadAsync();
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=voted");
     }
 
     private async Task HandleDeclineTransferAsync()

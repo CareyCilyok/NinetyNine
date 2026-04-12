@@ -1,0 +1,166 @@
+@page "/communities/{CommunityId:guid}/polls/new"
+@attribute [Authorize]
+@inject IPollService PollService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Create poll &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-create-poll-page">
+    <div class="nn-create-poll-page__inner">
+        <h1 class="nn-create-poll-page__title">Create a poll</h1>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+
+        <EditForm Model="_model" method="post"
+                  OnValidSubmit="HandleSubmitAsync"
+                  FormName="create-poll">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label class="form-label" for="poll-title">Title</label>
+                <InputText id="poll-title" class="form-control"
+                           @bind-Value="_model.Title" required />
+                <ValidationMessage For="() => _model.Title" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="poll-description">Description (optional)</label>
+                <InputTextArea id="poll-description" class="form-control"
+                               @bind-Value="_model.Description" rows="3" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="poll-type">Poll type</label>
+                <InputSelect id="poll-type" class="form-select"
+                             @bind-Value="_model.PollType">
+                    <option value="@PollType.Advisory">Advisory</option>
+                    <option value="@PollType.MemberRemoval">Member removal (binding)</option>
+                </InputSelect>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="poll-duration">Duration (days)</label>
+                <InputNumber id="poll-duration" class="form-control"
+                             @bind-Value="_model.DurationDays" min="1" max="14" />
+                <div class="form-text">1–14 days. Member removal polls require at least 3.</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Options</label>
+                <div class="nn-create-poll-page__options">
+                    <InputText class="form-control" @bind-Value="_model.Option1"
+                               placeholder="Option 1" required />
+                    <InputText class="form-control" @bind-Value="_model.Option2"
+                               placeholder="Option 2" required />
+                    @if (!string.IsNullOrWhiteSpace(_model.Option2))
+                    {
+                        <InputText class="form-control" @bind-Value="_model.Option3"
+                                   placeholder="Option 3 (optional)" />
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_model.Option3))
+                    {
+                        <InputText class="form-control" @bind-Value="_model.Option4"
+                                   placeholder="Option 4 (optional)" />
+                    }
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <InputCheckbox @bind-Value="_model.AnonymousVoting" />
+                    Anonymous voting
+                </label>
+                <div class="form-text">When checked, individual votes are not attributable to players.</div>
+            </div>
+
+            <div class="nn-create-poll-page__actions">
+                <button type="submit" class="btn btn-primary">Create poll</button>
+                <a href="/communities/@CommunityId" class="btn btn-ghost">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+
+    [SupplyParameterFromForm(FormName = "create-poll")]
+    private CreatePollModel _model { get; set; } = new();
+
+    private Guid _viewerId;
+    private string _errorMessage = "";
+
+    protected override void OnInitialized()
+    {
+        var claim = HttpContextAccessor.HttpContext?.User?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var id))
+        {
+            Navigation.NavigateTo($"/login?ReturnUrl=/communities/{CommunityId}/polls/new", forceLoad: true);
+            return;
+        }
+        _viewerId = id;
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        _errorMessage = "";
+
+        var options = new List<PollOption>();
+        var labels = new[] { _model.Option1, _model.Option2, _model.Option3, _model.Option4 };
+        for (int i = 0; i < labels.Length; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(labels[i]))
+                options.Add(new PollOption { Index = options.Count, Label = labels[i]!.Trim() });
+        }
+
+        if (options.Count < 2)
+        {
+            _errorMessage = "At least two options are required.";
+            return;
+        }
+
+        var result = await PollService.CreatePollAsync(
+            CommunityId,
+            _viewerId,
+            _model.Title ?? "",
+            _model.Description,
+            _model.PollType,
+            options,
+            _model.DurationDays,
+            _model.AnonymousVoting);
+
+        if (!result.Success)
+        {
+            _errorMessage = result.ErrorMessage ?? "Could not create the poll.";
+            return;
+        }
+
+        Navigation.NavigateTo($"/communities/{CommunityId}?flash=poll-created");
+    }
+
+    private sealed class CreatePollModel
+    {
+        [Required(ErrorMessage = "Title is required.")]
+        [StringLength(200, MinimumLength = 3)]
+        public string? Title { get; set; }
+
+        public string? Description { get; set; }
+        public PollType PollType { get; set; } = PollType.Advisory;
+        public int DurationDays { get; set; } = 7;
+        public bool AnonymousVoting { get; set; } = true;
+
+        [Required(ErrorMessage = "Option 1 is required.")]
+        public string? Option1 { get; set; }
+
+        [Required(ErrorMessage = "Option 2 is required.")]
+        public string? Option2 { get; set; }
+
+        public string? Option3 { get; set; }
+        public string? Option4 { get; set; }
+    }
+}
