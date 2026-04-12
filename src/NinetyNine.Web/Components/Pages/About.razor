@@ -1,4 +1,8 @@
 @page "/about"
+@inject IPollService PollService
+@inject IVoteRepository VoteRepository
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
 
 <PageTitle>About &mdash; NinetyNine</PageTitle>
 
@@ -103,13 +107,21 @@
         <section class="nn-about-page__section" aria-label="Planned features">
             <h2 class="nn-about-page__heading">Planned Features</h2>
             <p class="nn-about-page__hint">
-                What&rsquo;s coming next, in rough priority order. No ship dates &mdash;
-                just what we&rsquo;re working on.
+                What&rsquo;s coming next. Pool players vote on what gets built.
             </p>
+
+            @if (_featurePolls.Count > 0)
+            {
+                @foreach (var poll in _featurePolls)
+                {
+                    <PollCard Poll="poll"
+                              HasVoted="@_votedPollIds.Contains(poll.PollId)"
+                              OnVote="HandleFeatureVoteAsync" />
+                }
+            }
+
             <ul class="nn-about-page__feature-list">
-                <li>Voting and polls &mdash; community decisions made by pool players, not admins</li>
                 <li>Multi-player matches &mdash; head-to-head scoring with frame comparison</li>
-                <li>Real-time updates &mdash; live leaderboard and notification changes</li>
                 <li>New pool game formats &mdash; proposed and voted on by the community</li>
             </ul>
         </section>
@@ -137,3 +149,39 @@
 
     </div>
 </div>
+
+@code {
+    private List<Poll> _featurePolls = [];
+    private HashSet<Guid> _votedPollIds = new();
+    private Guid? _viewerId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var claim = HttpContextAccessor.HttpContext?.User?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (Guid.TryParse(claim, out var id))
+            _viewerId = id;
+
+        // Load all site-wide feature polls (open + closed).
+        var open = await PollService.ListSiteWidePollsAsync(PollStatus.Open);
+        var closed = await PollService.ListSiteWidePollsAsync(PollStatus.Closed);
+        _featurePolls = open.Concat(closed).ToList();
+
+        if (_viewerId is not null)
+        {
+            foreach (var poll in _featurePolls)
+            {
+                var vote = await VoteRepository.GetByPollAndPlayerAsync(poll.PollId, _viewerId.Value);
+                if (vote is not null)
+                    _votedPollIds.Add(poll.PollId);
+            }
+        }
+    }
+
+    private async Task HandleFeatureVoteAsync((Guid PollId, int OptionIndex) args)
+    {
+        if (_viewerId is null) return;
+
+        await PollService.CastVoteAsync(args.PollId, _viewerId.Value, args.OptionIndex);
+        Navigation.NavigateTo("/about");
+    }
+}
