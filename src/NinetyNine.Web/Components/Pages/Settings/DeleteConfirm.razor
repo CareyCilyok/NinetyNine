@@ -1,0 +1,91 @@
+@page "/settings/delete/confirm"
+@attribute [Authorize]
+@inject IPlayerService PlayerService
+@inject IPlayerRepository PlayerRepository
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Confirm deletion &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-delete-page">
+    <div class="nn-delete-page__inner">
+        <h1 class="nn-delete-page__title">Confirm account deletion</h1>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+
+        <p class="nn-delete-page__body">
+            Type your display name <strong>@_displayName</strong> to confirm.
+            Your account will be deleted in 7 days. You can cancel anytime during that period.
+        </p>
+
+        <EditForm Model="_model" method="post"
+                  OnValidSubmit="HandleConfirmAsync"
+                  FormName="confirm-delete">
+            <div class="form-group">
+                <label class="form-label" for="confirm-name">Display name</label>
+                <InputText id="confirm-name"
+                           class="form-control"
+                           @bind-Value="_model.ConfirmDisplayName"
+                           autocomplete="off" required />
+            </div>
+
+            <div class="nn-delete-page__actions">
+                <button type="submit" class="btn btn-danger">Delete my account</button>
+                <a href="/settings/delete" class="btn btn-ghost">Go back</a>
+            </div>
+        </EditForm>
+
+        <p class="nn-delete-page__farewell">Sorry to see you go.</p>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm(FormName = "confirm-delete")]
+    private ConfirmModel _model { get; set; } = new();
+
+    private Guid _playerId;
+    private string _displayName = "";
+    private string _errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var claim = HttpContextAccessor.HttpContext?.User?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var playerId))
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+        _playerId = playerId;
+
+        var player = await PlayerRepository.GetByIdAsync(playerId);
+        _displayName = player?.DisplayName ?? "";
+    }
+
+    private async Task HandleConfirmAsync()
+    {
+        if (!string.Equals(_model.ConfirmDisplayName?.Trim(), _displayName, StringComparison.Ordinal))
+        {
+            _errorMessage = "Display name does not match.";
+            return;
+        }
+
+        var result = await PlayerService.InitiateDeleteAsync(_playerId);
+        if (!result.Success)
+        {
+            _errorMessage = result.ErrorMessage ?? "Could not schedule deletion.";
+            return;
+        }
+
+        Navigation.NavigateTo("/settings/delete/scheduled");
+    }
+
+    private sealed class ConfirmModel
+    {
+        [Required]
+        public string? ConfirmDisplayName { get; set; }
+    }
+}

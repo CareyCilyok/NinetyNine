@@ -1,0 +1,78 @@
+@page "/settings/delete/scheduled"
+@attribute [Authorize]
+@inject IPlayerService PlayerService
+@inject IPlayerRepository PlayerRepository
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+
+<PageTitle>Deletion scheduled &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-delete-page">
+    <div class="nn-delete-page__inner">
+        <h1 class="nn-delete-page__title">Deletion scheduled</h1>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+
+        @if (_player?.DeletionScheduledAt is not null)
+        {
+            <p class="nn-delete-page__body">
+                Your account will be deleted on
+                <strong>@_player.DeletionScheduledAt.Value.ToString("MMMM d, yyyy")</strong>.
+                Cancel anytime before then.
+            </p>
+
+            <EditForm Model="_cancelModel" method="post"
+                      OnValidSubmit="HandleCancelAsync"
+                      FormName="cancel-delete">
+                <div class="nn-delete-page__actions">
+                    <button type="submit" class="btn btn-primary">Cancel deletion</button>
+                </div>
+            </EditForm>
+        }
+        else
+        {
+            <p class="nn-delete-page__body">
+                No deletion is currently scheduled.
+            </p>
+            <a href="/players/me" class="btn btn-primary">Back to profile</a>
+        }
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm(FormName = "cancel-delete")]
+    private EmptyModel _cancelModel { get; set; } = new();
+
+    private Player? _player;
+    private Guid _playerId;
+    private string _errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var claim = HttpContextAccessor.HttpContext?.User?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var playerId))
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+        _playerId = playerId;
+        _player = await PlayerRepository.GetByIdAsync(playerId);
+    }
+
+    private async Task HandleCancelAsync()
+    {
+        var result = await PlayerService.CancelDeleteAsync(_playerId);
+        if (!result.Success)
+        {
+            _errorMessage = result.ErrorMessage ?? "Could not cancel deletion.";
+            return;
+        }
+
+        Navigation.NavigateTo("/players/me");
+    }
+
+    private sealed class EmptyModel { }
+}

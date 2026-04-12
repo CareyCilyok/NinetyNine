@@ -1,0 +1,64 @@
+.nn-delete-page {
+    display: flex;
+    justify-content: center;
+    padding: var(--nn-space-6) var(--nn-space-4);
+}
+
+.nn-delete-page__inner {
+    width: 100%;
+    max-width: 36rem;
+}
+
+.nn-delete-page__title {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin: 0 0 var(--nn-space-5);
+}
+
+.nn-delete-page__heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin: 0 0 var(--nn-space-2);
+}
+
+.nn-delete-page__section {
+    margin-bottom: var(--nn-space-5);
+    padding: var(--nn-space-4);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+}
+
+.nn-delete-page__section--blocked {
+    border-color: var(--nn-danger);
+}
+
+.nn-delete-page__list {
+    padding-left: var(--nn-space-5);
+    margin: var(--nn-space-2) 0 0;
+    font-size: 0.9375rem;
+    color: var(--nn-text-secondary);
+    line-height: 1.6;
+}
+
+.nn-delete-page__body {
+    font-size: 0.9375rem;
+    color: var(--nn-text-secondary);
+    line-height: 1.6;
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-delete-page__actions {
+    display: flex;
+    gap: var(--nn-space-3);
+    margin-top: var(--nn-space-4);
+}
+
+.nn-delete-page__farewell {
+    font-size: 0.875rem;
+    color: var(--nn-text-tertiary);
+    margin-top: var(--nn-space-5);
+    font-style: italic;
+}

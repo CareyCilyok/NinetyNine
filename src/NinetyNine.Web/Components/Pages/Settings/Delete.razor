@@ -1,0 +1,91 @@
+@page "/settings/delete"
+@attribute [Authorize]
+@inject IPlayerService PlayerService
+@inject IPlayerRepository PlayerRepository
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+
+<PageTitle>Delete account &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-delete-page">
+    <div class="nn-delete-page__inner">
+        <h1 class="nn-delete-page__title">Delete your NinetyNine account</h1>
+
+        @if (_player is null)
+        {
+            <p>Loading&hellip;</p>
+        }
+        else if (_player.DeletionScheduledAt is not null)
+        {
+            Navigation.NavigateTo("/settings/delete/scheduled", forceLoad: true);
+        }
+        else
+        {
+            <section class="nn-delete-page__section">
+                <h2 class="nn-delete-page__heading">What will be deleted</h2>
+                <ul class="nn-delete-page__list">
+                    <li>Your email address, phone number, and real name</li>
+                    <li>Your password and login credentials</li>
+                    <li>Your avatar image</li>
+                    <li>All friendships and community memberships</li>
+                    <li>All blocks you've created or received</li>
+                </ul>
+            </section>
+
+            <section class="nn-delete-page__section">
+                <h2 class="nn-delete-page__heading">What will be preserved</h2>
+                <ul class="nn-delete-page__list">
+                    <li>Your display name (<strong>@_player.DisplayName</strong>) &mdash; retired permanently, no one else can claim it</li>
+                    <li>Your game history and scores</li>
+                    <li>Your leaderboard records (removed from active rankings)</li>
+                </ul>
+            </section>
+
+            @if (_ownedCommunities.Count > 0)
+            {
+                <section class="nn-delete-page__section nn-delete-page__section--blocked">
+                    <h2 class="nn-delete-page__heading">Before you can delete</h2>
+                    <p>
+                        You own @_ownedCommunities.Count community(ies). Transfer ownership before deleting:
+                    </p>
+                    <ul class="nn-delete-page__list">
+                        @foreach (var c in _ownedCommunities)
+                        {
+                            <li>
+                                <a href="/communities/@c.CommunityId">@c.Name</a>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+            else
+            {
+                <div class="nn-delete-page__actions">
+                    <a href="/settings/delete/confirm" class="btn btn-danger">
+                        Continue to deletion
+                    </a>
+                    <a href="/players/me" class="btn btn-ghost">Cancel</a>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private Player? _player;
+    private List<Community> _ownedCommunities = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var claim = HttpContextAccessor.HttpContext?.User?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var playerId))
+        {
+            Navigation.NavigateTo("/login?ReturnUrl=/settings/delete", forceLoad: true);
+            return;
+        }
+
+        _player = await PlayerRepository.GetByIdAsync(playerId);
+        if (_player is not null)
+            _ownedCommunities = (await PlayerService.ListOwnedCommunitiesBlockingDeletionAsync(playerId)).ToList();
+    }
+}
