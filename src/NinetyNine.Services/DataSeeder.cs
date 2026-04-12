@@ -108,55 +108,48 @@ public sealed class DataSeeder(
          "931 Monroe Dr NE Ste 205, Atlanta, GA 30308", "", false),
     ];
 
+    /// <summary>
+    /// Current canonical schema version for seeded test players. Bump
+    /// this whenever the template changes so the reconcile pass detects
+    /// stale records. History: 1 = pre-Sprint-0, 2 = Sprint 0 (Audience
+    /// enum), 3 = Sprint 6 (reconcile rewrite, legacy bool removal).
+    /// </summary>
+    private const int CurrentPlayerSchemaVersion = 3;
+
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        // Profile visibility heal: migrate any player with legacy bool
-        // visibility flags into the new Audience enum fields. Runs for
-        // every player (not just seeded test players) and is idempotent:
-        // once SchemaVersion reaches 2 the player is skipped.
-        // See docs/plans/friends-communities-v1.md Sprint 0 S0.5.
-        var visibilityHealed = await HealProfileVisibilityAsync(ct);
+        // ── Reconcile passes (run every startup, before seed guard) ──
 
-        // Heal pass: existing test players whose password hash is empty get
-        // their hash populated in place. This handles the upgrade case where
-        // players were seeded before the password-hashing field existed
-        // (their PasswordHash is still "").
-        var healed = await HealExistingTestPlayersAsync(ct);
+        // 1. Player reconcile: converge every seeded test player to the
+        //    current template. SchemaVersion comparison for cheap change
+        //    detection. Subsumes the former HealExistingTestPlayersAsync
+        //    and HealProfileVisibilityAsync passes. Also handles the
+        //    bool → Audience migration for any non-seeded player that
+        //    might still be at SchemaVersion < 2.
+        var playersReconciled = await ReconcileSeededPlayersAsync(ct);
+        var visibilityHealed = await HealNonSeededPlayerVisibilityAsync(ct);
 
-        // Venue reconcile pass: insert any canonical seeded venue whose
-        // Name is missing from the database. Runs on every startup and is
-        // idempotent — existing venues (even with stale addresses from
-        // earlier seed generations) are left alone. This is how new
-        // venues added to SeededVenueDefinitions land in an already-
-        // populated dev database without a full reseed.
+        // 2. Venue reconcile
         var addedVenues = await ReconcileSeededVenuesAsync(ct);
 
-        // Friendship reconcile pass: insert canonical mutual friendships
-        // between every pair of seeded test players so the /friends page
-        // is not empty on first run. Runs on every startup; the unique
-        // index on Friendship.PlayerIdsKey makes the pass idempotent.
-        // See docs/plans/friends-communities-v1.md Sprint 1 S1.5.
+        // 3. Friendship reconcile
         var addedFriendships = await ReconcileSeededFriendshipsAsync(ct);
 
-        // Community reconcile pass: ensure the canonical seeded community
-        // "Pocket Sports" exists with all test players as members and
-        // every seeded venue affiliated. Idempotent across restarts.
-        // See docs/plans/friends-communities-v1.md Sprint 2 S2.6.
+        // 4. Community reconcile
         var communityChange = await ReconcileSeededCommunityAsync(ct);
 
-        // Expiration sweep: mark stale Pending requests/invitations/transfers
-        // as Expired. Runs on every startup. Sprint 4 S4.5.
+        // 5. Expiration sweep
         var expired = await SweepExpiredPendingAsync(ct);
 
-        // Idempotent creation: if the primary test player already exists,
-        // we've already seeded at some point — skip the rest of the seed.
+        // ── Seed guard: if players already exist, log reconcile
+        //    summary and return. ─────────────────────────────────────
         var existing = await playerRepository.GetByDisplayNameAsync(
             IDataSeeder.TestPlayerDisplayNames[0], ct);
         if (existing is not null)
         {
             var parts = new List<string>();
-            if (visibilityHealed > 0) parts.Add($"migrated {visibilityHealed} player(s) to Audience enum");
-            if (healed > 0) parts.Add($"healed {healed} test player(s)");
+            if (playersReconciled > 0) parts.Add($"reconciled {playersReconciled} player(s)");
+            if (visibilityHealed > 0) parts.Add($"migrated {visibilityHealed} non-seeded player(s) to Audience enum");
             if (addedVenues > 0) parts.Add($"added {addedVenues} venue(s)");
             if (addedFriendships > 0) parts.Add($"seeded {addedFriendships} friendship(s)");
             if (communityChange.CommunityCreated) parts.Add("created Pocket Sports community");
@@ -438,119 +431,94 @@ public sealed class DataSeeder(
     }
 
     /// <summary>
-    /// Migrates every player from schema version 1 (bool visibility flags)
-    /// to schema version 2 (Audience enum). Idempotent: skips any player
-    /// already at <see cref="Player.SchemaVersion"/> &gt;= 2.
-    /// <para>
-    /// Migration map (locked by fork D in docs/plans/friends-communities-v1.md):
-    /// </para>
-    /// <list type="bullet">
-    /// <item>EmailAddress bool → <see cref="Audience.Friends"/> when true, <see cref="Audience.Private"/> when false</item>
-    /// <item>PhoneNumber bool → Friends when true, Private when false</item>
-    /// <item>RealName bool → Friends when true, Private when false</item>
-    /// <item>Avatar bool → <b>Public</b> when true, Private when false (the
-    /// one documented exception; preserves existing avatar-visible behavior)</item>
-    /// </list>
-    /// <para>
-    /// The <c>true → Friends</c> map for Email/Phone/RealName is strictly
-    /// tighter than the old bool semantics ("visible to everyone"),
-    /// implementing the security auditor's "no silent widening" rule.
-    /// Migrated players get <see cref="Player.MigrationBannerDismissed"/>
-    /// set to <c>false</c> so the Edit Profile page can show a one-time
-    /// notice in Sprint 3.
-    /// </para>
+    /// Reconciles every seeded test player to the current canonical
+    /// template. Uses <see cref="CurrentPlayerSchemaVersion"/> for cheap
+    /// change detection — if the stored version matches, no writes.
+    /// Subsumes the former <c>HealExistingTestPlayersAsync</c> and the
+    /// seeded-player portion of <c>HealProfileVisibilityAsync</c>.
+    /// Returns the number of players that were updated.
+    /// <para>See <c>docs/plans/v2-roadmap.md</c> Sprint 6 S6.1.</para>
     /// </summary>
-    private async Task<int> HealProfileVisibilityAsync(CancellationToken ct)
+    private async Task<int> ReconcileSeededPlayersAsync(CancellationToken ct)
     {
+        var templates = new (string DisplayName, string FirstName, string? LastName)[]
+        {
+            ("carey", "Carey", "Cilyok"),
+            ("george", "George", null),
+            ("carey_b", "Carey", null),
+        };
+
+        int reconciled = 0;
+        foreach (var (displayName, firstName, lastName) in templates)
+        {
+            var player = await playerRepository.GetByDisplayNameAsync(displayName, ct);
+            if (player is null) continue; // Not yet created — first-run seed will handle it.
+
+            if (player.SchemaVersion >= CurrentPlayerSchemaVersion) continue;
+
+            // Converge all template fields. Immutable fields (PlayerId,
+            // CreatedAt) are never touched.
+            player.EmailAddress = $"{displayName}@example.local";
+            player.EmailVerified = true;
+            player.FirstName = firstName;
+            player.LastName = lastName;
+
+            if (string.IsNullOrEmpty(player.PasswordHash))
+                player.PasswordHash = passwordHasher.HashPassword(player, DevPassword);
+
+            // Visibility: converge to the canonical template defaults.
+            player.Visibility.EmailAudience = Audience.Private;
+            player.Visibility.PhoneAudience = Audience.Private;
+            player.Visibility.RealNameAudience = Audience.Private;
+            player.Visibility.AvatarAudience = Audience.Public;
+
+            player.SchemaVersion = CurrentPlayerSchemaVersion;
+
+            await playerRepository.UpdateAsync(player, ct);
+            reconciled++;
+
+            logger.LogInformation(
+                "Reconciled seeded player {DisplayName} to SchemaVersion {Version}",
+                displayName, CurrentPlayerSchemaVersion);
+        }
+
+        return reconciled;
+    }
+
+    /// <summary>
+    /// Migrates non-seeded players that are still at SchemaVersion &lt; 2
+    /// from legacy bool visibility flags to the Audience enum. Seeded
+    /// players are handled by <see cref="ReconcileSeededPlayersAsync"/>
+    /// which converges them to <see cref="CurrentPlayerSchemaVersion"/>.
+    /// </summary>
+    private async Task<int> HealNonSeededPlayerVisibilityAsync(CancellationToken ct)
+    {
+        var seededNames = IDataSeeder.TestPlayerDisplayNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var players = await playerRepository.ListAllAsync(ct);
         int migrated = 0;
 
         foreach (var player in players)
         {
+            if (seededNames.Contains(player.DisplayName)) continue;
             if (player.SchemaVersion >= 2) continue;
 
-            // Map legacy bool flags to Audience enum per fork D.
             player.Visibility.EmailAudience = player.Visibility.EmailAddress
-                ? Audience.Friends
-                : Audience.Private;
+                ? Audience.Friends : Audience.Private;
             player.Visibility.PhoneAudience = player.Visibility.PhoneNumber
-                ? Audience.Friends
-                : Audience.Private;
+                ? Audience.Friends : Audience.Private;
             player.Visibility.RealNameAudience = player.Visibility.RealName
-                ? Audience.Friends
-                : Audience.Private;
+                ? Audience.Friends : Audience.Private;
             player.Visibility.AvatarAudience = player.Visibility.Avatar
-                ? Audience.Public    // Exception: preserves default-visible avatars.
-                : Audience.Private;
+                ? Audience.Public : Audience.Private;
 
             player.SchemaVersion = 2;
             player.MigrationBannerDismissed = false;
 
             await playerRepository.UpdateAsync(player, ct);
             migrated++;
-
-            logger.LogInformation(
-                "Migrated visibility for player {DisplayName}: " +
-                "email={Email}, phone={Phone}, realName={RealName}, avatar={Avatar}",
-                player.DisplayName,
-                player.Visibility.EmailAudience,
-                player.Visibility.PhoneAudience,
-                player.Visibility.RealNameAudience,
-                player.Visibility.AvatarAudience);
         }
-
-        if (migrated > 0)
-            logger.LogInformation("Profile visibility heal: migrated {Count} player(s) to SchemaVersion 2.", migrated);
 
         return migrated;
-    }
-
-    /// <summary>
-    /// Heals existing test players whose PasswordHash is empty. This covers
-    /// the upgrade path where players were seeded before WP-11 added
-    /// password-hashing support. Returns the number of players healed.
-    /// </summary>
-    private async Task<int> HealExistingTestPlayersAsync(CancellationToken ct)
-    {
-        int healed = 0;
-        foreach (var displayName in IDataSeeder.TestPlayerDisplayNames)
-        {
-            var player = await playerRepository.GetByDisplayNameAsync(displayName, ct);
-            if (player is null) continue;
-
-            // Also fix stale seeds where the email address wasn't populated
-            // (emailAddress was added later and earlier seeds left it blank).
-            var needsEmail = string.IsNullOrEmpty(player.EmailAddress);
-            var needsHash = string.IsNullOrEmpty(player.PasswordHash);
-
-            // DEF-008: earlier seeds set Visibility.RealName = true for all
-            // three test players. The new default is false (the safe default
-            // for the upcoming Friends/Communities audience model). Reset
-            // only the seeded test players — never touch real user accounts.
-            var needsRealNameReset = player.Visibility.RealName;
-
-            if (!needsEmail && !needsHash && !needsRealNameReset) continue;
-
-            if (needsEmail)
-                player.EmailAddress = $"{displayName}@example.local";
-
-            if (needsHash)
-                player.PasswordHash = passwordHasher.HashPassword(player, DevPassword);
-
-            if (needsRealNameReset)
-                player.Visibility.RealName = false;
-
-            player.EmailVerified = true;
-            await playerRepository.UpdateAsync(player, ct);
-            healed++;
-            logger.LogInformation(
-                "Healed seeded test player {DisplayName}: {Fields}",
-                displayName,
-                (needsEmail ? "email " : "")
-                  + (needsHash ? "passwordHash " : "")
-                  + (needsRealNameReset ? "visibility.realName" : ""));
-        }
-        return healed;
     }
 
     private Player CreateTestPlayer(string displayName, string firstName, string? lastName)
@@ -565,14 +533,13 @@ public sealed class DataSeeder(
             LastName = lastName,
             Visibility = new ProfileVisibility
             {
-                // RealName defaults to false (the ProfileVisibility default)
-                // because the upcoming Friends/Communities features will add
-                // finer-grained audience controls and the safe default for
-                // every new sharing dimension is the most-private option.
-                // See docs/defects.md DEF-008.
-                Avatar = true
+                EmailAudience = Audience.Private,
+                PhoneAudience = Audience.Private,
+                RealNameAudience = Audience.Private,
+                AvatarAudience = Audience.Public,
             },
-            CreatedAt = DateTime.UtcNow
+            SchemaVersion = CurrentPlayerSchemaVersion,
+            CreatedAt = DateTime.UtcNow,
         };
         player.PasswordHash = passwordHasher.HashPassword(player, DevPassword);
         return player;
