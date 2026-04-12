@@ -29,5 +29,9 @@ public interface INinetyNineDbContext
     // Sprint 5 S5.4
     IMongoCollection<PlayerBlock> PlayerBlocks { get; }
 
+    // Sprint 9 S9.1
+    IMongoCollection<Poll> Polls { get; }
+    IMongoCollection<Vote> Votes { get; }
+
     IMongoDatabase Database { get; }
 }

@@ -61,6 +61,10 @@ public static class DependencyInjection
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IPlayerBlockRepository, PlayerBlockRepository>();
 
+        // Sprint 9 S9.1
+        services.AddScoped<IPollRepository, PollRepository>();
+        services.AddScoped<IVoteRepository, VoteRepository>();
+
         return services;
     }
 }

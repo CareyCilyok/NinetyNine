@@ -61,6 +61,12 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
     public IMongoCollection<PlayerBlock> PlayerBlocks =>
         _database.GetCollection<PlayerBlock>("player_blocks");
 
+    // Sprint 9 S9.1
+    public IMongoCollection<Poll> Polls =>
+        _database.GetCollection<Poll>("polls");
+    public IMongoCollection<Vote> Votes =>
+        _database.GetCollection<Vote>("votes");
+
     public IMongoDatabase Database => _database;
 
     /// <summary>
@@ -80,6 +86,10 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
         EnsureCommunityMemberIndexes();
         EnsureCommunityInvitationIndexes();
         EnsureCommunityJoinRequestIndexes();
+
+        // Sprint 9 S9.1
+        EnsurePollIndexes();
+        EnsureVoteIndexes();
     }
 
     private void EnsurePlayerIndexes()
@@ -336,5 +346,39 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
         };
 
         games.Indexes.CreateMany(indexModels);
+    }
+
+    // ── Sprint 9 S9.1 indexes ──────────────────────────────────────
+
+    private void EnsurePollIndexes()
+    {
+        var polls = Polls;
+        var indexes = new List<CreateIndexModel<Poll>>
+        {
+            new(Builders<Poll>.IndexKeys
+                    .Ascending(p => p.CommunityId)
+                    .Ascending(p => p.Status),
+                new CreateIndexOptions { Name = "idx_polls_community_status" }),
+
+            new(Builders<Poll>.IndexKeys
+                    .Ascending(p => p.Status)
+                    .Ascending(p => p.ExpiresAt),
+                new CreateIndexOptions { Name = "idx_polls_status_expiresAt" }),
+        };
+        polls.Indexes.CreateMany(indexes);
+    }
+
+    private void EnsureVoteIndexes()
+    {
+        var votes = Votes;
+        var indexes = new List<CreateIndexModel<Vote>>
+        {
+            // One-vote-per-player enforced at the database level.
+            new(Builders<Vote>.IndexKeys
+                    .Ascending(v => v.PollId)
+                    .Ascending(v => v.PlayerId),
+                new CreateIndexOptions { Name = "ux_votes_poll_player", Unique = true }),
+        };
+        votes.Indexes.CreateMany(indexes);
     }
 }

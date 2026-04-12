@@ -67,6 +67,10 @@ public static class BsonConfiguration
 
         // Sprint 5 S5.4
         RegisterPlayerBlockClassMap();
+
+        // Sprint 9 S9.1
+        RegisterPollClassMap();
+        RegisterVoteClassMap();
     }
 
     private static void RegisterPlayerClassMap()
@@ -329,6 +333,46 @@ public static class BsonConfiguration
             cm.GetMemberMap(n => n.NotificationId)
               .SetSerializer(new GuidSerializer(BsonType.String));
             cm.GetMemberMap(n => n.PlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+        });
+    }
+
+    private static void RegisterPollClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(Poll))) return;
+
+        BsonClassMap.RegisterClassMap<Poll>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(p => p.PollId));
+            cm.GetMemberMap(p => p.PollId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(p => p.CreatedByPlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(p => p.CommunityId)
+              .SetSerializer(new NullableSerializer<Guid>(
+                  new GuidSerializer(BsonType.String)));
+        });
+
+        if (!BsonClassMap.IsClassMapRegistered(typeof(PollOption)))
+            BsonClassMap.RegisterClassMap<PollOption>(cm => cm.AutoMap());
+        if (!BsonClassMap.IsClassMapRegistered(typeof(PollResult)))
+            BsonClassMap.RegisterClassMap<PollResult>(cm => cm.AutoMap());
+    }
+
+    private static void RegisterVoteClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(Vote))) return;
+
+        BsonClassMap.RegisterClassMap<Vote>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(v => v.VoteId));
+            cm.GetMemberMap(v => v.VoteId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(v => v.PollId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(v => v.PlayerId)
               .SetSerializer(new GuidSerializer(BsonType.String));
         });
     }
