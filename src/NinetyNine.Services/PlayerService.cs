@@ -14,6 +14,8 @@ public sealed partial class PlayerService(
     IPlayerRepository playerRepository,
     IAvatarStore avatarStore,
     AvatarService avatarService,
+    IFriendshipRepository friendshipRepository,
+    ICommunityMemberRepository communityMemberRepository,
     ILogger<PlayerService> logger)
     : IPlayerService
 {
@@ -152,4 +154,109 @@ public sealed partial class PlayerService(
                 "Display name must be 2–32 characters and contain only letters, digits, underscores, or hyphens.",
                 nameof(displayName));
     }
+
+    /// <inheritdoc/>
+    public async Task<ViewerScopedPlayerProfile?> GetProfileForViewerAsync(
+        Guid targetId, Guid? viewerId, CancellationToken ct = default)
+    {
+        var target = await playerRepository.GetByIdAsync(targetId, ct);
+        if (target is null) return null;
+
+        var relationship = await ResolveRelationshipAsync(targetId, viewerId, ct);
+        return Project(target, relationship);
+    }
+
+    /// <summary>
+    /// Resolves the viewer → target relationship in the locked order:
+    /// Self → Friend → CommunityMember → Public → Anonymous. Performs at
+    /// most two data-store round trips for non-trivial cases (friendship
+    /// lookup + shared-community intersection) and returns immediately
+    /// on the first match.
+    /// </summary>
+    private async Task<ViewerRelationship> ResolveRelationshipAsync(
+        Guid targetId, Guid? viewerId, CancellationToken ct)
+    {
+        if (viewerId is null) return ViewerRelationship.Anonymous;
+        var vid = viewerId.Value;
+
+        if (vid == targetId) return ViewerRelationship.Self;
+
+        var friendship = await friendshipRepository.GetByPairAsync(vid, targetId, ct);
+        if (friendship is not null) return ViewerRelationship.Friend;
+
+        if (await SharesCommunityAsync(vid, targetId, ct))
+            return ViewerRelationship.CommunityMember;
+
+        return ViewerRelationship.Public;
+    }
+
+    /// <summary>
+    /// Returns true when the viewer and target are co-members of at
+    /// least one community. Uses two single-filter lookups against the
+    /// <c>ux_community_members_player_community</c> index (one per
+    /// player) and intersects in memory — the working set is tiny
+    /// (≤ soft cap of 10 communities per player) so a single aggregate
+    /// pipeline would be more machinery than the call deserves.
+    /// </summary>
+    private async Task<bool> SharesCommunityAsync(
+        Guid viewerId, Guid targetId, CancellationToken ct)
+    {
+        var viewerMemberships = await communityMemberRepository
+            .ListCommunitiesForPlayerAsync(viewerId, ct);
+        if (viewerMemberships.Count == 0) return false;
+
+        var targetMemberships = await communityMemberRepository
+            .ListCommunitiesForPlayerAsync(targetId, ct);
+        if (targetMemberships.Count == 0) return false;
+
+        var viewerIds = new HashSet<Guid>(viewerMemberships.Select(m => m.CommunityId));
+        return targetMemberships.Any(m => viewerIds.Contains(m.CommunityId));
+    }
+
+    /// <summary>
+    /// Applies the audience matrix to a target player and produces the
+    /// viewer-scoped projection. The comparison uses
+    /// <c>(int)relationship &lt;= (int)audience</c>, which matches the
+    /// enum ordering (most-private-first) and the semantic "my floor
+    /// is at or below the field's audience tier".
+    /// </summary>
+    private static ViewerScopedPlayerProfile Project(
+        Player target, ViewerRelationship relationship)
+    {
+        bool Visible(Audience audience) => CanSee(relationship, audience);
+
+        var vis = target.Visibility;
+        bool realNameVisible = Visible(vis.RealNameAudience);
+
+        return new ViewerScopedPlayerProfile
+        {
+            PlayerId = target.PlayerId,
+            DisplayName = target.DisplayName,
+            CreatedAt = target.CreatedAt,
+            IsOwnProfile = relationship == ViewerRelationship.Self,
+            Relationship = relationship,
+            EmailAddress = Visible(vis.EmailAudience) ? NullIfBlank(target.EmailAddress) : null,
+            PhoneNumber = Visible(vis.PhoneAudience) ? NullIfBlank(target.PhoneNumber) : null,
+            FirstName = realNameVisible ? NullIfBlank(target.FirstName) : null,
+            MiddleName = realNameVisible ? NullIfBlank(target.MiddleName) : null,
+            LastName = realNameVisible ? NullIfBlank(target.LastName) : null,
+            Avatar = Visible(vis.AvatarAudience) ? target.Avatar : null,
+        };
+    }
+
+    /// <summary>
+    /// Audience gate. Anonymous viewers only ever see Public fields.
+    /// Authenticated viewers use the integer comparison described in
+    /// <see cref="ViewerRelationship"/>.
+    /// </summary>
+    private static bool CanSee(ViewerRelationship relationship, Audience audience)
+    {
+        if (relationship == ViewerRelationship.Anonymous)
+            return audience == Audience.Public;
+
+        return (int)relationship <= (int)audience;
+    }
+
+    private static string? NullIfBlank(string? s) =>
+        string.IsNullOrWhiteSpace(s) ? null : s;
 }

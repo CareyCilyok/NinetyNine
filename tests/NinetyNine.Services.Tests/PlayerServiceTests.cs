@@ -18,8 +18,10 @@ public class PlayerServiceTests(MongoFixture fixture)
         var playerRepo = new PlayerRepository(ctx, NullLogger<PlayerRepository>.Instance);
         var avatarStore = new GridFsAvatarStore(ctx, NullLogger<GridFsAvatarStore>.Instance);
         var avatarSvc = new AvatarService(avatarStore, NullLogger<AvatarService>.Instance);
+        var friends = new FriendshipRepository(ctx, NullLogger<FriendshipRepository>.Instance);
+        var members = new CommunityMemberRepository(ctx, NullLogger<CommunityMemberRepository>.Instance);
         return new PlayerService(playerRepo, avatarStore, avatarSvc,
-            NullLogger<PlayerService>.Instance);
+            friends, members, NullLogger<PlayerService>.Instance);
     }
 
     private IPlayerService CreateService() => CreateService(out _);
