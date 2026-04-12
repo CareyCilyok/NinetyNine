@@ -904,6 +904,60 @@ Result: __________  (PASS / FAIL / BLOCKED)
 
 - [ ] Navigate through all main pages — verify no breakage from the polling additions.
 
+### 26. Multi-player matches (Sprint 10)
+
+*Sprint 10 adds head-to-head match creation, alternating-break scoring, and match history.*
+
+#### 26.1 — Create a match
+
+- [ ] Sign in as carey. Navigate to `/games/new`.
+- [ ] Verify: the subtitle includes a "Start a match instead" link.
+- [ ] Click the link → `/matches/new`.
+- [ ] Verify: form fields for opponent, venue, format (Single/RaceTo/BestOf), break method, table size, table number, stakes.
+- [ ] Select george as opponent, Bumpers as venue, Single format, Lag for break.
+- [ ] Submit. Verify: redirect to `/matches/{id}/play`.
+
+#### 26.2 — Match play flow
+
+- [ ] On `/matches/{id}/play`, verify: scoreboard shows both players with 0 wins each.
+- [ ] Click "Continue game 1" → redirects to `/games/{gameId}/play`.
+- [ ] Score all 9 frames (use break-bonus + ball-count inputs).
+- [ ] Return to `/matches/{id}/play`.
+- [ ] Verify (Single format): match status is Completed, winner is shown.
+
+#### 26.3 — Race-to format
+
+- [ ] Create a new match with race-to-3 format against george.
+- [ ] Play through 3 complete games.
+- [ ] Verify: on game completion, the next game is auto-created if the race isn't won yet.
+- [ ] Verify: if `BreakMethod` is not `PreviousLoserBreaks`, games alternate breakers.
+- [ ] Verify: the privacy interstitial fires between games with "Hand the device to {name}".
+- [ ] Verify: match completes when a player reaches 3 wins.
+
+#### 26.4 — Match detail page
+
+- [ ] Navigate to `/matches/{id}` for a completed match.
+- [ ] Verify: header shows players, format, date, venue, status, winner, final score.
+- [ ] Verify: each game is rendered with breaker, total score, and frame-by-frame breakdown.
+- [ ] Verify: stakes field is NOT displayed (private per design).
+
+#### 26.5 — Match history on profile
+
+- [ ] Navigate to `/players/me`.
+- [ ] Verify: "Recent matches" card appears with up to 5 most recent matches.
+- [ ] Verify: each row shows date, "vs {opponent}", result (Won/Lost/InProgress/Abandoned).
+- [ ] Click a match row → navigates to `/matches/{id}`.
+
+#### 26.6 — Abandon match
+
+- [ ] Create a match and navigate to `/matches/{id}/play`.
+- [ ] Click "Abandon match".
+- [ ] Verify: redirect to profile; match shows as Abandoned in history.
+
+#### 26.7 — No regression
+
+- [ ] Navigate through all main pages — verify no breakage from the match additions.
+
 ---
 
 ## Cross-Browser Results Table
@@ -937,6 +991,7 @@ Run the complete checklist (sections 1–15) three times — once per browser �
 | 23. Sprint 7 user lifecycle | | | |
 | 24. Sprint 8 SignalR real-time | | | |
 | 25. Sprint 9 voting and polls | | | |
+| 26. Sprint 10 multi-player matches | | | |
 | **Overall** | | | |
 
 Cell values: **PASS** / **FAIL** / **SKIP** / **BLOCKED**
