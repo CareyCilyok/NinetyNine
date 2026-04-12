@@ -1,0 +1,223 @@
+@page "/matches/new"
+@attribute [Authorize]
+@inject IMatchService MatchService
+@inject IVenueService VenueService
+@inject IFriendService FriendService
+@inject IPlayerRepository PlayerRepository
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>New Match &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-new-match-page">
+    <div class="nn-new-match-page__inner">
+        <header class="nn-new-match-page__header">
+            <h1 class="nn-new-match-page__title">Start a match</h1>
+            <p class="nn-new-match-page__subtitle">
+                Head-to-head scoring with frame-by-frame comparison.
+            </p>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+
+        @if (_venues.Count == 0)
+        {
+            <div class="nn-empty-state">
+                <p>Add a venue before starting a match.</p>
+                <a href="/venues/new" class="btn btn-primary">Add a venue</a>
+            </div>
+        }
+        else if (_opponents.Count == 0)
+        {
+            <div class="nn-empty-state">
+                <p>You need at least one friend to start a match.</p>
+                <a href="/friends" class="btn btn-primary">Find friends</a>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="_model" method="post"
+                      OnValidSubmit="HandleSubmitAsync"
+                      FormName="new-match">
+                <DataAnnotationsValidator />
+
+                <div class="form-group">
+                    <label class="form-label" for="opponent">Opponent</label>
+                    <InputSelect id="opponent" class="form-select"
+                                 @bind-Value="_model.OpponentId">
+                        <option value="@Guid.Empty">-- Select opponent --</option>
+                        @foreach (var p in _opponents)
+                        {
+                            <option value="@p.PlayerId">@p.DisplayName</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="venue">Venue</label>
+                    <InputSelect id="venue" class="form-select"
+                                 @bind-Value="_model.VenueId">
+                        <option value="@Guid.Empty">-- Select venue --</option>
+                        @foreach (var v in _venues)
+                        {
+                            <option value="@v.VenueId">@v.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="format">Format</label>
+                    <InputSelect id="format" class="form-select"
+                                 @bind-Value="_model.Format">
+                        <option value="@MatchFormat.Single">Single game</option>
+                        <option value="@MatchFormat.RaceTo">Race to N</option>
+                        <option value="@MatchFormat.BestOf">Best of N</option>
+                    </InputSelect>
+                </div>
+
+                @if (_model.Format != MatchFormat.Single)
+                {
+                    <div class="form-group">
+                        <label class="form-label" for="target">N (number of games)</label>
+                        <InputNumber id="target" class="form-control"
+                                     @bind-Value="_model.Target" min="2" max="21" />
+                        <div class="form-text">
+                            Race to: first player to win N games. Best of: first to win ⌈N/2⌉.
+                        </div>
+                    </div>
+                }
+
+                <div class="form-group">
+                    <label class="form-label">Break method</label>
+                    <InputRadioGroup @bind-Value="_model.BreakMethod" Name="_model.BreakMethod">
+                        <div class="nn-new-match-page__radio-group" role="radiogroup">
+                            @foreach (var method in _breakMethods)
+                            {
+                                var id = $"break-{method}";
+                                <label class="nn-new-match-page__radio-option" for="@id">
+                                    <InputRadio id="@id" Value="@method" />
+                                    <span>@BreakMethodLabel(method)</span>
+                                </label>
+                            }
+                        </div>
+                    </InputRadioGroup>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="table-size">Table size</label>
+                    <InputSelect id="table-size" class="form-select"
+                                 @bind-Value="_model.TableSize">
+                        <option value="@TableSize.SixFoot">6 ft</option>
+                        <option value="@TableSize.SevenFoot">7 ft</option>
+                        <option value="@TableSize.NineFoot">9 ft</option>
+                        <option value="@TableSize.TenFoot">10 ft</option>
+                    </InputSelect>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="table-number">Table number (optional)</label>
+                    <InputNumber id="table-number" class="form-control"
+                                 @bind-Value="_model.TableNumber" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="stakes">For bragging rights (optional)</label>
+                    <InputText id="stakes" class="form-control"
+                               @bind-Value="_model.Stakes"
+                               placeholder="e.g., loser buys next round" />
+                    <div class="form-text">
+                        Private — only you and your opponent see this. Never shown publicly.
+                    </div>
+                </div>
+
+                <div class="nn-new-match-page__actions">
+                    <button type="submit" class="btn btn-primary">Start match</button>
+                    <a href="/games/new" class="btn btn-ghost">Start a solo game instead</a>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm(FormName = "new-match")]
+    private NewMatchModel _model { get; set; } = new();
+
+    private List<Venue> _venues = [];
+    private List<Player> _opponents = [];
+    private Guid _creatorId;
+    private string _errorMessage = "";
+
+    private static readonly BreakMethod[] _breakMethods =
+    [
+        BreakMethod.Lagged,
+        BreakMethod.CoinFlip,
+        BreakMethod.MutualAgreement,
+    ];
+
+    private static string BreakMethodLabel(BreakMethod m) => m switch
+    {
+        BreakMethod.Lagged => "Lag for break",
+        BreakMethod.CoinFlip => "Coin flip",
+        BreakMethod.MutualAgreement => "Agreed",
+        _ => m.ToString(),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var claim = HttpContextAccessor.HttpContext?.User?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var id))
+        {
+            Navigation.NavigateTo("/login?ReturnUrl=/matches/new", forceLoad: true);
+            return;
+        }
+        _creatorId = id;
+
+        _venues = (await VenueService.ListAsync(includePrivate: true)).ToList();
+        _opponents = (await FriendService.ListFriendsAsync(_creatorId)).ToList();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (_model.OpponentId == Guid.Empty || _model.VenueId == Guid.Empty)
+        {
+            _errorMessage = "Opponent and venue are required.";
+            return;
+        }
+
+        var result = await MatchService.CreateMatchAsync(
+            _creatorId,
+            _model.OpponentId,
+            _model.VenueId,
+            _model.TableSize,
+            _model.Format,
+            _model.Format == MatchFormat.Single ? 1 : _model.Target,
+            _model.BreakMethod,
+            _model.TableNumber,
+            _model.Stakes);
+
+        if (!result.Success)
+        {
+            _errorMessage = result.ErrorMessage ?? "Could not create the match.";
+            return;
+        }
+
+        Navigation.NavigateTo($"/matches/{result.Value!.MatchId}/play");
+    }
+
+    private sealed class NewMatchModel
+    {
+        public Guid OpponentId { get; set; }
+        public Guid VenueId { get; set; }
+        public MatchFormat Format { get; set; } = MatchFormat.Single;
+        public int Target { get; set; } = 3;
+        public BreakMethod BreakMethod { get; set; } = BreakMethod.Lagged;
+        public TableSize TableSize { get; set; } = TableSize.SevenFoot;
+        public int? TableNumber { get; set; }
+        public string? Stakes { get; set; }
+    }
+}
