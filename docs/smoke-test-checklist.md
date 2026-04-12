@@ -625,6 +625,76 @@ Result: __________  (PASS / FAIL / BLOCKED)
 - [ ] Navigate through `/games`, `/stats`, `/venues`, `/friends`, `/communities`, `/players/me` — verify all existing pages still render cleanly after the Sprint 3 additions.
 - [ ] Repeat on a second browser (Firefox or Safari) for cross-browser confidence.
 
+### 20. Admin role, leaderboard filters, ownership transfer, expiration sweep (Sprint 4)
+
+*Sprint 4 widens community admin powers, adds leaderboard filtering by friends/community, implements two-phase ownership transfer, and sweeps stale pending items on startup.*
+
+#### Prerequisites
+
+- Stack running via `./deploy.sh rebuild`.
+- Signed in as `carey` (owner of Pocket Sports) via the mock picker.
+- `george` and `carey_b` exist as seeded players and Pocket Sports members.
+
+#### 20.1 — Admin role: promote and demote
+
+- [ ] Navigate to `/communities/{Pocket Sports id}`.
+- [ ] Verify: the Members section shows carey as **Owner** (gold badge), george and carey_b as **Member**.
+- [ ] As Owner, click **Make Admin** next to george.
+- [ ] Verify: redirect with "Role updated." flash. george's badge changes to **Admin** (teal).
+- [ ] Click **Remove Admin** next to george.
+- [ ] Verify: george's badge reverts to **Member**.
+
+#### 20.2 — Admin can invite, approve, remove
+
+- [ ] Promote george to Admin.
+- [ ] Sign in as george in a second browser.
+- [ ] On the Pocket Sports detail page, verify: george sees the **Invite a player** section and any pending join requests.
+- [ ] As george (Admin), type carey_b's display name and send an invite — this should fail with "That player is already a member." Confirm the error flash.
+- [ ] Register a new test player in a third browser. As george (Admin), invite that player. Verify success.
+- [ ] As george (Admin), try to remove carey_b. Verify success (Admin can remove Member).
+- [ ] Promote carey_b back via carey (Owner), then as george (Admin) try to remove carey_b again — verify failure with "Only the community owner can remove an admin."
+
+#### 20.3 — Transfer ownership (two-phase)
+
+- [ ] As carey (Owner), scroll to the **Transfer ownership** section on the Pocket Sports detail page.
+- [ ] Type `george` in the display-name field and click **Send request**.
+- [ ] Verify: redirect with "Ownership transfer request sent." flash.
+- [ ] Verify: the Transfer ownership section now shows "Ownership transfer pending — waiting for george to respond. Expires {date}."
+- [ ] Switch to george's browser. Navigate to Pocket Sports.
+- [ ] Verify: a warning banner reads "carey wants to hand you ownership of Pocket Sports." with **Accept ownership** / **No thanks** buttons.
+- [ ] Click **Accept ownership**.
+- [ ] Verify: redirect with "You are now the owner." flash. george is now Owner, carey is Member.
+- [ ] (Optional) Transfer back to carey to restore the original state.
+
+#### 20.4 — Transfer ownership decline
+
+- [ ] As the current owner, initiate a transfer to another member.
+- [ ] As the target, click **No thanks**.
+- [ ] Verify: redirect with "Ownership transfer declined." flash.
+- [ ] As the owner, verify: the Transfer ownership section shows the input again (no pending transfer).
+
+#### 20.5 — Leaderboard filters
+
+- [ ] Navigate to `/stats`.
+- [ ] Verify: an authenticated viewer sees a filter dropdown with "All players", "Just friends", and an optgroup "My communities" containing "Pocket Sports" (and any other communities the viewer belongs to).
+- [ ] Select "Just friends" and click Filter.
+- [ ] Verify: only the viewer and their mutual friends appear (carey + george if they are friends).
+- [ ] Select "Pocket Sports" and click Filter.
+- [ ] Verify: only Pocket Sports members with completed games appear.
+- [ ] Select "All players" and click Filter.
+- [ ] Verify: the full leaderboard is restored.
+
+#### 20.6 — Expiration sweep (log verification)
+
+- [ ] Run `./deploy.sh rebuild` (triggers DataSeeder on startup).
+- [ ] Check `./deploy.sh logs web` for the sweep output.
+- [ ] Verify: no errors related to the sweep. If stale pending items existed, the log shows "Expiration sweep: N friend request(s), N invitation(s), N join request(s), N ownership transfer(s)."
+- [ ] If no stale items exist (fresh dev DB), verify the sweep runs silently (no error, no log entry for zero counts).
+
+#### 20.7 — No regression
+
+- [ ] Navigate through `/games`, `/stats`, `/venues`, `/friends`, `/communities`, `/players/me`, `/players/me/edit` — verify all existing pages still render cleanly after the Sprint 4 additions.
+
 ---
 
 ## Cross-Browser Results Table
