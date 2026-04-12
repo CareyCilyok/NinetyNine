@@ -36,6 +36,27 @@
             <div class="alert alert-danger" role="alert">@_errorMessage</div>
         }
 
+        @* ── One-time migration banner (Sprint 3 S3.4). Lives outside
+           every EditForm so it can host its own top-level dismiss form
+           without nesting. *@
+        @if (_showMigrationBanner)
+        {
+            <div class="alert alert-info nn-edit-profile-page__migration-banner" role="status">
+                <p>
+                    We've moved from simple on/off visibility to four audience
+                    tiers. Anything you had visible is now set to <strong>Friends</strong>
+                    — widen or narrow each field any time.
+                </p>
+                <EditForm Model="_dismissModel" method="post"
+                          OnValidSubmit="HandleDismissMigrationBannerAsync"
+                          FormName="dismiss-migration-banner">
+                    <button type="submit" class="btn btn-sm btn-ghost">
+                        Got it
+                    </button>
+                </EditForm>
+            </div>
+        }
+
         @* ── Avatar section (separate multipart form, SSR-compatible) ──── *@
         <section class="nn-edit-profile-page__card nn-edit-profile-page__avatar-section"
                  aria-label="Avatar">
@@ -200,26 +221,41 @@
                     </div>
                 </div>
 
-                @* Visibility toggles *@
+                @* Privacy / audience (Sprint 3 S3.4) *@
                 <div class="nn-edit-profile-page__field-group">
                     <h2 class="nn-edit-profile-page__card-title">Privacy</h2>
+                    <p class="nn-edit-profile-page__section-hint">
+                        Pick who can see each field. Tiers widen left to right:
+                        <strong>Private</strong> keeps a field to yourself,
+                        <strong>Friends</strong> shares with mutual friends,
+                        <strong>Communities</strong> extends to pool players who share a community with you, and
+                        <strong>Public</strong> lets any signed-in pool player see it.
+                    </p>
 
-                    <div class="nn-edit-profile-page__toggles">
-                        <div class="nn-edit-profile-page__toggle-row">
-                            <VisibilityToggle Label="Show real name publicly"
-                                              @bind-Value="_model.ShowRealName" />
+                    <div class="nn-edit-profile-page__audience-grid">
+                        <div class="nn-edit-profile-page__audience-row">
+                            <label class="nn-edit-profile-page__audience-label">Real name</label>
+                            <AudiencePicker Value="@_model.RealNameAudience"
+                                            Name="_model.RealNameAudience"
+                                            AriaLabel="Real name audience" />
                         </div>
-                        <div class="nn-edit-profile-page__toggle-row">
-                            <VisibilityToggle Label="Show email publicly"
-                                              @bind-Value="_model.ShowEmail" />
+                        <div class="nn-edit-profile-page__audience-row">
+                            <label class="nn-edit-profile-page__audience-label">Email address</label>
+                            <AudiencePicker Value="@_model.EmailAudience"
+                                            Name="_model.EmailAudience"
+                                            AriaLabel="Email audience" />
                         </div>
-                        <div class="nn-edit-profile-page__toggle-row">
-                            <VisibilityToggle Label="Show phone number publicly"
-                                              @bind-Value="_model.ShowPhone" />
+                        <div class="nn-edit-profile-page__audience-row">
+                            <label class="nn-edit-profile-page__audience-label">Phone number</label>
+                            <AudiencePicker Value="@_model.PhoneAudience"
+                                            Name="_model.PhoneAudience"
+                                            AriaLabel="Phone audience" />
                         </div>
-                        <div class="nn-edit-profile-page__toggle-row">
-                            <VisibilityToggle Label="Show avatar publicly"
-                                              @bind-Value="_model.ShowAvatar" />
+                        <div class="nn-edit-profile-page__audience-row">
+                            <label class="nn-edit-profile-page__audience-label">Avatar</label>
+                            <AudiencePicker Value="@_model.AvatarAudience"
+                                            Name="_model.AvatarAudience"
+                                            AriaLabel="Avatar audience" />
                         </div>
                     </div>
                 </div>
@@ -257,13 +293,19 @@
     [SupplyParameterFromForm(FormName = "edit-profile")]
     private EditProfileModel _model { get; set; } = new();
 
+    [SupplyParameterFromForm(FormName = "dismiss-migration-banner")]
+    private EmptyModel _dismissModel { get; set; } = new();
+
     private Player? _player;
     private string? _avatarUrl;
     private string _errorMessage = "";
     private bool _loadError;
     private bool _isSaving;
+    private bool _showMigrationBanner;
     private Guid? _playerId;
     private string _antiforgeryToken = "";
+
+    private sealed class EmptyModel { }
 
     protected override void OnInitialized()
     {
@@ -311,6 +353,23 @@
 
         if (_player.Avatar is not null)
             _avatarUrl = $"/api/avatars/{_player.PlayerId}";
+
+        // One-time migration banner shown to every player whose visibility
+        // was migrated by Sprint 0 S0.5's heal pass. Dismiss is persisted
+        // via HandleDismissMigrationBannerAsync below.
+        _showMigrationBanner = !_player.MigrationBannerDismissed;
+    }
+
+    private async Task HandleDismissMigrationBannerAsync()
+    {
+        if (_playerId is null || _player is null) return;
+
+        _player.MigrationBannerDismissed = true;
+        await PlayerRepository.UpdateAsync(_player);
+        _showMigrationBanner = false;
+
+        // Reload the page so the banner stays hidden on the next render.
+        Navigation.NavigateTo("/players/me/edit");
     }
 
     private async Task HandleSubmitAsync()
@@ -326,6 +385,23 @@
 
         try
         {
+            // Audience enum fields are the source of truth. Legacy bool
+            // fields are still populated for one more sprint of backward-
+            // compat reads in Profile.razor et al.; they get derived from
+            // the Audience as "anything above Private counts as visible".
+            var visibility = new ProfileVisibility
+            {
+                EmailAudience    = _model.EmailAudience,
+                PhoneAudience    = _model.PhoneAudience,
+                RealNameAudience = _model.RealNameAudience,
+                AvatarAudience   = _model.AvatarAudience,
+
+                EmailAddress = _model.EmailAudience    > Audience.Private,
+                PhoneNumber  = _model.PhoneAudience    > Audience.Private,
+                RealName     = _model.RealNameAudience > Audience.Private,
+                Avatar       = _model.AvatarAudience   > Audience.Private,
+            };
+
             var update = new PlayerProfileUpdate(
                 DisplayName: _model.DisplayName,
                 EmailAddress: null,          // email changes not supported in v1
@@ -333,13 +409,7 @@
                 FirstName: _model.FirstName,
                 MiddleName: _model.MiddleName,
                 LastName: _model.LastName,
-                Visibility: new ProfileVisibility
-                {
-                    RealName    = _model.ShowRealName,
-                    EmailAddress = _model.ShowEmail,
-                    PhoneNumber = _model.ShowPhone,
-                    Avatar      = _model.ShowAvatar
-                });
+                Visibility: visibility);
 
             await PlayerService.UpdateProfileAsync(_playerId.Value, update);
         }
@@ -375,22 +445,26 @@
         [StringLength(50)] public string? LastName    { get; set; }
         [StringLength(30)] public string? PhoneNumber { get; set; }
 
-        public bool ShowRealName { get; set; }
-        public bool ShowEmail    { get; set; }
-        public bool ShowPhone    { get; set; }
-        public bool ShowAvatar   { get; set; } = true;
+        // Audience fields (Sprint 3 S3.4) — the source of truth going
+        // forward. Bool ShowX flags were dropped in this sprint; the
+        // save handler still populates them on the persisted model for
+        // backward-compat reads until Sprint 4 completes the migration.
+        public Audience EmailAudience    { get; set; } = Audience.Private;
+        public Audience PhoneAudience    { get; set; } = Audience.Private;
+        public Audience RealNameAudience { get; set; } = Audience.Private;
+        public Audience AvatarAudience   { get; set; } = Audience.Public;
 
         public static EditProfileModel From(Player p) => new()
         {
-            DisplayName = p.DisplayName,
-            FirstName   = p.FirstName,
-            MiddleName  = p.MiddleName,
-            LastName    = p.LastName,
-            PhoneNumber = p.PhoneNumber,
-            ShowRealName = p.Visibility.RealName,
-            ShowEmail    = p.Visibility.EmailAddress,
-            ShowPhone    = p.Visibility.PhoneNumber,
-            ShowAvatar   = p.Visibility.Avatar
+            DisplayName      = p.DisplayName,
+            FirstName        = p.FirstName,
+            MiddleName       = p.MiddleName,
+            LastName         = p.LastName,
+            PhoneNumber      = p.PhoneNumber,
+            EmailAudience    = p.Visibility.EmailAudience,
+            PhoneAudience    = p.Visibility.PhoneAudience,
+            RealNameAudience = p.Visibility.RealNameAudience,
+            AvatarAudience   = p.Visibility.AvatarAudience,
         };
     }
 }

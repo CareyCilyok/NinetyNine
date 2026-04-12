@@ -194,6 +194,46 @@
     border: 1px solid var(--nn-border-subtle);
 }
 
+/* ── Sprint 3 S3.4: Audience picker grid + migration banner ───────────── */
+
+.nn-edit-profile-page__migration-banner {
+    margin-top: var(--nn-space-3);
+    margin-bottom: var(--nn-space-4);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--nn-space-3);
+    flex-wrap: wrap;
+}
+
+.nn-edit-profile-page__migration-banner p {
+    margin: 0;
+    flex: 1 1 auto;
+}
+
+.nn-edit-profile-page__audience-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-4);
+    margin-top: var(--nn-space-3);
+}
+
+.nn-edit-profile-page__audience-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-4);
+    background: var(--nn-bg-tertiary);
+    border-radius: var(--nn-radius-md);
+    border: 1px solid var(--nn-border-subtle);
+}
+
+.nn-edit-profile-page__audience-label {
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    font-size: 0.9375rem;
+}
+
 /* ── Actions ─────────────────────────────────────────────────────────────── */
 .nn-edit-profile-page__actions {
     display: flex;
