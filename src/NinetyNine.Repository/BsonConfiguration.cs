@@ -71,6 +71,9 @@ public static class BsonConfiguration
         // Sprint 9 S9.1
         RegisterPollClassMap();
         RegisterVoteClassMap();
+
+        // Sprint 10 S10.1
+        RegisterMatchClassMap();
     }
 
     private static void RegisterPlayerClassMap()
@@ -374,6 +377,24 @@ public static class BsonConfiguration
               .SetSerializer(new GuidSerializer(BsonType.String));
             cm.GetMemberMap(v => v.PlayerId)
               .SetSerializer(new GuidSerializer(BsonType.String));
+        });
+    }
+
+    private static void RegisterMatchClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(Match))) return;
+
+        BsonClassMap.RegisterClassMap<Match>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(m => m.MatchId));
+            cm.GetMemberMap(m => m.MatchId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(m => m.VenueId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(m => m.WinnerPlayerId)
+              .SetSerializer(new NullableSerializer<Guid>(
+                  new GuidSerializer(BsonType.String)));
         });
     }
 

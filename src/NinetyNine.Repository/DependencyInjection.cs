@@ -65,6 +65,9 @@ public static class DependencyInjection
         services.AddScoped<IPollRepository, PollRepository>();
         services.AddScoped<IVoteRepository, VoteRepository>();
 
+        // Sprint 10 S10.1
+        services.AddScoped<IMatchRepository, MatchRepository>();
+
         return services;
     }
 }

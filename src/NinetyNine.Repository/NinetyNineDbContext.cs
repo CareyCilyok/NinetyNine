@@ -67,6 +67,10 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
     public IMongoCollection<Vote> Votes =>
         _database.GetCollection<Vote>("votes");
 
+    // Sprint 10 S10.1
+    public IMongoCollection<Match> Matches =>
+        _database.GetCollection<Match>("matches");
+
     public IMongoDatabase Database => _database;
 
     /// <summary>
@@ -90,6 +94,9 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
         // Sprint 9 S9.1
         EnsurePollIndexes();
         EnsureVoteIndexes();
+
+        // Sprint 10 S10.1
+        EnsureMatchIndexes();
     }
 
     private void EnsurePlayerIndexes()
@@ -380,5 +387,25 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
                 new CreateIndexOptions { Name = "ux_votes_poll_player", Unique = true }),
         };
         votes.Indexes.CreateMany(indexes);
+    }
+
+    // ── Sprint 10 S10.1 indexes ─────────────────────────────────────
+
+    private void EnsureMatchIndexes()
+    {
+        var matches = Matches;
+        var indexes = new List<CreateIndexModel<Match>>
+        {
+            // "My matches" lookup.
+            new(Builders<Match>.IndexKeys.Ascending(m => m.PlayerIds),
+                new CreateIndexOptions { Name = "idx_matches_playerIds" }),
+
+            // Active matches listing.
+            new(Builders<Match>.IndexKeys
+                    .Ascending(m => m.Status)
+                    .Descending(m => m.CreatedAt),
+                new CreateIndexOptions { Name = "idx_matches_status_createdAt" }),
+        };
+        matches.Indexes.CreateMany(indexes);
     }
 }

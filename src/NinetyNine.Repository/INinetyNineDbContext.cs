@@ -33,5 +33,8 @@ public interface INinetyNineDbContext
     IMongoCollection<Poll> Polls { get; }
     IMongoCollection<Vote> Votes { get; }
 
+    // Sprint 10 S10.1
+    IMongoCollection<Match> Matches { get; }
+
     IMongoDatabase Database { get; }
 }
