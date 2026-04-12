@@ -15,6 +15,25 @@
     box-sizing: border-box;
 }
 
+/* Skip-to-main-content link — visually hidden until focused (WCAG 2.4.1). */
+.nn-layout__skip-link {
+    position: absolute;
+    top: -100%;
+    left: var(--nn-space-4);
+    z-index: 9999;
+    padding: var(--nn-space-2) var(--nn-space-4);
+    background: var(--nn-bg-primary);
+    color: var(--nn-accent-teal);
+    border: 2px solid var(--nn-accent-teal);
+    border-radius: var(--nn-radius-md);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.nn-layout__skip-link:focus {
+    top: var(--nn-space-2);
+}
+
 .nn-layout {
     display: flex;
     flex-direction: row;

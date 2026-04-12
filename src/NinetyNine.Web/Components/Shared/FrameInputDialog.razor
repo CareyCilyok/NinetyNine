@@ -154,6 +154,15 @@
                         </button>
                     </footer>
                 </EditForm>
+
+                @* Focus sentinel: when Tab passes the last interactive
+                   element (Record Frame button), this invisible div
+                   receives focus and wraps it back to the first input.
+                   WCAG 2.4.3 Focus Order compliance. *@
+                <div tabindex="0"
+                     style="position:absolute;width:1px;height:1px;overflow:hidden"
+                     @onfocus="WrapFocusToFirst"
+                     aria-hidden="true"></div>
             </div>
         </div>
     </div>
@@ -241,6 +250,12 @@
         {
             _model.BallCount--;
         }
+    }
+
+    private async Task WrapFocusToFirst()
+    {
+        try { await _firstInputRef.FocusAsync(); }
+        catch { /* Element may not exist yet */ }
     }
 
     public sealed class FrameScoreInput

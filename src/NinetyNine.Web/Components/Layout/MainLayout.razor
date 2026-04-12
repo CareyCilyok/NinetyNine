@@ -28,6 +28,11 @@
 <CascadingValue Value="_unreadNotificationCount" Name="UnreadNotificationCount">
 <div class="nn-layout @(_sidebarOpen ? "nn-layout--sidebar-open" : string.Empty)">
 
+    @* Skip-to-main — visually hidden, appears on focus (WCAG 2.4.1). *@
+    <a href="#nn-main-content" class="nn-layout__skip-link">
+        Skip to main content
+    </a>
+
     @* Hamburger — visible only on mobile via scoped CSS. *@
     <button type="button"
             class="nn-layout__menu-button"
@@ -72,7 +77,7 @@
         </div>
     </aside>
 
-    <main class="nn-layout__main" role="main">
+    <main id="nn-main-content" class="nn-layout__main" role="main">
         <div class="nn-layout__content">
             @Body
         </div>
