@@ -542,6 +542,89 @@ Result: __________  (PASS / FAIL / BLOCKED)
 
 - [ ] Navigate through `/games`, `/stats`, `/venues`, `/friends`, `/players/me` — verify all existing pages still render cleanly after the Sprint 2 additions.
 
+### 19. Venue affiliation + Audience UI (Sprint 3)
+
+*Sprint 3 adds venue → community affiliation, per-field audience pickers on Edit Profile, a migration banner, and viewer-scoped profile rendering that applies the full audience matrix.*
+
+#### Prerequisites
+
+- Stack running via `./deploy.sh rebuild` (picks up Sprint 3 code).
+- Signed in as `carey` via the mock picker.
+- `george` and `carey_b` exist as seeded players.
+- `carey` and `george` are mutual friends (seeded in Sprint 1).
+- `carey`, `george`, and `carey_b` are members of the seeded "Pocket Sports" community (Sprint 2).
+
+#### 19.1 — Migration banner appears and dismisses
+
+- [ ] Navigate to `/players/me/edit`.
+- [ ] If `carey`'s `migrationBannerDismissed` flag is `false`, verify: a blue info banner reads *"We've moved from simple on/off visibility to four audience tiers…"* with a **Got it** button.
+- [ ] Click **Got it**.
+- [ ] Verify: the banner disappears and does not return on subsequent page loads.
+
+#### 19.2 — Audience picker saves and persists
+
+- [ ] On `/players/me/edit`, verify: four audience picker rows (Email, Phone, Real name, Avatar) are rendered in the Privacy section.
+- [ ] Set Email audience to **Friends**. Set Phone to **Communities**. Leave Real name at **Private** and Avatar at **Public**.
+- [ ] Click **Save changes**.
+- [ ] Verify: redirect to `/players/me` (or flash confirmation).
+- [ ] Return to `/players/me/edit`.
+- [ ] Verify: the pickers show the previously saved values — Email = Friends, Phone = Communities, Real name = Private, Avatar = Public.
+
+#### 19.3 — Profile view as Self shows everything
+
+- [ ] Navigate to `/players/me`.
+- [ ] Verify: all fields are visible regardless of audience settings — display name, real name (if set), email, phone, avatar, stats, recent games.
+- [ ] Verify: the **Edit profile** button is present.
+
+#### 19.4 — Profile view as Friend shows friend-tier fields
+
+- [ ] Sign in as `george` (carey's friend) via a second browser profile / incognito.
+- [ ] Navigate to `/players/{carey's guid}`.
+- [ ] Verify: **Email** appears in the Contact card (audience = Friends; george is a friend ✓).
+- [ ] Verify: **Phone** appears (audience = Communities; george is in Pocket Sports with carey ✓ — Communities is a wider tier than Friends, so friend also qualifies).
+- [ ] Verify: **Real name** does NOT appear (audience = Private; only Self can see).
+- [ ] Verify: **Avatar** is visible (audience = Public).
+
+#### 19.5 — Profile view as same-community member shows community-tier fields but not friend-only
+
+- [ ] Sign in as `carey_b` (shares Pocket Sports with carey but is NOT a friend).
+- [ ] Navigate to `/players/{carey's guid}`.
+- [ ] Verify: **Email** does NOT appear (audience = Friends; carey_b is not carey's friend).
+- [ ] Verify: **Phone** DOES appear (audience = Communities; carey_b shares Pocket Sports ✓).
+- [ ] Verify: **Real name** does NOT appear (audience = Private).
+- [ ] Verify: **Avatar** is visible (audience = Public).
+
+#### 19.6 — Profile view as stranger shows only public-tier fields
+
+- [ ] Register a brand-new test account (or use a player not in any shared community or friendship with carey).
+- [ ] Navigate to `/players/{carey's guid}`.
+- [ ] Verify: **Email**, **Phone**, and **Real name** do NOT appear.
+- [ ] Verify: **Avatar** is visible (audience = Public).
+- [ ] Verify: **Display name**, **Member since**, and **Statistics** are visible (ungated fields).
+
+#### 19.7 — Private venue in game history renders anonymously for non-members
+
+- [ ] As `carey`, create a private venue on `/venues/new` (check the "Private" box).
+- [ ] Play a game at the private venue (or use `mongosh` to insert a game doc referencing the private venue).
+- [ ] View carey's profile as `george` or `carey_b`.
+- [ ] Verify: the game row for the private venue shows *"Private venue"* in italic, muted text — not the actual venue name. No link is emitted.
+- [ ] View carey's profile as `carey` (Self).
+- [ ] Verify: the private venue's actual name appears normally (carey is the venue creator).
+
+#### 19.8 — Venue affiliation picker and chip
+
+- [ ] Sign in as `carey`. Navigate to `/venues/{id}/edit` for any venue carey created.
+- [ ] Verify: a **Community affiliation** section appears with a dropdown listing "None" and every community carey is a member of.
+- [ ] Select "Pocket Sports". Submit.
+- [ ] Verify: redirect with "Affiliation saved." flash.
+- [ ] Navigate to `/venues`.
+- [ ] Verify: the affiliated venue's card shows a community chip linking to `/communities/{id}`.
+
+#### 19.9 — No regression
+
+- [ ] Navigate through `/games`, `/stats`, `/venues`, `/friends`, `/communities`, `/players/me` — verify all existing pages still render cleanly after the Sprint 3 additions.
+- [ ] Repeat on a second browser (Firefox or Safari) for cross-browser confidence.
+
 ---
 
 ## Cross-Browser Results Table
@@ -565,6 +648,10 @@ Run the complete checklist (sections 1–15) three times — once per browser �
 | 13. Sign out | | | |
 | 14. Dev theme test page | | | |
 | 15. Health check endpoint | | | |
+| 16. Sprint 0 foundation migration | | | |
+| 17. Sprint 1 friends e2e | | | |
+| 18. Sprint 2 communities e2e | | | |
+| 19. Sprint 3 audience + affiliation | | | |
 | **Overall** | | | |
 
 Cell values: **PASS** / **FAIL** / **SKIP** / **BLOCKED**
