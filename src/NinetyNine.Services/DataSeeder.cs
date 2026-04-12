@@ -123,11 +123,8 @@ public sealed class DataSeeder(
         // 1. Player reconcile: converge every seeded test player to the
         //    current template. SchemaVersion comparison for cheap change
         //    detection. Subsumes the former HealExistingTestPlayersAsync
-        //    and HealProfileVisibilityAsync passes. Also handles the
-        //    bool → Audience migration for any non-seeded player that
-        //    might still be at SchemaVersion < 2.
+        //    and HealProfileVisibilityAsync passes.
         var playersReconciled = await ReconcileSeededPlayersAsync(ct);
-        var visibilityHealed = await HealNonSeededPlayerVisibilityAsync(ct);
 
         // 2. Venue reconcile
         var addedVenues = await ReconcileSeededVenuesAsync(ct);
@@ -149,7 +146,6 @@ public sealed class DataSeeder(
         {
             var parts = new List<string>();
             if (playersReconciled > 0) parts.Add($"reconciled {playersReconciled} player(s)");
-            if (visibilityHealed > 0) parts.Add($"migrated {visibilityHealed} non-seeded player(s) to Audience enum");
             if (addedVenues > 0) parts.Add($"added {addedVenues} venue(s)");
             if (addedFriendships > 0) parts.Add($"seeded {addedFriendships} friendship(s)");
             if (communityChange.CommunityCreated) parts.Add("created Pocket Sports community");
@@ -485,41 +481,11 @@ public sealed class DataSeeder(
         return reconciled;
     }
 
-    /// <summary>
-    /// Migrates non-seeded players that are still at SchemaVersion &lt; 2
-    /// from legacy bool visibility flags to the Audience enum. Seeded
-    /// players are handled by <see cref="ReconcileSeededPlayersAsync"/>
-    /// which converges them to <see cref="CurrentPlayerSchemaVersion"/>.
-    /// </summary>
-    private async Task<int> HealNonSeededPlayerVisibilityAsync(CancellationToken ct)
-    {
-        var seededNames = IDataSeeder.TestPlayerDisplayNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var players = await playerRepository.ListAllAsync(ct);
-        int migrated = 0;
-
-        foreach (var player in players)
-        {
-            if (seededNames.Contains(player.DisplayName)) continue;
-            if (player.SchemaVersion >= 2) continue;
-
-            player.Visibility.EmailAudience = player.Visibility.EmailAddress
-                ? Audience.Friends : Audience.Private;
-            player.Visibility.PhoneAudience = player.Visibility.PhoneNumber
-                ? Audience.Friends : Audience.Private;
-            player.Visibility.RealNameAudience = player.Visibility.RealName
-                ? Audience.Friends : Audience.Private;
-            player.Visibility.AvatarAudience = player.Visibility.Avatar
-                ? Audience.Public : Audience.Private;
-
-            player.SchemaVersion = 2;
-            player.MigrationBannerDismissed = false;
-
-            await playerRepository.UpdateAsync(player, ct);
-            migrated++;
-        }
-
-        return migrated;
-    }
+    // HealNonSeededPlayerVisibilityAsync removed in Sprint 6 S6.2.
+    // The legacy bool→Audience migration was only relevant for pre-Sprint-0
+    // players; with the bool flags removed from ProfileVisibility, the
+    // migration can no longer run. Non-seeded players at SchemaVersion < 2
+    // would need a mongosh-level fix if they ever exist (dev-only scenario).
 
     private Player CreateTestPlayer(string displayName, string firstName, string? lastName)
     {

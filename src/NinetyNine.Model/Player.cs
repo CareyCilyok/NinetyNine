@@ -143,16 +143,16 @@ public enum Audience
 
 /// <summary>
 /// Per-field visibility settings controlling what other users can see on a
-/// player's profile. Schema version 2 uses the <see cref="Audience"/> enum
-/// per field; schema version 1 (legacy) used bool flags. The bool
-/// properties are kept temporarily with <see cref="ObsoleteAttribute"/>
-/// and are migrated on startup by <c>DataSeeder.HealProfileVisibilityAsync</c>.
-/// <para>See <c>docs/plans/friends-communities-v1.md</c> Sprint 0.</para>
+/// player's profile. Each field uses the <see cref="Audience"/> enum.
+/// <para>
+/// Legacy bool flags (EmailAddress, PhoneNumber, RealName, Avatar) were
+/// removed in Sprint 6 S6.2. Old Mongo documents that still contain them
+/// deserialize cleanly via <c>SetIgnoreExtraElements(true)</c> on the
+/// <c>ProfileVisibility</c> BSON class map.
+/// </para>
 /// </summary>
 public class ProfileVisibility
 {
-    // ── Audience enum per field (schema version 2) ──────────────────────
-
     /// <summary>Who can see the email address. Defaults to <see cref="Audience.Private"/>.</summary>
     public Audience EmailAudience { get; set; } = Audience.Private;
 
@@ -169,27 +169,6 @@ public class ProfileVisibility
     /// game history, and badges without explicit opt-in.
     /// </summary>
     public Audience AvatarAudience { get; set; } = Audience.Public;
-
-    // ── Legacy bool flags (schema version 1) ────────────────────────────
-    // These remain for one sprint so that existing reads in Profile.razor,
-    // EditProfile.razor, Login.razor, and DataSeeder continue to compile
-    // while the heal pass (Sprint 0 S0.5) migrates stored values into the
-    // *Audience properties above. They will be removed in Sprint 3 once
-    // GetProfileForViewerAsync is the single read path. The project builds
-    // under TreatWarningsAsErrors, so these are NOT marked [Obsolete] —
-    // obsolete usage would cascade into ~20 build errors at call sites.
-
-    /// <summary>Legacy schema-v1 bool flag. Use <see cref="EmailAudience"/>.</summary>
-    public bool EmailAddress { get; set; } = false;
-
-    /// <summary>Legacy schema-v1 bool flag. Use <see cref="PhoneAudience"/>.</summary>
-    public bool PhoneNumber { get; set; } = false;
-
-    /// <summary>Legacy schema-v1 bool flag. Use <see cref="RealNameAudience"/>.</summary>
-    public bool RealName { get; set; } = false;
-
-    /// <summary>Legacy schema-v1 bool flag. Use <see cref="AvatarAudience"/>.</summary>
-    public bool Avatar { get; set; } = true;
 }
 
 /// <summary>

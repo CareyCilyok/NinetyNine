@@ -31,10 +31,10 @@ public class ModelEntityTests
     {
         var player = new Player();
         player.Visibility.Should().NotBeNull();
-        player.Visibility.EmailAddress.Should().BeFalse();
-        player.Visibility.PhoneNumber.Should().BeFalse();
-        player.Visibility.RealName.Should().BeFalse();
-        player.Visibility.Avatar.Should().BeTrue("avatar is visible by default");
+        player.Visibility.EmailAudience.Should().Be(Audience.Private);
+        player.Visibility.PhoneAudience.Should().Be(Audience.Private);
+        player.Visibility.RealNameAudience.Should().Be(Audience.Private);
+        player.Visibility.AvatarAudience.Should().Be(Audience.Public, "avatar is visible by default");
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public class ModelEntityTests
             FirstName = "First",
             MiddleName = "Mid",
             LastName = "Last",
-            Visibility = new ProfileVisibility { RealName = true },
+            Visibility = new ProfileVisibility { RealNameAudience = Audience.Friends },
             Avatar = new AvatarRef { StorageKey = "key123", ContentType = "image/png" }
         };
         player.PlayerId.Should().Be(id);
@@ -60,7 +60,7 @@ public class ModelEntityTests
         player.FirstName.Should().Be("First");
         player.MiddleName.Should().Be("Mid");
         player.LastName.Should().Be("Last");
-        player.Visibility.RealName.Should().BeTrue();
+        player.Visibility.RealNameAudience.Should().Be(Audience.Friends);
         player.Avatar!.StorageKey.Should().Be("key123");
     }
 
@@ -71,15 +71,15 @@ public class ModelEntityTests
     {
         var vis = new ProfileVisibility
         {
-            EmailAddress = true,
-            PhoneNumber = true,
-            RealName = true,
-            Avatar = false
+            EmailAudience = Audience.Friends,
+            PhoneAudience = Audience.Friends,
+            RealNameAudience = Audience.Friends,
+            AvatarAudience = Audience.Private
         };
-        vis.EmailAddress.Should().BeTrue();
-        vis.PhoneNumber.Should().BeTrue();
-        vis.RealName.Should().BeTrue();
-        vis.Avatar.Should().BeFalse();
+        vis.EmailAudience.Should().Be(Audience.Friends);
+        vis.PhoneAudience.Should().Be(Audience.Friends);
+        vis.RealNameAudience.Should().Be(Audience.Friends);
+        vis.AvatarAudience.Should().Be(Audience.Private);
     }
 
     // ── AvatarRef ─────────────────────────────────────────────────────────────

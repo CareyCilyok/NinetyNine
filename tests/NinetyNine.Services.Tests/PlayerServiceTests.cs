@@ -85,15 +85,15 @@ public class PlayerServiceTests(MongoFixture fixture)
             FirstName: "Updated",
             MiddleName: null,
             LastName: "Last",
-            Visibility: new ProfileVisibility { RealName = true, EmailAddress = true });
+            Visibility: new ProfileVisibility { RealNameAudience = Audience.Friends, EmailAudience = Audience.Friends });
 
         var updated = await svc.UpdateProfileAsync(player.PlayerId, update);
         updated.EmailAddress.Should().Be("me@example.com");
         updated.PhoneNumber.Should().Be("555-4321");
         updated.FirstName.Should().Be("Updated");
         updated.LastName.Should().Be("Last");
-        updated.Visibility.RealName.Should().BeTrue();
-        updated.Visibility.EmailAddress.Should().BeTrue();
+        updated.Visibility.RealNameAudience.Should().Be(Audience.Friends);
+        updated.Visibility.EmailAudience.Should().Be(Audience.Friends);
     }
 
     [Fact]

@@ -25,7 +25,7 @@ public class BsonConfigurationTests(MongoFixture fixture)
             FirstName = "Test",
             MiddleName = "M",
             LastName = "Player",
-            Visibility = new ProfileVisibility { EmailAddress = true, RealName = true },
+            Visibility = new ProfileVisibility { EmailAudience = Audience.Friends, RealNameAudience = Audience.Friends },
             Avatar = new AvatarRef
             {
                 StorageKey = "507f1f77bcf86cd799439011",
@@ -48,8 +48,8 @@ public class BsonConfigurationTests(MongoFixture fixture)
         retrieved.FirstName.Should().Be("Test");
         retrieved.MiddleName.Should().Be("M");
         retrieved.LastName.Should().Be("Player");
-        retrieved.Visibility.EmailAddress.Should().BeTrue();
-        retrieved.Visibility.RealName.Should().BeTrue();
+        retrieved.Visibility.EmailAudience.Should().Be(Audience.Friends);
+        retrieved.Visibility.RealNameAudience.Should().Be(Audience.Friends);
         retrieved.Avatar.Should().NotBeNull();
         retrieved.Avatar!.StorageKey.Should().Be("507f1f77bcf86cd799439011");
         retrieved.Avatar.ContentType.Should().Be("image/png");

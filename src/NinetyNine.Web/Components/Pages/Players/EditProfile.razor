@@ -385,21 +385,12 @@
 
         try
         {
-            // Audience enum fields are the source of truth. Legacy bool
-            // fields are still populated for one more sprint of backward-
-            // compat reads in Profile.razor et al.; they get derived from
-            // the Audience as "anything above Private counts as visible".
             var visibility = new ProfileVisibility
             {
                 EmailAudience    = _model.EmailAudience,
                 PhoneAudience    = _model.PhoneAudience,
                 RealNameAudience = _model.RealNameAudience,
                 AvatarAudience   = _model.AvatarAudience,
-
-                EmailAddress = _model.EmailAudience    > Audience.Private,
-                PhoneNumber  = _model.PhoneAudience    > Audience.Private,
-                RealName     = _model.RealNameAudience > Audience.Private,
-                Avatar       = _model.AvatarAudience   > Audience.Private,
             };
 
             var update = new PlayerProfileUpdate(
@@ -445,10 +436,6 @@
         [StringLength(50)] public string? LastName    { get; set; }
         [StringLength(30)] public string? PhoneNumber { get; set; }
 
-        // Audience fields (Sprint 3 S3.4) — the source of truth going
-        // forward. Bool ShowX flags were dropped in this sprint; the
-        // save handler still populates them on the persisted model for
-        // backward-compat reads until Sprint 4 completes the migration.
         public Audience EmailAudience    { get; set; } = Audience.Private;
         public Audience PhoneAudience    { get; set; } = Audience.Private;
         public Audience RealNameAudience { get; set; } = Audience.Private;

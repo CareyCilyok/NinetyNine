@@ -83,7 +83,14 @@ public static class BsonConfiguration
 
         if (!BsonClassMap.IsClassMapRegistered(typeof(ProfileVisibility)))
         {
-            BsonClassMap.RegisterClassMap<ProfileVisibility>(cm => cm.AutoMap());
+            BsonClassMap.RegisterClassMap<ProfileVisibility>(cm =>
+            {
+                cm.AutoMap();
+                // Legacy bool flags (emailAddress, phoneNumber, realName,
+                // avatar) were removed in Sprint 6 S6.2. Old docs still
+                // contain them — ignore on deserialize.
+                cm.SetIgnoreExtraElements(true);
+            });
         }
 
         if (!BsonClassMap.IsClassMapRegistered(typeof(AvatarRef)))

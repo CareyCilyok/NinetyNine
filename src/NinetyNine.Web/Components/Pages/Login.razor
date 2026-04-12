@@ -116,7 +116,7 @@
                                              SizePx="48" />
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold">@player.DisplayName</div>
-                                    @if (player.Visibility.RealName && !string.IsNullOrEmpty(player.FirstName))
+                                    @if (player.Visibility.RealNameAudience != Audience.Private && !string.IsNullOrEmpty(player.FirstName))
                                     {
                                         <div class="text-muted small">@player.FirstName @player.LastName</div>
                                     }

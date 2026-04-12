@@ -65,7 +65,7 @@ These three issues surfaced together because the DP-keys issue caused the origin
 ## DEF-002 — `/players/me` is not a registered route (profile 404)
 
 **Discovered**: 2026-04-11 during Wave 7 manual smoke testing (section 8 — Profile and Editing)
-**Status**: Open
+**Status**: Fixed (Sprint 3 S3.6, commit 4588897)
 **Severity**: High — "View profile" in the user menu is unreachable for all authenticated users
 **Owner**: frontend
 
@@ -99,7 +99,7 @@ Interestingly, [EditProfile.razor:1](src/NinetyNine.Web/Components/Pages/Players
 ## DEF-003 — New Game form: duplicate `__RequestVerificationToken` causes 400 antiforgery failure on every submit
 
 **Discovered**: 2026-04-11 during Wave 7 manual smoke testing (section 6 — Start and Play a Game)
-**Status**: Open — **blocks all Blazor SSR form submissions**, including email/password login, registration, forgot-password, venue edit, profile edit, and new game.
+**Status**: Fixed (pre-Sprint 0, explicit `<AntiforgeryToken />` removed from all forms)
 **Severity**: **Critical** — no form in the application that uses `EditForm method="post"` can successfully post while DP keys are valid, because the rendered form always contains two `__RequestVerificationToken` hidden inputs.
 **Owner**: backend / framework
 
@@ -189,7 +189,7 @@ DEF-001 diagnosed that `./deploy.sh rebuild` regenerated DP keys and invalidated
 ## DEF-004 — New Game: table size picker is non-interactive (page renders as static SSR)
 
 **Discovered**: 2026-04-11 during Wave 7 manual smoke testing (section 6)
-**Status**: Open
+**Status**: Fixed (pre-Sprint 0, replaced with native radio buttons)
 **Severity**: High — users cannot change the table size from the default `7 ft`; there is no workaround short of re-coding the form.
 **Owner**: frontend
 
@@ -265,7 +265,7 @@ Prior to Wave 5 (dark redesign), the only `<select>` in the app was on a page th
 ## DEF-006 — Leaderboard renders literal `entry.DisplayName` / `entry.PlayerId` / `entry.AvatarUrl` strings in the desktop table
 
 **Discovered**: 2026-04-11 during Wave 7 manual smoke testing (section 10 — Statistics)
-**Status**: Open — **trivial fix**
+**Status**: Fixed (pre-Sprint 0, added missing `@` prefix on component parameters)
 **Severity**: High — leaderboard is the feature page for section 10; desktop rendering is broken for all rows.
 **Owner**: frontend
 

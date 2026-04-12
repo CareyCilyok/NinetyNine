@@ -121,17 +121,15 @@ The application implements the official Ninety-Nine pool game rules:
 - **Debug Tools**: Avalonia.Diagnostics only included in Debug builds
 - **Platform Support**: Configured for Windows, Linux (X11), and macOS
 
-## Friends & Communities (in progress)
+## Friends & Communities (complete — v0.1.2)
 
-An in-progress multi-sprint feature adding mutual friendships, player- and
-venue-owned communities, venue↔community affiliation, and a 4-tier profile
-audience model (`Private` / `Friends` / `Communities` / `Public`). The
-**canonical planning document** is [docs/plans/friends-communities-v1.md](docs/plans/friends-communities-v1.md)
-— fork selections, sprint stories, acceptance criteria, and a changelog live
-there. Keep it in sync with every user-directed scope or fork change.
+Completed in Sprints 0–5 (tagged v0.1.2). Adds mutual friendships, player-owned communities, venue↔community affiliation, 4-tier profile audience model, admin roles, ownership transfer, leaderboard filters, in-app notifications, player blocking, and an activity log.
 
-- **`Audience` enum** — `src/NinetyNine.Model/Player.cs` defines the four-tier enum ordered most-private-first so relationship checks are `relationship >= fieldAudience`. Legacy `bool` `ProfileVisibility` flags are kept one more sprint for read compatibility; the heal pass in `DataSeeder.HealProfileVisibilityAsync` migrates stored values on startup.
-- **New collections** — `friendships`, `friend_requests`, `communities`, `community_members`, plus lazily-created `community_invitations` and `community_join_requests`. Indexes ensured at startup via `NinetyNineDbContext.EnsureIndexes`.
-- **Repositories** — `IFriendshipRepository`, `IFriendRequestRepository`, `ICommunityRepository`, `ICommunityMemberRepository` in `src/NinetyNine.Repository/Repositories/`. Service layer (`IFriendService`, `ICommunityService`) lands in Sprint 1 / Sprint 2 respectively.
-- **Seeded test data** — `DataSeeder.HealProfileVisibilityAsync` runs for every player on every startup; once `SchemaVersion == 2` the pass is a no-op.
-- **Smoke test §16** in `docs/smoke-test-checklist.md` — data-layer-only verification; no UI changes ship in Sprint 0.
+- **Planning documents** — [friends-communities-v1.md](docs/plans/friends-communities-v1.md) (Sprints 0–5, complete) and [v2-roadmap.md](docs/plans/v2-roadmap.md) (Sprints 6–10, approved).
+- **`Audience` enum** — `Private=0, Friends=1, Communities=2, Public=3` in `Player.cs`. Visibility check: `(int)viewerRelationship <= (int)fieldAudience`. Legacy bool flags removed in Sprint 6 S6.2.
+- **`ViewerRelationship` enum** — `Self=0, Friend=1, CommunityMember=2, Public=3, Anonymous=-1`. Resolution: Self → Friend → CommunityMember → Public → Anonymous.
+- **`GetProfileForViewerAsync`** — the single read path for profile rendering. Returns `ViewerScopedPlayerProfile` with gated fields.
+- **Collections** — `players`, `venues`, `games`, `friendships`, `friend_requests`, `communities`, `community_members`, `community_invitations`, `community_join_requests`, `ownership_transfers`, `notifications`, `player_blocks`.
+- **Services** — `IPlayerService`, `IFriendService`, `ICommunityService`, `INotificationService`, `IStatisticsService` (with community/friends filters), `IVenueService` (with affiliation).
+- **DataSeeder** — reconcile-based pattern (Sprint 6 S6.1). `CurrentPlayerSchemaVersion = 3`. Seeded players converge to template on every startup. Expiration sweep for stale pending items.
+- **Smoke tests** — §16–§21 in `docs/smoke-test-checklist.md`.
