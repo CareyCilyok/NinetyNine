@@ -16,7 +16,10 @@ public class StatisticsServiceTests(MongoFixture fixture)
         var ctx = fixture.CreateDbContext();
         var gameRepo = new GameRepository(ctx, NullLogger<GameRepository>.Instance);
         var playerRepo = new PlayerRepository(ctx, NullLogger<PlayerRepository>.Instance);
-        var statsSvc = new StatisticsService(gameRepo, playerRepo, NullLogger<StatisticsService>.Instance);
+        var friends = new FriendshipRepository(ctx, NullLogger<FriendshipRepository>.Instance);
+        var members = new CommunityMemberRepository(ctx, NullLogger<CommunityMemberRepository>.Instance);
+        var statsSvc = new StatisticsService(gameRepo, playerRepo, friends, members,
+            NullLogger<StatisticsService>.Instance);
         return (statsSvc, gameRepo, playerRepo);
     }
 

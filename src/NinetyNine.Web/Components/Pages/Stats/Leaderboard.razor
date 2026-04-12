@@ -1,5 +1,7 @@
 @page "/stats"
 @inject IStatisticsService StatisticsService
+@inject ICommunityService CommunityService
+@inject IHttpContextAccessor HttpContextAccessor
 @inject ILogger<Leaderboard> Logger
 
 <PageTitle>Leaderboard &mdash; NinetyNine</PageTitle>
@@ -11,6 +13,38 @@
             <h1 class="nn-leaderboard__title">Leaderboard</h1>
             <p class="nn-leaderboard__subtitle">Top players by average score</p>
         </div>
+
+        @if (_isAuthenticated)
+        {
+            <EditForm Model="_filterModel" method="post"
+                      OnValidSubmit="HandleFilterAsync"
+                      FormName="leaderboard-filter"
+                      class="nn-leaderboard__filter-form">
+                <select name="_filterModel.Filter"
+                        class="form-select nn-leaderboard__filter-select"
+                        aria-label="Filter leaderboard">
+                    <option value="" selected="@(string.IsNullOrEmpty(_filterModel.Filter))">
+                        All players
+                    </option>
+                    <option value="friends" selected="@(_filterModel.Filter == "friends")">
+                        Just friends
+                    </option>
+                    @if (_myCommunities.Count > 0)
+                    {
+                        <optgroup label="My communities">
+                            @foreach (var c in _myCommunities)
+                            {
+                                <option value="@c.CommunityId"
+                                        selected="@(_filterModel.Filter == c.CommunityId.ToString())">
+                                    @c.Name
+                                </option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+                <button type="submit" class="btn btn-ghost btn-sm">Filter</button>
+            </EditForm>
+        }
     </header>
 
     @if (_loading)
@@ -161,16 +195,32 @@
 </div>
 
 @code {
+    [SupplyParameterFromForm(FormName = "leaderboard-filter")]
+    private FilterModel _filterModel { get; set; } = new();
+
     private List<LeaderboardEntry> _entries = [];
+    private List<Community> _myCommunities = [];
     private bool _loading = true;
+    private bool _isAuthenticated;
+    private Guid? _viewerId;
+
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
+        _isAuthenticated = user?.Identity?.IsAuthenticated == true;
+        if (Guid.TryParse(claim, out var id))
+            _viewerId = id;
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var result = await StatisticsService.GetLeaderboardAsync(limit: 20);
-            // Service should return sorted descending by average score; preserve that order
-            _entries = result.ToList();
+            if (_viewerId is not null)
+                _myCommunities = (await CommunityService.ListCommunitiesForPlayerAsync(_viewerId.Value)).ToList();
+
+            _entries = (await LoadEntriesAsync()).ToList();
         }
         catch (Exception ex)
         {
@@ -180,5 +230,43 @@
         {
             _loading = false;
         }
+    }
+
+    private async Task HandleFilterAsync()
+    {
+        _loading = true;
+        try
+        {
+            _entries = (await LoadEntriesAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load filtered leaderboard.");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<IReadOnlyList<LeaderboardEntry>> LoadEntriesAsync()
+    {
+        var filter = _filterModel.Filter?.Trim();
+
+        if (string.IsNullOrEmpty(filter))
+            return await StatisticsService.GetLeaderboardAsync(limit: 20);
+
+        if (filter == "friends" && _viewerId is not null)
+            return await StatisticsService.GetLeaderboardForFriendsAsync(_viewerId.Value, limit: 20);
+
+        if (Guid.TryParse(filter, out var communityId))
+            return await StatisticsService.GetLeaderboardForCommunityAsync(communityId, limit: 20);
+
+        return await StatisticsService.GetLeaderboardAsync(limit: 20);
+    }
+
+    private sealed class FilterModel
+    {
+        public string? Filter { get; set; }
     }
 }

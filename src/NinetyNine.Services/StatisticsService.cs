@@ -11,6 +11,8 @@ namespace NinetyNine.Services;
 public sealed class StatisticsService(
     IGameRepository gameRepository,
     IPlayerRepository playerRepository,
+    IFriendshipRepository friendshipRepository,
+    ICommunityMemberRepository communityMemberRepository,
     ILogger<StatisticsService> logger)
     : IStatisticsService
 {
@@ -98,5 +100,70 @@ public sealed class StatisticsService(
             .ToList();
 
         return best.AsReadOnly();
+    }
+
+    public async Task<IReadOnlyList<LeaderboardEntry>> GetLeaderboardForFriendsAsync(
+        Guid viewerId, int limit, CancellationToken ct = default)
+    {
+        var friendships = await friendshipRepository.ListForPlayerAsync(viewerId, ct);
+        var playerIds = new HashSet<Guid> { viewerId };
+        foreach (var f in friendships)
+            playerIds.Add(f.OtherParty(viewerId));
+
+        return await GetLeaderboardForPlayerSetAsync(playerIds, limit, ct);
+    }
+
+    public async Task<IReadOnlyList<LeaderboardEntry>> GetLeaderboardForCommunityAsync(
+        Guid communityId, int limit, CancellationToken ct = default)
+    {
+        var memberships = await communityMemberRepository.ListMembersAsync(
+            communityId, skip: 0, limit: int.MaxValue, ct);
+        var playerIds = memberships.Select(m => m.PlayerId).ToHashSet();
+
+        return await GetLeaderboardForPlayerSetAsync(playerIds, limit, ct);
+    }
+
+    /// <summary>
+    /// Core leaderboard logic filtered to a specific set of player IDs.
+    /// Reuses the same aggregation logic as <see cref="GetLeaderboardAsync"/>
+    /// but only includes games from the given player set.
+    /// </summary>
+    private async Task<IReadOnlyList<LeaderboardEntry>> GetLeaderboardForPlayerSetAsync(
+        HashSet<Guid> playerIds, int limit, CancellationToken ct)
+    {
+        var recentGames = await gameRepository.GetRecentAsync(limit: 5000, ct);
+
+        var completedByPlayer = recentGames
+            .Where(g => g.GameState == GameState.Completed && playerIds.Contains(g.PlayerId))
+            .GroupBy(g => g.PlayerId);
+
+        var entries = new List<LeaderboardEntry>();
+
+        foreach (var group in completedByPlayer)
+        {
+            var games = group.ToList();
+            var playerId = group.Key;
+            var player = await playerRepository.GetByIdAsync(playerId, ct);
+            if (player is null) continue;
+
+            string? avatarUrl = player.Avatar is not null
+                ? $"/api/avatars/{playerId}"
+                : null;
+
+            entries.Add(new LeaderboardEntry(
+                PlayerId: playerId,
+                DisplayName: player.DisplayName,
+                AvatarUrl: avatarUrl,
+                GamesPlayed: games.Count,
+                AverageScore: Math.Round(games.Average(g => (double)g.TotalScore), 2),
+                BestScore: games.Max(g => g.TotalScore)));
+        }
+
+        return entries
+            .OrderByDescending(e => e.AverageScore)
+            .ThenByDescending(e => e.BestScore)
+            .Take(limit)
+            .ToList()
+            .AsReadOnly();
     }
 }
