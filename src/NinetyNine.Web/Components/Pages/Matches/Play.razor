@@ -1,0 +1,216 @@
+@page "/matches/{MatchId:guid}/play"
+@attribute [Authorize]
+@inject IMatchService MatchService
+@inject IPlayerRepository PlayerRepository
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+
+<PageTitle>Match &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-match-play-page">
+    <div class="nn-match-play-page__inner">
+        @if (_detail is null)
+        {
+            <p>Loading&hellip;</p>
+        }
+        else if (_detail.Match.Status == MatchStatus.Completed)
+        {
+            @* ── Match complete ───────────────────────────────────── *@
+            <div class="nn-match-play-page__complete">
+                <h1 class="nn-match-play-page__complete-title">Match complete</h1>
+                <p class="nn-match-play-page__winner">
+                    Winner: <strong>@WinnerName</strong>
+                </p>
+                <div class="nn-match-play-page__score">
+                    @foreach (var playerId in _detail.Match.PlayerIds)
+                    {
+                        var name = _playerNames.GetValueOrDefault(playerId, "—");
+                        var wins = _detail.Games.Count(g => g.PlayerId == playerId && g.GameState == GameState.Completed);
+                        <div class="nn-match-play-page__player-score">
+                            <span>@name</span>
+                            <strong>@wins</strong>
+                        </div>
+                    }
+                </div>
+                <div class="nn-match-play-page__actions">
+                    <a href="/matches/@MatchId" class="btn btn-primary">View match details</a>
+                    <a href="/players/me" class="btn btn-ghost">Back to profile</a>
+                </div>
+            </div>
+        }
+        else if (_showInterstitial)
+        {
+            @* ── Privacy interstitial between turns ──────────────── *@
+            <div class="nn-match-play-page__interstitial" role="alert">
+                <h1 class="nn-match-play-page__interstitial-title">
+                    Hand the device to @NextBreakerName
+                </h1>
+                <p class="nn-match-play-page__interstitial-body">
+                    @NextBreakerName breaks the next game.
+                </p>
+                <EditForm Model="_dismissModel" method="post"
+                          OnValidSubmit="HandleDismissInterstitialAsync"
+                          FormName="dismiss-interstitial">
+                    <button type="submit" class="btn btn-primary">Ready</button>
+                </EditForm>
+            </div>
+        }
+        else
+        {
+            @* ── Current game + match score ───────────────────────── *@
+            <header class="nn-match-play-page__header">
+                <h1 class="nn-match-play-page__title">Match in progress</h1>
+                <p class="nn-match-play-page__format">
+                    @FormatLabel(_detail.Match.Format, _detail.Match.Target)
+                </p>
+            </header>
+
+            <div class="nn-match-play-page__scoreboard">
+                @foreach (var playerId in _detail.Match.PlayerIds)
+                {
+                    var name = _playerNames.GetValueOrDefault(playerId, "—");
+                    var wins = _detail.Games.Count(g => g.PlayerId == playerId && g.GameState == GameState.Completed);
+                    <div class="nn-match-play-page__player">
+                        <span class="nn-match-play-page__player-name">@name</span>
+                        <span class="nn-match-play-page__player-wins">@wins</span>
+                    </div>
+                }
+            </div>
+
+            @if (_currentGame is not null)
+            {
+                <section class="nn-match-play-page__current-game">
+                    <h2 class="nn-match-play-page__current-game-title">
+                        Game @(_detail.Games.Count): @CurrentBreakerName breaks
+                    </h2>
+                    <p class="nn-match-play-page__current-game-body">
+                        Continue scoring this game. When the ninth frame is recorded,
+                        come back here for the next game or the match result.
+                    </p>
+                    <a href="/games/@_currentGame.GameId/play" class="btn btn-primary">
+                        Continue game @(_detail.Games.Count)
+                    </a>
+                </section>
+            }
+
+            <section class="nn-match-play-page__section">
+                <EditForm Model="_abandonModel" method="post"
+                          OnValidSubmit="HandleAbandonAsync"
+                          FormName="abandon-match">
+                    <button type="submit" class="btn btn-ghost btn-sm">Abandon match</button>
+                </EditForm>
+            </section>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid MatchId { get; set; }
+
+    [SupplyParameterFromForm]
+    private EmptyModel _dismissModel { get; set; } = new();
+
+    [SupplyParameterFromForm(FormName = "abandon-match")]
+    private EmptyModel _abandonModel { get; set; } = new();
+
+    private MatchDetail? _detail;
+    private Game? _currentGame;
+    private Guid _viewerId;
+    private Dictionary<Guid, string> _playerNames = new();
+    private bool _showInterstitial;
+    private Guid _nextBreakerId;
+    private string WinnerName => _detail?.Match.WinnerPlayerId is Guid id
+        ? _playerNames.GetValueOrDefault(id, "—")
+        : "—";
+    private string NextBreakerName => _playerNames.GetValueOrDefault(_nextBreakerId, "—");
+    private string CurrentBreakerName => _currentGame is not null
+        ? _playerNames.GetValueOrDefault(_currentGame.PlayerId, "—")
+        : "—";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var claim = HttpContextAccessor.HttpContext?.User?.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var id))
+        {
+            Navigation.NavigateTo($"/login?ReturnUrl=/matches/{MatchId}/play", forceLoad: true);
+            return;
+        }
+        _viewerId = id;
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _detail = await MatchService.GetMatchDetailAsync(MatchId);
+        if (_detail is null) return;
+
+        // Resolve player names.
+        _playerNames = new Dictionary<Guid, string>();
+        foreach (var playerId in _detail.Match.PlayerIds)
+        {
+            var player = await PlayerRepository.GetByIdAsync(playerId);
+            if (player is not null)
+                _playerNames[playerId] = player.DisplayName;
+        }
+
+        // Find the current game: the last one in GameIds that's still InProgress or Created.
+        // If the last game is Completed and the match is still InProgress, the next game
+        // needs to be created via OnGameCompletedAsync.
+        var lastGame = _detail.Games.LastOrDefault();
+        if (lastGame is null)
+        {
+            _currentGame = null;
+            return;
+        }
+
+        if (lastGame.GameState == GameState.Completed
+            && _detail.Match.Status == MatchStatus.InProgress)
+        {
+            // Trigger next-game creation (or match completion).
+            var result = await MatchService.OnGameCompletedAsync(MatchId, lastGame.GameId);
+            if (result.Success)
+            {
+                // Reload with the new state.
+                _detail = await MatchService.GetMatchDetailAsync(MatchId);
+                if (_detail?.Match.Status == MatchStatus.InProgress)
+                {
+                    _currentGame = _detail.Games.LastOrDefault();
+                    // Show interstitial if the next game's breaker is different
+                    // from the previous game's breaker (turn switch).
+                    if (_currentGame is not null && _currentGame.PlayerId != lastGame.PlayerId)
+                    {
+                        _nextBreakerId = _currentGame.PlayerId;
+                        _showInterstitial = true;
+                    }
+                }
+            }
+        }
+        else
+        {
+            _currentGame = lastGame;
+        }
+    }
+
+    private Task HandleDismissInterstitialAsync()
+    {
+        _showInterstitial = false;
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleAbandonAsync()
+    {
+        await MatchService.AbandonMatchAsync(MatchId, _viewerId);
+        Navigation.NavigateTo("/players/me");
+    }
+
+    private static string FormatLabel(MatchFormat format, int target) => format switch
+    {
+        MatchFormat.Single => "Single game",
+        MatchFormat.RaceTo => $"Race to {target}",
+        MatchFormat.BestOf => $"Best of {target}",
+        _ => format.ToString(),
+    };
+
+    private sealed class EmptyModel { }
+}
