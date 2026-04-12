@@ -35,6 +35,9 @@ public static class DependencyInjection
         // Sprint 9 S9.3
         services.AddScoped<IPollService, PollService>();
 
+        // Sprint 10 S10.2
+        services.AddScoped<IMatchService, MatchService>();
+
         return services;
     }
 }
