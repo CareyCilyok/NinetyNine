@@ -57,6 +57,10 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
     public IMongoCollection<Notification> Notifications =>
         _database.GetCollection<Notification>("notifications");
 
+    // Sprint 5 S5.4
+    public IMongoCollection<PlayerBlock> PlayerBlocks =>
+        _database.GetCollection<PlayerBlock>("player_blocks");
+
     public IMongoDatabase Database => _database;
 
     /// <summary>

@@ -57,8 +57,9 @@ public static class DependencyInjection
         // Sprint 4 S4.3
         services.AddScoped<IOwnershipTransferRepository, OwnershipTransferRepository>();
 
-        // Sprint 5 S5.2
+        // Sprint 5 S5.2 + S5.4
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IPlayerBlockRepository, PlayerBlockRepository>();
 
         return services;
     }

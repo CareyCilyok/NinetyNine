@@ -26,5 +26,8 @@ public interface INinetyNineDbContext
     // Sprint 5 S5.2
     IMongoCollection<Notification> Notifications { get; }
 
+    // Sprint 5 S5.4
+    IMongoCollection<PlayerBlock> PlayerBlocks { get; }
+
     IMongoDatabase Database { get; }
 }

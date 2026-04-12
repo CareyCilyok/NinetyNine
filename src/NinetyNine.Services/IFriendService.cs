@@ -110,6 +110,33 @@ public interface IFriendService
         Guid viewerId,
         Guid targetId,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Block a player. Auto-unfriends if currently friends. Bidirectional
+    /// in the UI: neither party sees the other in search, leaderboards,
+    /// or member lists. Only the original blocker can unblock.
+    /// </summary>
+    Task<ServiceResult> BlockPlayerAsync(
+        Guid blockerPlayerId,
+        Guid blockedPlayerId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Unblock a previously blocked player. Only the original blocker
+    /// can unblock. Does NOT restore friendships or memberships.
+    /// </summary>
+    Task<ServiceResult> UnblockPlayerAsync(
+        Guid blockerPlayerId,
+        Guid blockedPlayerId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns all player IDs that the given player has blocked or been
+    /// blocked by. Used for filtering results in search and leaderboards.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> GetBlockedIdsAsync(
+        Guid playerId,
+        CancellationToken ct = default);
 }
 
 /// <summary>

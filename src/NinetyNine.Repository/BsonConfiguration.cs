@@ -64,6 +64,9 @@ public static class BsonConfiguration
 
         // Sprint 5 S5.2
         RegisterNotificationClassMap();
+
+        // Sprint 5 S5.4
+        RegisterPlayerBlockClassMap();
     }
 
     private static void RegisterPlayerClassMap()
@@ -319,6 +322,23 @@ public static class BsonConfiguration
             cm.GetMemberMap(n => n.NotificationId)
               .SetSerializer(new GuidSerializer(BsonType.String));
             cm.GetMemberMap(n => n.PlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+        });
+    }
+
+    private static void RegisterPlayerBlockClassMap()
+    {
+        if (BsonClassMap.IsClassMapRegistered(typeof(PlayerBlock))) return;
+
+        BsonClassMap.RegisterClassMap<PlayerBlock>(cm =>
+        {
+            cm.AutoMap();
+            cm.SetIdMember(cm.GetMemberMap(b => b.BlockId));
+            cm.GetMemberMap(b => b.BlockId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(b => b.BlockerPlayerId)
+              .SetSerializer(new GuidSerializer(BsonType.String));
+            cm.GetMemberMap(b => b.BlockedPlayerId)
               .SetSerializer(new GuidSerializer(BsonType.String));
         });
     }

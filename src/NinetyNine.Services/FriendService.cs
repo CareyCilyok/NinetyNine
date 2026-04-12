@@ -20,6 +20,7 @@ public sealed class FriendService(
     IFriendshipRepository friendships,
     IFriendRequestRepository requests,
     IPlayerRepository players,
+    IPlayerBlockRepository blocks,
     INotificationService notificationService,
     ILogger<FriendService> logger) : IFriendService
 {
@@ -346,4 +347,48 @@ public sealed class FriendService(
 
     private static bool IsDuplicateKey(MongoDB.Driver.MongoWriteException ex)
         => ex.WriteError?.Category == MongoDB.Driver.ServerErrorCategory.DuplicateKey;
+
+    // ── Block / Unblock (Sprint 5 S5.4) ────────────────────────────
+
+    public async Task<ServiceResult> BlockPlayerAsync(
+        Guid blockerPlayerId, Guid blockedPlayerId, CancellationToken ct = default)
+    {
+        if (blockerPlayerId == blockedPlayerId)
+            return ServiceResult.Fail("SelfBlock", "You cannot block yourself.");
+
+        var existing = await blocks.GetBlockAsync(blockerPlayerId, blockedPlayerId, ct);
+        if (existing is not null)
+            return ServiceResult.Fail("AlreadyBlocked", "This player is already blocked.");
+
+        // Auto-unfriend if currently friends.
+        await friendships.DeleteAsync(blockerPlayerId, blockedPlayerId, ct);
+
+        var block = new PlayerBlock
+        {
+            BlockerPlayerId = blockerPlayerId,
+            BlockedPlayerId = blockedPlayerId,
+        };
+        await blocks.CreateAsync(block, ct);
+
+        return ServiceResult.Ok();
+    }
+
+    public async Task<ServiceResult> UnblockPlayerAsync(
+        Guid blockerPlayerId, Guid blockedPlayerId, CancellationToken ct = default)
+    {
+        var block = await blocks.GetBlockAsync(blockerPlayerId, blockedPlayerId, ct);
+        if (block is null)
+            return ServiceResult.Fail("NotBlocked", "This player is not blocked.");
+
+        if (block.BlockerPlayerId != blockerPlayerId)
+            return ServiceResult.Fail(
+                "NotAuthorized", "Only the player who initiated the block can unblock.");
+
+        await blocks.DeleteAsync(block.BlockId, ct);
+        return ServiceResult.Ok();
+    }
+
+    public Task<IReadOnlyList<Guid>> GetBlockedIdsAsync(
+        Guid playerId, CancellationToken ct = default)
+        => blocks.ListBlockedIdsAsync(playerId, ct);
 }
