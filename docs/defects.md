@@ -363,3 +363,29 @@ Once the override wrote `realName: true` into Mongo, DEF-001's "create once, ski
 ### Related: Friends/Communities privacy defaults
 
 The user introduced the Friends and Communities features in the same session. A project memory has been saved capturing the rule: "any new sharing dimension should default to the most-private option so the eventual multi-tier audience model (Private / Friends / Communities / Public) has safe defaults." Future visibility toggles should follow this convention.
+
+---
+
+## DEF-009 — Skip-to-main-content link is permanently visible on screen
+
+**Discovered**: 2026-04-12 during Sprint 6 live verification
+**Status**: Open — scheduled for Sprint 7
+**Severity**: Medium — accessibility link is visually distracting; should only appear on keyboard focus
+**Owner**: frontend
+
+### Symptom
+
+The "Skip to main content" link added in Sprint 6 S6.3 (commit `b1ded58`) is permanently visible on the left side of the website instead of being hidden off-screen until the user presses Tab.
+
+### Root cause
+
+[MainLayout.razor.css:19-31](src/NinetyNine.Web/Components/Layout/MainLayout.razor.css#L19-L31) uses `position: absolute; top: -100%` to hide the skip link. This approach is unreliable because:
+
+1. The percentage `top: -100%` resolves relative to the containing block's height, not the viewport. If the containing block (`nn-layout`) has an explicit height or is the initial containing block, the resolved value may not push the element fully off-screen.
+2. Blazor scoped CSS may introduce specificity or selector-matching issues that prevent the unfocused styles from applying correctly.
+
+The standard accessible-hiding pattern uses `clip: rect(0, 0, 0, 0)` with `width: 1px; height: 1px; overflow: hidden` (the "sr-only" pattern), which reliably hides the element regardless of ancestor positioning context.
+
+### Fix
+
+Replace the `top: -100%` approach with the `clip-rect` visually-hidden pattern. On `:focus`, reset all clip/overflow properties and position the link at the top of the viewport with `position: fixed`.
