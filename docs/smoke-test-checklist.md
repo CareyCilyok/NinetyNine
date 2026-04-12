@@ -827,6 +827,40 @@ Result: __________  (PASS / FAIL / BLOCKED)
 
 - [ ] Navigate through all main pages — verify no breakage from the registration or deletion changes.
 
+### 24. SignalR real-time infrastructure (Sprint 8)
+
+*Sprint 8 adds a SignalR hub for push notifications and leaderboard refresh without page reload.*
+
+#### 24.1 — SignalR connection
+
+- [ ] Sign in as carey. Open browser dev tools → Network tab.
+- [ ] Verify: a WebSocket connection is established to `/hubs/notifications`.
+- [ ] Open a second tab as carey — verify both tabs maintain connections.
+
+#### 24.2 — Notification badge real-time update
+
+- [ ] Sign in as carey in tab 1. Note the notification badge count.
+- [ ] In a second browser, sign in as george and send carey a friend request.
+- [ ] Within 30 seconds, verify: carey's notification badge updates without page refresh in tab 1.
+- [ ] Verify: the aria-live region announces the change to screen readers.
+
+#### 24.3 — Leaderboard auto-refresh
+
+- [ ] Navigate to `/stats` as carey.
+- [ ] In a second browser, complete a game as george.
+- [ ] Within 60 seconds, verify: the leaderboard page reloads automatically.
+- [ ] Switch to a background tab, complete another game — verify no reload occurs while the tab is hidden.
+
+#### 24.4 — Graceful degradation
+
+- [ ] Stop the web container (`docker compose stop web`). Wait. Restart.
+- [ ] Verify: pages still render correctly via static SSR even if SignalR fails to connect.
+- [ ] Verify: notification badge shows the server-rendered count (no JS error in console).
+
+#### 24.5 — No regression
+
+- [ ] Navigate through all main pages — verify no breakage from the SignalR additions.
+
 ---
 
 ## Cross-Browser Results Table
@@ -858,6 +892,7 @@ Run the complete checklist (sections 1–15) three times — once per browser �
 | 21. Sprint 5 discovery + notifications + block | | | |
 | 22. Sprint 6 tech debt + About page | | | |
 | 23. Sprint 7 user lifecycle | | | |
+| 24. Sprint 8 SignalR real-time | | | |
 | **Overall** | | | |
 
 Cell values: **PASS** / **FAIL** / **SKIP** / **BLOCKED**
