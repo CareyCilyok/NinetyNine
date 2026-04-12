@@ -21,4 +21,9 @@ public interface IVenueRepository
     /// <para>See <c>docs/plans/friends-communities-v1.md</c> Sprint 2 S2.1.</para>
     /// </summary>
     Task<long> ClearCommunityAffiliationsAsync(Guid communityId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Counts venues affiliated with a given community. Sprint 5 S5.1.
+    /// </summary>
+    Task<long> CountByCommunityAsync(Guid communityId, CancellationToken ct = default);
 }

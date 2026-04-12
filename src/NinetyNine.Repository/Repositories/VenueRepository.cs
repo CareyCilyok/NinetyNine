@@ -78,4 +78,10 @@ public sealed class VenueRepository(INinetyNineDbContext context, ILogger<VenueR
 
         return result.ModifiedCount;
     }
+
+    public async Task<long> CountByCommunityAsync(Guid communityId, CancellationToken ct = default)
+    {
+        var filter = Builders<Venue>.Filter.Eq(v => v.CommunityId, (Guid?)communityId);
+        return await _collection.CountDocumentsAsync(filter, cancellationToken: ct);
+    }
 }

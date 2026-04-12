@@ -1,6 +1,8 @@
 @page "/communities"
 @attribute [Authorize]
 @inject ICommunityService CommunityService
+@inject IPlayerRepository PlayerRepository
+@inject IVenueRepository VenueRepository
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<Index> Logger
@@ -51,7 +53,9 @@
                         <li class="nn-communities-page__grid-item" role="listitem">
                             <CommunityCard Community="c"
                                            ShowVisibility="true"
-                                           MemberCount="@(_myMemberCounts.GetValueOrDefault(c.CommunityId, 0))" />
+                                           MemberCount="@(_myMemberCounts.GetValueOrDefault(c.CommunityId, 0))"
+                                           OwnerDisplayName="@(_ownerNames.GetValueOrDefault(c.OwnerPlayerId))"
+                                           VenueCount="@(_venueCounts.GetValueOrDefault(c.CommunityId, 0))" />
                         </li>
                     }
                 </ul>
@@ -92,7 +96,9 @@
                             <CommunityCard Community="c"
                                            ShowVisibility="true"
                                            MemberCount="@(_browseMemberCounts.GetValueOrDefault(c.CommunityId, 0))"
-                                           IsMember="@_myCommunityIds.Contains(c.CommunityId)" />
+                                           IsMember="@_myCommunityIds.Contains(c.CommunityId)"
+                                           OwnerDisplayName="@(_ownerNames.GetValueOrDefault(c.OwnerPlayerId))"
+                                           VenueCount="@(_venueCounts.GetValueOrDefault(c.CommunityId, 0))" />
                         </li>
                     }
                 </ul>
@@ -114,6 +120,8 @@
     private Dictionary<Guid, long> _myMemberCounts = [];
     private List<Community> _browseResults = [];
     private Dictionary<Guid, long> _browseMemberCounts = [];
+    private Dictionary<Guid, string> _ownerNames = new();
+    private Dictionary<Guid, long> _venueCounts = new();
     private bool _browseSearched;
     private string _flashSuccess = "";
 
@@ -164,6 +172,22 @@
         {
             _browseMemberCounts[c.CommunityId] =
                 (await CommunityService.ListMembersAsync(c.CommunityId, _viewerId)).Count;
+        }
+
+        // Owner names and venue counts for all communities on the page.
+        var all = _myCommunities.Concat(_browseResults).DistinctBy(c => c.CommunityId);
+        foreach (var c in all)
+        {
+            if (!_ownerNames.ContainsKey(c.OwnerPlayerId))
+            {
+                var owner = await PlayerRepository.GetByIdAsync(c.OwnerPlayerId);
+                if (owner is not null)
+                    _ownerNames[c.OwnerPlayerId] = owner.DisplayName;
+            }
+            if (!_venueCounts.ContainsKey(c.CommunityId))
+            {
+                _venueCounts[c.CommunityId] = await VenueRepository.CountByCommunityAsync(c.CommunityId);
+            }
         }
     }
 

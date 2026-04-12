@@ -36,6 +36,26 @@
                  class="nn-community-card__meta-icon" />
             @MemberCount @(MemberCount == 1 ? "member" : "members")
         </span>
+        @if (!string.IsNullOrWhiteSpace(OwnerDisplayName))
+        {
+            <span class="nn-community-card__meta-item">
+                <img src="icons/phosphor/regular/crown-simple.svg"
+                     alt=""
+                     role="presentation"
+                     class="nn-community-card__meta-icon" />
+                @OwnerDisplayName
+            </span>
+        }
+        @if (VenueCount > 0)
+        {
+            <span class="nn-community-card__meta-item">
+                <img src="icons/phosphor/regular/map-pin.svg"
+                     alt=""
+                     role="presentation"
+                     class="nn-community-card__meta-icon" />
+                @VenueCount @(VenueCount == 1 ? "venue" : "venues")
+            </span>
+        }
     </div>
 </a>
 
@@ -44,4 +64,6 @@
     [Parameter] public bool ShowVisibility { get; set; } = true;
     [Parameter] public bool IsMember { get; set; }
     [Parameter] public long MemberCount { get; set; }
+    [Parameter] public string? OwnerDisplayName { get; set; }
+    [Parameter] public long VenueCount { get; set; }
 }
