@@ -124,13 +124,13 @@
                  role="presentation"
                  class="nn-nav__icon" />
             <span class="nn-nav__label">Notifications</span>
-            @if (UnreadNotificationCount > 0)
-            {
-                <span class="nn-nav__badge"
-                      aria-label="@($"{UnreadNotificationCount} unread notification(s)")">
-                    @UnreadNotificationCount
-                </span>
-            }
+            <span class="nn-nav__badge"
+                  data-notification-badge
+                  aria-live="polite"
+                  aria-label="@($"{UnreadNotificationCount} unread notification(s)")"
+                  style="@(UnreadNotificationCount > 0 ? "" : "display:none")">
+                @UnreadNotificationCount
+            </span>
         </NavLink>
     </li>
 

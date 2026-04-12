@@ -95,6 +95,12 @@ builder.Services.AddScoped<IPasswordHasher<Player>, PasswordHasher<Player>>();
 
 builder.Services.AddAuthorization();
 
+// ── SignalR (Sprint 8 S8.1) ──────────────────────────────────────────────────
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<NinetyNine.Web.Hubs.IHubConnectionTracker,
+    NinetyNine.Web.Hubs.HubConnectionTracker>();
+builder.Services.AddHostedService<NinetyNine.Web.Services.NotificationPollerService>();
+
 // ── Anti-forgery ──────────────────────────────────────────────────────────────
 builder.Services.AddAntiforgery();
 
@@ -177,6 +183,9 @@ if (mockAuthEnabled)
 
 // ── Avatar endpoint ───────────────────────────────────────────────────────────
 AvatarEndpoint.Map(app);
+
+// ── SignalR (Sprint 8 S8.1) ───────────────────────────────────────────────────
+app.MapHub<NinetyNine.Web.Hubs.NotificationHub>("/hubs/notifications");
 
 // ── Blazor ────────────────────────────────────────────────────────────────────
 app.MapRazorComponents<App>()
