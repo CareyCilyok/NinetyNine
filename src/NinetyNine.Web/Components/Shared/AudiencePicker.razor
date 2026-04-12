@@ -1,0 +1,76 @@
+@* AudiencePicker — segmented radio-group for the 4-tier Audience enum.
+
+   Four segments (Private / Friends / Communities / Public) styled as
+   labeled radio buttons inside <label> wrappers so static SSR picks up
+   the selection natively and the form POST carries the value. No
+   @onclick handlers — those would require a Blazor circuit per DEF-004.
+
+   Reused by EditProfile.razor (Sprint 3 S3.4). Future profile pages
+   that need to display the same control (e.g. per-game visibility)
+   can consume it too.
+
+   See docs/plans/friends-communities-v1.md Sprint 3 S3.3.
+*@
+
+<div class="nn-audience-picker" role="radiogroup" aria-label="@AriaLabel">
+    @foreach (var option in _options)
+    {
+        var inputId = $"{Name.Replace('.', '-')}-{option.Value}";
+        var isSelected = Value == option.Value;
+        <label class="nn-audience-picker__option @(isSelected ? "nn-audience-picker__option--selected" : null)"
+               for="@inputId"
+               title="@option.Tooltip">
+            <input type="radio"
+                   id="@inputId"
+                   name="@Name"
+                   value="@option.Value"
+                   checked="@isSelected"
+                   class="nn-audience-picker__input" />
+            <img src="@option.Icon"
+                 alt=""
+                 role="presentation"
+                 class="nn-audience-picker__icon" />
+            <span class="nn-audience-picker__label">@option.Label</span>
+        </label>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Current selected value. Used for the checked state and the
+    /// selected-option CSS modifier.
+    /// </summary>
+    [Parameter] public Audience Value { get; set; } = Audience.Private;
+
+    /// <summary>
+    /// Form field name. Must match the <c>[SupplyParameterFromForm]</c>
+    /// model-property path (e.g. <c>"_model.EmailAudience"</c>) so the
+    /// browser POST reaches the right backing field.
+    /// </summary>
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+
+    /// <summary>ARIA label for the group; defaults to "Audience".</summary>
+    [Parameter] public string AriaLabel { get; set; } = "Audience";
+
+    private readonly record struct PickerOption(
+        Audience Value,
+        string Label,
+        string Icon,
+        string Tooltip);
+
+    private static readonly PickerOption[] _options =
+    [
+        new(Audience.Private, "Private",
+            "/icons/phosphor/regular/key.svg",
+            "Only you."),
+        new(Audience.Friends, "Friends",
+            "/icons/phosphor/regular/user.svg",
+            "Your mutual friends."),
+        new(Audience.Communities, "Communities",
+            "/icons/phosphor/regular/users-three.svg",
+            "Anyone who shares a community with you."),
+        new(Audience.Public, "Public",
+            "/icons/phosphor/regular/globe.svg",
+            "Any signed-in pool player."),
+    ];
+}

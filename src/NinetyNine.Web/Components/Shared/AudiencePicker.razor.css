@@ -1,0 +1,109 @@
+/* =====================================================================
+   AudiencePicker — segmented 4-tier audience radio group.
+   Scoped to AudiencePicker.razor. Uses only var(--nn-*) tokens.
+   ===================================================================== */
+
+.nn-audience-picker {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.25rem;
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    max-width: 100%;
+    flex-wrap: wrap;
+}
+
+.nn-audience-picker__option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-2) var(--nn-space-3);
+    min-height: var(--nn-touch-target);
+    border: 1px solid transparent;
+    border-radius: calc(var(--nn-radius-md) - 0.125rem);
+    background-color: transparent;
+    color: var(--nn-text-primary);
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.2;
+    transition:
+        background-color var(--nn-transition-fast),
+        color var(--nn-transition-fast),
+        border-color var(--nn-transition-fast),
+        box-shadow var(--nn-transition-fast);
+}
+
+.nn-audience-picker__option:hover:not(.nn-audience-picker__option--selected) {
+    background-color: var(--nn-bg-tertiary);
+}
+
+.nn-audience-picker__option--selected {
+    background-color: var(--nn-accent-teal);
+    color: var(--nn-text-on-accent);
+    border-color: var(--nn-accent-teal-hover);
+}
+
+.nn-audience-picker__option--selected:hover {
+    background-color: var(--nn-accent-teal-hover);
+}
+
+/* Hide the native radio visually but keep it focusable + form-postable. */
+.nn-audience-picker__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.nn-audience-picker__option:focus-within {
+    outline: 2px solid var(--nn-focus-ring);
+    outline-offset: 2px;
+    z-index: 1;
+}
+
+.nn-audience-picker__icon {
+    width: 16px;
+    height: 16px;
+    filter: invert(85%);
+    flex-shrink: 0;
+}
+
+/* Invert filter on selected option to make the icon readable on the
+   teal fill. */
+.nn-audience-picker__option--selected .nn-audience-picker__icon {
+    filter: invert(100%);
+}
+
+.nn-audience-picker__label {
+    white-space: nowrap;
+}
+
+/* Stack to a single column on narrow viewports so each segment gets
+   full width rather than wrapping awkwardly. */
+@media (max-width: 575px) {
+    .nn-audience-picker {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .nn-audience-picker__option {
+        justify-content: flex-start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nn-audience-picker__option {
+        transition: none;
+    }
+}
