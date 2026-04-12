@@ -9,6 +9,8 @@
 @inject IGameRepository GameRepository
 @inject IVenueService VenueService
 @inject ICommunityService CommunityService
+@inject IMatchService MatchService
+@inject IPlayerRepository PlayerRepository
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
 @inject ILogger<Profile> Logger
@@ -270,6 +272,43 @@
                 </ul>
             }
         </section>
+
+        @* ── 5. Recent matches card (Sprint 10 S10.6) ─────────────────── *@
+        @if (_recentMatches.Count > 0)
+        {
+            <section class="nn-profile-page__card nn-profile-page__games-card"
+                     aria-label="Recent matches">
+                <h2 class="nn-profile-page__card-title">Recent matches</h2>
+                <ul class="nn-profile-page__games-list" role="list">
+                    @foreach (var match in _recentMatches)
+                    {
+                        var opponentId = match.PlayerIds.FirstOrDefault(p => p != _profile.PlayerId);
+                        var opponentName = _matchOpponentNames.GetValueOrDefault(opponentId, "—");
+                        var isWinner = match.WinnerPlayerId == _profile.PlayerId;
+                        var isLoser = match.Status == MatchStatus.Completed && match.WinnerPlayerId is not null && !isWinner;
+                        var resultLabel = match.Status == MatchStatus.Completed
+                            ? (isWinner ? "Won" : "Lost")
+                            : match.Status.ToString();
+
+                        <li class="nn-profile-page__game-row" role="listitem">
+                            <a href="/matches/@match.MatchId"
+                               class="nn-profile-page__game-link"
+                               aria-label="@($"Match vs {opponentName}, {resultLabel}")">
+                                <time class="nn-profile-page__game-date"
+                                      datetime="@match.CreatedAt.ToString("O")"
+                                      title="@match.CreatedAt.ToLocalTime().ToString("f")">
+                                    @match.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")
+                                </time>
+                                <span class="nn-profile-page__game-venue">vs @opponentName</span>
+                                <span class="nn-profile-page__game-score">
+                                    @resultLabel
+                                </span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
     }
 
 </div>
@@ -284,6 +323,8 @@
     private Dictionary<Guid, string> _venueNames = new();
     private HashSet<Guid> _maskedVenueIds = new();
     private List<Community> _visibleCommunities = [];
+    private List<Match> _recentMatches = [];
+    private Dictionary<Guid, string> _matchOpponentNames = new();
     private bool _loading = true;
     private Guid? _viewerId;
 
@@ -411,6 +452,26 @@
             catch (Exception ex)
             {
                 Logger.LogWarning(ex, "Failed to load communities for player {PlayerId}.", PlayerId);
+            }
+
+            // Recent matches (Sprint 10 S10.6)
+            try
+            {
+                var matches = await MatchService.ListForPlayerAsync(PlayerId, skip: 0, limit: 5);
+                _recentMatches = matches.ToList();
+                var opponentIds = _recentMatches
+                    .SelectMany(m => m.PlayerIds)
+                    .Where(pid => pid != PlayerId)
+                    .Distinct();
+                foreach (var oid in opponentIds)
+                {
+                    var p = await PlayerRepository.GetByIdAsync(oid);
+                    if (p is not null) _matchOpponentNames[oid] = p.DisplayName;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to load matches for player {PlayerId}.", PlayerId);
             }
         }
         catch (Exception ex)
