@@ -16,8 +16,12 @@ public sealed class DataSeeder(
     IVenueRepository venueRepository,
     IGameRepository gameRepository,
     IFriendshipRepository friendshipRepository,
+    IFriendRequestRepository friendRequestRepository,
     ICommunityRepository communityRepository,
     ICommunityMemberRepository communityMemberRepository,
+    ICommunityInvitationRepository communityInvitationRepository,
+    ICommunityJoinRequestRepository communityJoinRequestRepository,
+    IOwnershipTransferRepository ownershipTransferRepository,
     ILogger<DataSeeder> logger,
     IPasswordHasher<Player> passwordHasher) : IDataSeeder
 {
@@ -140,6 +144,10 @@ public sealed class DataSeeder(
         // See docs/plans/friends-communities-v1.md Sprint 2 S2.6.
         var communityChange = await ReconcileSeededCommunityAsync(ct);
 
+        // Expiration sweep: mark stale Pending requests/invitations/transfers
+        // as Expired. Runs on every startup. Sprint 4 S4.5.
+        var expired = await SweepExpiredPendingAsync(ct);
+
         // Idempotent creation: if the primary test player already exists,
         // we've already seeded at some point — skip the rest of the seed.
         var existing = await playerRepository.GetByDisplayNameAsync(
@@ -154,6 +162,8 @@ public sealed class DataSeeder(
             if (communityChange.CommunityCreated) parts.Add("created Pocket Sports community");
             if (communityChange.MembersAdded > 0) parts.Add($"added {communityChange.MembersAdded} community member(s)");
             if (communityChange.VenuesAffiliated > 0) parts.Add($"affiliated {communityChange.VenuesAffiliated} venue(s)");
+            var totalExpired = expired.FriendRequests + expired.Invitations + expired.JoinRequests + expired.Transfers;
+            if (totalExpired > 0) parts.Add($"expired {totalExpired} stale pending item(s)");
             if (parts.Count > 0)
                 logger.LogInformation("Seed skipped — test players already exist. {Parts}.",
                     string.Join(", ", parts));
@@ -631,5 +641,130 @@ public sealed class DataSeeder(
             return (1, total - 1);
 
         return (0, total);
+    }
+
+    // ── Sprint 4 S4.5: expiration sweep ────────────────────────────────
+
+    private record SweepResult(int FriendRequests, int Invitations, int JoinRequests, int Transfers);
+
+    /// <summary>
+    /// Marks stale Pending items as Expired. Runs on every startup;
+    /// idempotent since only Pending → Expired transitions happen.
+    /// <list type="bullet">
+    /// <item>Friend requests > 30 days.</item>
+    /// <item>Community invitations > 14 days.</item>
+    /// <item>Community join requests > 30 days.</item>
+    /// <item>Ownership transfers past <c>ExpiresAt</c>.</item>
+    /// </list>
+    /// </summary>
+    private async Task<SweepResult> SweepExpiredPendingAsync(CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+
+        int friendReqs = await ExpireFriendRequestsAsync(now - TimeSpan.FromDays(30), ct);
+        int invites = await ExpireInvitationsAsync(now - TimeSpan.FromDays(14), ct);
+        int joins = await ExpireJoinRequestsAsync(now - TimeSpan.FromDays(30), ct);
+        int xfers = await ExpireTransfersAsync(now, ct);
+
+        if (friendReqs + invites + joins + xfers > 0)
+            logger.LogInformation(
+                "Expiration sweep: {FriendReqs} friend request(s), {Invites} invitation(s), " +
+                "{Joins} join request(s), {Transfers} ownership transfer(s).",
+                friendReqs, invites, joins, xfers);
+
+        return new SweepResult(friendReqs, invites, joins, xfers);
+    }
+
+    private async Task<int> ExpireFriendRequestsAsync(DateTime cutoff, CancellationToken ct)
+    {
+        int count = 0;
+        // No global "list all pending" exists — iterate seeded test players.
+        // Dev-only seeder; production would use a bulk UpdateMany.
+        foreach (var displayName in IDataSeeder.TestPlayerDisplayNames)
+        {
+            var player = await playerRepository.GetByDisplayNameAsync(displayName, ct);
+            if (player is null) continue;
+
+            var inbox = await friendRequestRepository.ListIncomingAsync(
+                player.PlayerId, FriendRequestStatus.Pending, ct);
+            foreach (var req in inbox)
+            {
+                if (req.CreatedAt < cutoff)
+                {
+                    await friendRequestRepository.UpdateStatusAsync(
+                        req.RequestId, FriendRequestStatus.Expired, DateTime.UtcNow, ct);
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private async Task<int> ExpireInvitationsAsync(DateTime cutoff, CancellationToken ct)
+    {
+        int count = 0;
+        foreach (var displayName in IDataSeeder.TestPlayerDisplayNames)
+        {
+            var player = await playerRepository.GetByDisplayNameAsync(displayName, ct);
+            if (player is null) continue;
+
+            var pending = await communityInvitationRepository.ListByInviteeAsync(
+                player.PlayerId, CommunityInvitationStatus.Pending, ct);
+            foreach (var inv in pending)
+            {
+                if (inv.CreatedAt < cutoff)
+                {
+                    await communityInvitationRepository.UpdateStatusAsync(
+                        inv.InvitationId, CommunityInvitationStatus.Expired, DateTime.UtcNow, ct);
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private async Task<int> ExpireJoinRequestsAsync(DateTime cutoff, CancellationToken ct)
+    {
+        int count = 0;
+        // Iterate communities and check their pending join requests.
+        var allCommunities = await communityRepository.SearchPublicByNameAsync("", limit: 1000, ct);
+        foreach (var community in allCommunities)
+        {
+            var pending = await communityJoinRequestRepository.ListPendingByCommunityAsync(community.CommunityId, ct);
+            foreach (var req in pending)
+            {
+                if (req.CreatedAt < cutoff)
+                {
+                    await communityJoinRequestRepository.UpdateStatusAsync(
+                        req.RequestId, CommunityJoinRequestStatus.Expired, DateTime.UtcNow, null, ct);
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private async Task<int> ExpireTransfersAsync(DateTime now, CancellationToken ct)
+    {
+        int count = 0;
+        // Check each test player's pending transfers as target.
+        foreach (var displayName in IDataSeeder.TestPlayerDisplayNames)
+        {
+            var player = await playerRepository.GetByDisplayNameAsync(displayName, ct);
+            if (player is null) continue;
+
+            var pending = await ownershipTransferRepository.ListPendingForTargetAsync(player.PlayerId, ct);
+            foreach (var xfer in pending)
+            {
+                if (now > xfer.ExpiresAt)
+                {
+                    xfer.Status = OwnershipTransferStatus.Expired;
+                    xfer.RespondedAt = now;
+                    await ownershipTransferRepository.UpdateAsync(xfer, ct);
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 }
