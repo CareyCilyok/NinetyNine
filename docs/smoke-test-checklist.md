@@ -787,6 +787,46 @@ Result: __________  (PASS / FAIL / BLOCKED)
 
 - [ ] Navigate through all main pages — verify no breakage from the legacy bool removal or seeder reconcile.
 
+### 23. User lifecycle (Sprint 7)
+
+*Sprint 7 simplifies registration, adds self-deletion with a 7-day cooldown, and handles retired player display.*
+
+#### 23.1 — Registration
+
+- [ ] Navigate to `/register`.
+- [ ] Verify: no confirm-password field; password field only.
+- [ ] Enter a display name that is already taken (e.g., "carey").
+- [ ] Verify: "That display name is already taken." error with 3 suggestion chips (e.g., carey_99, carey_pool, carey_42).
+- [ ] Click a suggestion chip — verify the form reloads with the suggested name pre-filled.
+- [ ] Verify: retirement disclosure in the display-name hint text.
+
+#### 23.2 — Deletion flow
+
+- [ ] Sign in as carey. Navigate to `/players/me/edit`.
+- [ ] Verify: an "Account" section at the bottom with a "Delete account" link.
+- [ ] Click "Delete account" → `/settings/delete`.
+- [ ] Verify: "What will be deleted" and "What will be preserved" lists.
+- [ ] If carey owns communities: verify the deletion is blocked with links to transfer ownership.
+- [ ] Transfer ownership if needed, then return to `/settings/delete`.
+- [ ] Click "Continue to deletion" → `/settings/delete/confirm`.
+- [ ] Type an incorrect display name and submit — verify error "Display name does not match."
+- [ ] Type the correct display name and submit.
+- [ ] Verify: redirect to `/settings/delete/scheduled` with the deletion date (7 days out).
+- [ ] Click "Cancel deletion" — verify redirect to `/players/me`.
+- [ ] Verify: no deletion is scheduled (the player is active again).
+
+#### 23.3 — Retired player display
+
+- [ ] (After executing a test deletion via mongosh or waiting for cooldown) View a retired player's profile.
+- [ ] Verify: page shows "{DisplayName}" with "This player is no longer active. Their game history is preserved."
+- [ ] Verify: no PII, no contact card, no stats section.
+- [ ] Verify: the retired player does not appear on the leaderboard.
+- [ ] Verify: PlayerBadge for the retired player shows the name without a link.
+
+#### 23.4 — No regression
+
+- [ ] Navigate through all main pages — verify no breakage from the registration or deletion changes.
+
 ---
 
 ## Cross-Browser Results Table
@@ -817,6 +857,7 @@ Run the complete checklist (sections 1–15) three times — once per browser �
 | 20. Sprint 4 admin + filters + transfer | | | |
 | 21. Sprint 5 discovery + notifications + block | | | |
 | 22. Sprint 6 tech debt + About page | | | |
+| 23. Sprint 7 user lifecycle | | | |
 | **Overall** | | | |
 
 Cell values: **PASS** / **FAIL** / **SKIP** / **BLOCKED**
