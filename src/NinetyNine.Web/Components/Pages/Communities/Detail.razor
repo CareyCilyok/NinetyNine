@@ -275,8 +275,7 @@
         }
 
         _isMember = await CommunityService.IsMemberAsync(CommunityId, _viewerId!.Value);
-        _isOwner = _community.OwnerType == CommunityOwnerType.Player
-                && _community.OwnerPlayerId == _viewerId;
+        _isOwner = _community.OwnerPlayerId == _viewerId;
         _members = (await CommunityService.ListMembersAsync(CommunityId, _viewerId)).ToList();
         _memberCount = _members.Count;
 

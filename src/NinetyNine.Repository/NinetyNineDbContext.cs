@@ -195,16 +195,17 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
             Builders<Community>.IndexKeys.Ascending(c => c.Visibility),
             new CreateIndexOptions { Name = "idx_communities_visibility" });
 
-        // 10. "Communities I own" — sparse because only player-owned
-        // communities populate this field.
+        // 10. "Communities I own". No longer sparse — every community has
+        // a non-null OwnerPlayerId now that venue ownership was removed
+        // by the 2026-04-11 principle update.
         var ownerPlayerIndex = new CreateIndexModel<Community>(
             Builders<Community>.IndexKeys.Ascending(c => c.OwnerPlayerId),
-            new CreateIndexOptions { Name = "idx_communities_ownerPlayerId", Sparse = true });
+            new CreateIndexOptions { Name = "idx_communities_ownerPlayerId" });
 
-        // 11. Venue-owned communities — sparse for the same reason.
-        var ownerVenueIndex = new CreateIndexModel<Community>(
-            Builders<Community>.IndexKeys.Ascending(c => c.OwnerVenueId),
-            new CreateIndexOptions { Name = "idx_communities_ownerVenueId", Sparse = true });
+        // ── idx_communities_ownerVenueId is intentionally absent.
+        // Venues cannot own communities; see the plan's 2026-04-11 fork
+        // B reversal. Legacy indexes on existing dev databases are
+        // harmless (empty) and can be dropped manually if desired.
 
         communities.Indexes.CreateMany(new[]
         {
@@ -212,7 +213,6 @@ public sealed class NinetyNineDbContext : INinetyNineDbContext
             slugIndex,
             visibilityIndex,
             ownerPlayerIndex,
-            ownerVenueIndex,
         });
     }
 

@@ -76,11 +76,10 @@ public sealed class CommunityService(
             Slug = normalizedSlug,
             Description = TrimDescription(description),
             Visibility = visibility,
-            OwnerType = CommunityOwnerType.Player,
             OwnerPlayerId = ownerPlayerId,
             CreatedByPlayerId = ownerPlayerId,
             CreatedAt = DateTime.UtcNow,
-            SchemaVersion = 1,
+            SchemaVersion = 2,
         };
 
         try
@@ -741,8 +740,7 @@ public sealed class CommunityService(
     // ── Helpers ─────────────────────────────────────────────────────
 
     private static bool IsOwner(Community community, Guid playerId)
-        => community.OwnerType == CommunityOwnerType.Player
-        && community.OwnerPlayerId == playerId;
+        => community.OwnerPlayerId == playerId;
 
     private static string? TrimDescription(string? description)
     {

@@ -45,15 +45,6 @@ public sealed class CommunityRepository(
         return results.AsReadOnly();
     }
 
-    public async Task<IReadOnlyList<Community>> ListByOwnerVenueAsync(Guid ownerVenueId, CancellationToken ct = default)
-    {
-        var filter = Builders<Community>.Filter.Eq(c => c.OwnerVenueId, ownerVenueId);
-        var results = await _collection.Find(filter)
-            .SortBy(c => c.Name)
-            .ToListAsync(ct);
-        return results.AsReadOnly();
-    }
-
     public async Task<IReadOnlyList<Community>> SearchPublicByNameAsync(
         string namePrefix,
         int limit = 20,
@@ -83,17 +74,15 @@ public sealed class CommunityRepository(
     public async Task CreateAsync(Community community, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(community);
-        community.AssertOwnerInvariant();
         logger.LogInformation(
-            "Creating community {CommunityId} '{Name}' (owner {OwnerType})",
-            community.CommunityId, community.Name, community.OwnerType);
+            "Creating community {CommunityId} '{Name}' (owner {OwnerPlayerId})",
+            community.CommunityId, community.Name, community.OwnerPlayerId);
         await _collection.InsertOneAsync(community, cancellationToken: ct);
     }
 
     public async Task UpdateAsync(Community community, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(community);
-        community.AssertOwnerInvariant();
 
         var filter = Builders<Community>.Filter.Eq(c => c.CommunityId, community.CommunityId);
         var result = await _collection.ReplaceOneAsync(filter, community, cancellationToken: ct);

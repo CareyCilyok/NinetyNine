@@ -59,98 +59,31 @@ public class FriendshipTests
 }
 
 /// <summary>
-/// Locks in the <see cref="Community"/> owner-type / owner-id
-/// mutual-exclusion invariant required by the authorization model.
+/// After the 2026-04-11 principle update the Community model is
+/// simpler — <see cref="Community.OwnerPlayerId"/> is always set and
+/// non-nullable, venues cannot own a community. The remaining
+/// invariant is just "owner is a valid Guid" which the language's
+/// non-nullable type already enforces at compile time, so there are
+/// no runtime-invariant tests here. See the plan's fork-B reversal
+/// and <c>project-pool-players-only</c> memory.
 /// </summary>
 public class CommunityInvariantTests
 {
     [Fact]
-    public void AssertOwnerInvariant_PassesForPlayerOwned()
+    public void Community_DefaultsHaveCorrectShape()
     {
         var c = new Community
         {
             Name = "Test",
             Slug = "test",
-            OwnerType = CommunityOwnerType.Player,
             OwnerPlayerId = Guid.NewGuid(),
             CreatedByPlayerId = Guid.NewGuid(),
         };
-        c.Invoking(x => x.AssertOwnerInvariant()).Should().NotThrow();
-    }
 
-    [Fact]
-    public void AssertOwnerInvariant_PassesForVenueOwned()
-    {
-        var c = new Community
-        {
-            Name = "Test",
-            Slug = "test",
-            OwnerType = CommunityOwnerType.Venue,
-            OwnerVenueId = Guid.NewGuid(),
-            CreatedByPlayerId = Guid.NewGuid(),
-        };
-        c.Invoking(x => x.AssertOwnerInvariant()).Should().NotThrow();
-    }
-
-    [Fact]
-    public void AssertOwnerInvariant_FailsWhenPlayerOwnedHasNoPlayerId()
-    {
-        var c = new Community
-        {
-            Name = "Test",
-            Slug = "test",
-            OwnerType = CommunityOwnerType.Player,
-            OwnerPlayerId = null,
-            CreatedByPlayerId = Guid.NewGuid(),
-        };
-        c.Invoking(x => x.AssertOwnerInvariant())
-            .Should().Throw<InvalidOperationException>();
-    }
-
-    [Fact]
-    public void AssertOwnerInvariant_FailsWhenPlayerOwnedAlsoSetsVenueId()
-    {
-        var c = new Community
-        {
-            Name = "Test",
-            Slug = "test",
-            OwnerType = CommunityOwnerType.Player,
-            OwnerPlayerId = Guid.NewGuid(),
-            OwnerVenueId = Guid.NewGuid(),
-            CreatedByPlayerId = Guid.NewGuid(),
-        };
-        c.Invoking(x => x.AssertOwnerInvariant())
-            .Should().Throw<InvalidOperationException>();
-    }
-
-    [Fact]
-    public void AssertOwnerInvariant_FailsWhenVenueOwnedHasNoVenueId()
-    {
-        var c = new Community
-        {
-            Name = "Test",
-            Slug = "test",
-            OwnerType = CommunityOwnerType.Venue,
-            OwnerVenueId = null,
-            CreatedByPlayerId = Guid.NewGuid(),
-        };
-        c.Invoking(x => x.AssertOwnerInvariant())
-            .Should().Throw<InvalidOperationException>();
-    }
-
-    [Fact]
-    public void AssertOwnerInvariant_FailsWhenVenueOwnedAlsoSetsPlayerId()
-    {
-        var c = new Community
-        {
-            Name = "Test",
-            Slug = "test",
-            OwnerType = CommunityOwnerType.Venue,
-            OwnerVenueId = Guid.NewGuid(),
-            OwnerPlayerId = Guid.NewGuid(),
-            CreatedByPlayerId = Guid.NewGuid(),
-        };
-        c.Invoking(x => x.AssertOwnerInvariant())
-            .Should().Throw<InvalidOperationException>();
+        c.CommunityId.Should().NotBeEmpty("auto-generated");
+        c.Visibility.Should().Be(CommunityVisibility.Public);
+        c.SchemaVersion.Should().Be(2,
+            "Sprint 3 principle update bumped the default schema version");
+        c.OwnerPlayerId.Should().NotBe(Guid.Empty);
     }
 }

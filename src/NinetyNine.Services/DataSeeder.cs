@@ -320,13 +320,12 @@ public sealed class DataSeeder(
             {
                 Name = SeededCommunityName,
                 Slug = SeededCommunitySlug,
-                Description = "The seeded community — every test player is a member, every seeded venue is affiliated.",
+                Description = "The seeded community — every test pool player is a member, every seeded venue is affiliated.",
                 Visibility = CommunityVisibility.Public,
-                OwnerType = CommunityOwnerType.Player,
                 OwnerPlayerId = ownerPlayer.PlayerId,
                 CreatedByPlayerId = ownerPlayer.PlayerId,
                 CreatedAt = DateTime.UtcNow,
-                SchemaVersion = 1,
+                SchemaVersion = 2,
             };
             try
             {

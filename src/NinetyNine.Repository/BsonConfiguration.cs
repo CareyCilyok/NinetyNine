@@ -197,14 +197,17 @@ public static class BsonConfiguration
             cm.SetIdMember(cm.GetMemberMap(c => c.CommunityId));
             cm.GetMemberMap(c => c.CommunityId)
               .SetSerializer(new GuidSerializer(BsonType.String));
+
+            // OwnerPlayerId is non-nullable now (2026-04-11 principle
+            // update: venues can never own a community).
             cm.GetMemberMap(c => c.OwnerPlayerId)
-              .SetSerializer(new NullableSerializer<Guid>(
-                  new GuidSerializer(BsonType.String)));
-            cm.GetMemberMap(c => c.OwnerVenueId)
-              .SetSerializer(new NullableSerializer<Guid>(
-                  new GuidSerializer(BsonType.String)));
+              .SetSerializer(new GuidSerializer(BsonType.String));
             cm.GetMemberMap(c => c.CreatedByPlayerId)
               .SetSerializer(new GuidSerializer(BsonType.String));
+
+            // Legacy schema-v1 `ownerType` / `ownerVenueId` fields on
+            // old docs are ignored by AutoMap's default extra-element
+            // handling.
         });
     }
 

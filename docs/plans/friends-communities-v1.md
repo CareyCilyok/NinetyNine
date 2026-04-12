@@ -43,7 +43,7 @@ Every fork below was picked against that single criterion. When the two sides co
 | Fork | Decision | Why this is both usable and privacy-centric |
 |---|---|---|
 | **A — Friend request workflow** | Request / accept from day 1 | One extra click vs. mutual-add is a negligible UX cost; in return you get recipient consent (privacy), the rate-limit / spam / harassment controls from the security plan, and an immutable audit of who initiated. Mutual-add would also be a throwaway you'd ship twice. |
-| **B — Venue-owned communities** | Data model in v1.0 (`OwnerType` + nullable FKs); UI in v1.1 | Keeps the MVP small without painting the schema into a corner. When we need venue-owned UI, there's no migration. |
+| **B — Venue-owned communities** | ~~Data model in v1.0; UI in v1.1~~ **Removed entirely (2026-04-11 principle update)** | Only pool players control communities. Venues may be affiliated with a community (`Venue.CommunityId`), but never own or govern. The `CommunityOwnerType` enum and `Community.OwnerVenueId` field are stripped from the model; future group decisions ("should we rename this community?", "who becomes the next owner?", "should Bumpers be affiliated?") go through an in-app polling/voting feature restricted to pool players. Sprint 4 S4.1 is removed; see the [pool-players-only memory](../../.claude/projects/-home-carey-source-repos-NinetyNine/memory/project-pool-players-only.md). |
 | **C — `Communities` audience tier semantics** | "Shares at least one community with the viewer" (union, most-permissive wins within the tier) | Pick-a-community-per-field is unusable in a small app. Shared-membership is the only interpretation that survives contact with reality. |
 | **D — bool → Audience migration** | `true` → `Friends`, not `Public` | Strictly-tighter default (security's "no silent widening" principle). One-time banner on Edit Profile after migration explains what changed and how to widen back. |
 | **E — Mongo transactions on accept** | Idempotent compensating (no replica set) | Current Mongo is single-node; transactions would need a replica-set rebuild. Compensating is safe here because the friendship unique index prevents dupes and the request-status flip is idempotent. |
@@ -126,7 +126,7 @@ Each sprint is sized ~M (one focused week of solo work). Sprint 0 is a hard prer
 
 - Each class in `NinetyNine.Model/` with a Guid id, required fields per the backend plan, `CreatedAt = DateTime.UtcNow` defaults
 - `Friendship` has `PlayerAId`, `PlayerBId` (canonically ordered, lower first), `PlayerIdsKey` string (`"{a}:{b}"`), `Since`, `CreatedVia`
-- `Community` has `OwnerType` enum (`Player | Venue`), `OwnerPlayerId?`, `OwnerVenueId?` (mutually exclusive), `Visibility` enum (`Public | Private`), `SchemaVersion = 1`, `Slug`, `Description?`
+- `Community` has non-nullable `OwnerPlayerId` (always a pool player — see fork B update), `Visibility` enum (`Public | Private`), `SchemaVersion = 1`, `Slug`, `Description?`
 - `Venue` gains `CommunityId?` and `CreatedByPlayerId?` (latter is retroactive — null for existing venues; the first editor of a legacy venue claims authorship)
 - Unit tests: canonical ordering invariant on `Friendship`; enum mutual-exclusion invariant on `Community`
 
@@ -159,7 +159,7 @@ Each sprint is sized ~M (one focused week of solo work). Sprint 0 is a hard prer
 | 8 | `communities.slug` | url lookup | yes |
 | 9 | `communities.visibility` | public community browse | no |
 | 10 | `communities.ownerPlayerId` | "communities I own" | no |
-| 11 | `communities.ownerVenueId` | venue-owned communities | no |
+| 11 | ~~`communities.ownerVenueId`~~ | ~~venue-owned communities~~ | — removed by the 2026-04-11 principle update (venues never own communities). |
 | 12 | `community_members.{communityId, joinedAt}` | members ordered by join | no |
 | 13 | `community_members.{playerId, communityId}` | "my communities", dedupe | yes |
 | 14 | `community_members.{communityId, role}` | list mods/owners | no |
@@ -538,13 +538,11 @@ Add to `docs/smoke-test-checklist.md`:
 
 ## Sprint 4 — v1.1 polish
 
-**Sprint goal:** Venue-owned communities have a UI; admin role exists; leaderboard can be filtered by community; friends-only leaderboard works.
+**Sprint goal:** Admin role exists; leaderboard can be filtered by community; friends-only leaderboard works; expiration sweep. ~~Venue-owned communities UI is removed from scope per the 2026-04-11 principle update — venues can only be *affiliated* with communities (Sprint 3 S3.2), never own or govern.~~
 
-### S4.1 — Venue-owned community creation UI [M]
+### ~~S4.1 — Venue-owned community creation UI~~ [removed]
 
-- `/venues/{id}/edit` gets a "Create a community for this venue" button
-- Pre-fills name = venue name, visibility = Public, owner type = Venue, owner venue id = current venue
-- After creation, the venue is auto-affiliated with the new community
+Removed by the 2026-04-11 principle update. Venues cannot own or govern communities. Venue ↔ community is affiliation-only via `Venue.CommunityId` (Sprint 3 S3.2). Future group decisions about venue affiliations will be made through the in-app polling/voting feature by the community's pool-player members.
 
 ### S4.2 — Admin role [M]
 
@@ -646,3 +644,4 @@ Every sprint's DB changes are additive (new collections, new fields). No destruc
 | 2026-04-11 | Initial plan accepted; Sprint 0 started. Fork selections A–E locked; all open questions answered per "most usable yet privacy-centric" north star. | Carey + Claude synthesis of 5 specialist sub-plans |
 | 2026-04-11 | S0.1 deviation: legacy `ProfileVisibility.{EmailAddress,PhoneNumber,RealName,Avatar}` bool properties are NOT marked `[Obsolete]` despite the plan's acceptance criteria calling for it. `TreatWarningsAsErrors=true` in every csproj would turn ~20 obsolete-usage warnings into build errors at call sites that don't migrate until Sprint 3. XML doc comments now carry the "legacy — use `*Audience`" signal instead. Functionally equivalent; no scope change. | Claude (during S0.1 implementation) |
 | 2026-04-11 | Smoke-test section renumbering: Sprint 0 took §16 (Foundation migration verification), so every subsequent sprint's smoke section shifted down by one. Sprint 1 = §17, Sprint 2 = §18, Sprint 3 = §19, Sprint 4 = §20, Sprint 5 = §21. The earlier plan draft double-booked §16 across Sprint 0 and Sprint 1 — this resolves the conflict. No scope change. | Claude (at Sprint 1 kickoff) |
+| 2026-04-11 | **Principle update: pool players are the only actors.** The users of the app are called "pool players" (not "users"). Only pool players control communities. Venues can be affiliated with a community via `Venue.CommunityId` (Sprint 3 S3.2) but can never own, admin, invite, or govern. Fork B is reversed: the `CommunityOwnerType` enum, `Community.OwnerVenueId` field, `Community.OwnerType` discriminator, `ICommunityRepository.ListByOwnerVenueAsync`, and related indexes/tests are all removed. Sprint 4 S4.1 (venue-owned community creation UI) is deleted from scope. A future polling/voting feature will let pool players make group decisions. See [project-pool-players-only memory](../../.claude/projects/-home-carey-source-repos-NinetyNine/memory/project-pool-players-only.md). | Carey (at Sprint 3 kickoff) |

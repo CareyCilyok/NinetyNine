@@ -1,15 +1,19 @@
 namespace NinetyNine.Model;
 
 /// <summary>
-/// A named group of players — the first-class "communities / groups"
-/// concept. Can be owned by an individual <see cref="Player"/> (v1.0) or
-/// by a <see cref="Venue"/> (v1.1 UI, v1.0 data model).
+/// A named group of pool players — the first-class "communities / groups"
+/// concept. Always owned by a single pool player (see
+/// <see cref="OwnerPlayerId"/>).
 /// <para>
-/// Exactly one of <see cref="OwnerPlayerId"/> / <see cref="OwnerVenueId"/>
-/// is non-null, keyed by <see cref="OwnerType"/>. The mutual-exclusion
-/// invariant is enforced in the service layer and asserted in tests.
+/// <b>Pool players only principle:</b> Venues can be <i>affiliated</i> with
+/// a community via <see cref="Venue.CommunityId"/> but cannot own, admin,
+/// or govern one. Future group decisions go through a polling/voting
+/// feature restricted to pool players. See the plan's 2026-04-11
+/// changelog entry and
+/// <c>.claude/.../memory/project-pool-players-only.md</c>.
 /// </para>
-/// <para>See <c>docs/plans/friends-communities-v1.md</c> Sprint 0 S0.2.</para>
+/// <para>See <c>docs/plans/friends-communities-v1.md</c> Sprint 0 S0.2
+/// (and the 2026-04-11 fork-B reversal).</para>
 /// </summary>
 public class Community
 {
@@ -35,68 +39,27 @@ public class Community
     public CommunityVisibility Visibility { get; set; } = CommunityVisibility.Public;
 
     /// <summary>
-    /// Which kind of entity owns this community. Determines which of
-    /// <see cref="OwnerPlayerId"/> / <see cref="OwnerVenueId"/> is populated.
+    /// The pool player who owns this community. Always set; a community
+    /// cannot exist without a human owner.
     /// </summary>
-    public CommunityOwnerType OwnerType { get; set; } = CommunityOwnerType.Player;
+    public Guid OwnerPlayerId { get; set; }
 
     /// <summary>
-    /// Owning player, when <see cref="OwnerType"/> is <see cref="CommunityOwnerType.Player"/>.
-    /// Must be null otherwise.
-    /// </summary>
-    public Guid? OwnerPlayerId { get; set; }
-
-    /// <summary>
-    /// Owning venue, when <see cref="OwnerType"/> is <see cref="CommunityOwnerType.Venue"/>.
-    /// Must be null otherwise. (v1.1 UI; data model exists in v1.0.)
-    /// </summary>
-    public Guid? OwnerVenueId { get; set; }
-
-    /// <summary>
-    /// Player responsible for creating this community, regardless of
-    /// <see cref="OwnerType"/>. Always set. For a venue-owned community this
-    /// is the venue staff member who initiated the claim — useful for audit.
+    /// Pool player who originally created this community. Always set, and
+    /// for player-owned communities it equals <see cref="OwnerPlayerId"/>
+    /// at create time — diverges only after ownership transfer.
     /// </summary>
     public Guid CreatedByPlayerId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Schema evolution marker. 1 = initial Sprint 0 shape.
+    /// Schema evolution marker. 1 = initial Sprint 0 shape (with the
+    /// `OwnerType` discriminator and `OwnerVenueId`); 2 = Sprint 3
+    /// principle update that removed both. The Sprint 3 BSON class map
+    /// ignores extra elements, so legacy docs still deserialize cleanly.
     /// </summary>
-    public int SchemaVersion { get; set; } = 1;
-
-    /// <summary>
-    /// Convenience: asserts the owner-type / owner-id mutual-exclusion
-    /// invariant. Called by tests and by the service layer on write.
-    /// </summary>
-    public void AssertOwnerInvariant()
-    {
-        switch (OwnerType)
-        {
-            case CommunityOwnerType.Player:
-                if (OwnerPlayerId is null)
-                    throw new InvalidOperationException(
-                        $"Community {CommunityId} has OwnerType=Player but OwnerPlayerId is null.");
-                if (OwnerVenueId is not null)
-                    throw new InvalidOperationException(
-                        $"Community {CommunityId} has OwnerType=Player but OwnerVenueId is set.");
-                break;
-
-            case CommunityOwnerType.Venue:
-                if (OwnerVenueId is null)
-                    throw new InvalidOperationException(
-                        $"Community {CommunityId} has OwnerType=Venue but OwnerVenueId is null.");
-                if (OwnerPlayerId is not null)
-                    throw new InvalidOperationException(
-                        $"Community {CommunityId} has OwnerType=Venue but OwnerPlayerId is set.");
-                break;
-
-            default:
-                throw new InvalidOperationException(
-                    $"Community {CommunityId} has unknown OwnerType {OwnerType}.");
-        }
-    }
+    public int SchemaVersion { get; set; } = 2;
 }
 
 /// <summary>
@@ -109,15 +72,4 @@ public enum CommunityVisibility
 {
     Public = 0,
     Private = 1,
-}
-
-/// <summary>
-/// Discriminator for <see cref="Community.OwnerType"/>. Determines which of
-/// <see cref="Community.OwnerPlayerId"/> / <see cref="Community.OwnerVenueId"/>
-/// is populated.
-/// </summary>
-public enum CommunityOwnerType
-{
-    Player = 0,
-    Venue = 1,
 }

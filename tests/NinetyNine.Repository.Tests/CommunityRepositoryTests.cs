@@ -21,24 +21,17 @@ public class CommunityRepositoryTests(MongoFixture fixture)
             Slug = name.ToLowerInvariant().Replace(' ', '-') + "-" + Guid.NewGuid().ToString("N")[..8],
             Description = "Test community",
             Visibility = visibility,
-            OwnerType = CommunityOwnerType.Player,
             OwnerPlayerId = Guid.NewGuid(),
             CreatedByPlayerId = Guid.NewGuid(),
         };
 
-    private static Community MakeVenueOwned(string name)
-        => new()
-        {
-            Name = name,
-            Slug = name.ToLowerInvariant().Replace(' ', '-') + "-" + Guid.NewGuid().ToString("N")[..8],
-            Visibility = CommunityVisibility.Public,
-            OwnerType = CommunityOwnerType.Venue,
-            OwnerVenueId = Guid.NewGuid(),
-            CreatedByPlayerId = Guid.NewGuid(),
-        };
+    // Note: post-2026-04-11 principle update, venue-owned communities
+    // are impossible. The venue-owned helper + persistence test have been
+    // removed. Venue ↔ community is affiliation-only via Venue.CommunityId
+    // (Sprint 3 S3.2).
 
     [Fact]
-    public async Task CreateAndGet_PlayerOwned_RoundTrip()
+    public async Task CreateAndGet_RoundTrip()
     {
         var repo = CreateRepo();
         var c = MakePlayerOwned($"Bumpers Regulars {Guid.NewGuid():N}");
@@ -48,26 +41,7 @@ public class CommunityRepositoryTests(MongoFixture fixture)
 
         retrieved.Should().NotBeNull();
         retrieved!.Name.Should().Be(c.Name);
-        retrieved.OwnerType.Should().Be(CommunityOwnerType.Player);
         retrieved.OwnerPlayerId.Should().Be(c.OwnerPlayerId);
-        retrieved.OwnerVenueId.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task CreateAsync_EnforcesOwnerInvariant()
-    {
-        var repo = CreateRepo();
-        var broken = new Community
-        {
-            Name = "Broken",
-            Slug = "broken",
-            OwnerType = CommunityOwnerType.Player,
-            OwnerPlayerId = null,
-            CreatedByPlayerId = Guid.NewGuid(),
-        };
-
-        var act = async () => await repo.CreateAsync(broken);
-        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
     [Fact]
@@ -85,7 +59,6 @@ public class CommunityRepositoryTests(MongoFixture fixture)
             Name = name.ToUpperInvariant(),
             Slug = "different-slug-" + Guid.NewGuid().ToString("N")[..8],
             Visibility = CommunityVisibility.Public,
-            OwnerType = CommunityOwnerType.Player,
             OwnerPlayerId = Guid.NewGuid(),
             CreatedByPlayerId = Guid.NewGuid(),
         };
@@ -121,16 +94,4 @@ public class CommunityRepositoryTests(MongoFixture fixture)
         results.Should().OnlyContain(c => c.Visibility == CommunityVisibility.Public);
     }
 
-    [Fact]
-    public async Task VenueOwnedCommunity_PersistsOwnerVenueId()
-    {
-        var repo = CreateRepo();
-        var c = MakeVenueOwned($"Bumpers Billiards Crew {Guid.NewGuid():N}");
-        await repo.CreateAsync(c);
-
-        var retrieved = await repo.GetByIdAsync(c.CommunityId);
-        retrieved!.OwnerType.Should().Be(CommunityOwnerType.Venue);
-        retrieved.OwnerVenueId.Should().Be(c.OwnerVenueId);
-        retrieved.OwnerPlayerId.Should().BeNull();
-    }
 }

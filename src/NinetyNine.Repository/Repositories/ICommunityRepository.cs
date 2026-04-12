@@ -19,11 +19,8 @@ public interface ICommunityRepository
     /// </summary>
     Task<Community?> GetByNameAsync(string name, CancellationToken ct = default);
 
-    /// <summary>Lists communities owned by a player. Sorted by name.</summary>
+    /// <summary>Lists communities owned by a pool player. Sorted by name.</summary>
     Task<IReadOnlyList<Community>> ListByOwnerPlayerAsync(Guid ownerPlayerId, CancellationToken ct = default);
-
-    /// <summary>Lists communities owned by a venue. Sorted by name.</summary>
-    Task<IReadOnlyList<Community>> ListByOwnerVenueAsync(Guid ownerVenueId, CancellationToken ct = default);
 
     /// <summary>
     /// Case-insensitive prefix search over public communities only.
