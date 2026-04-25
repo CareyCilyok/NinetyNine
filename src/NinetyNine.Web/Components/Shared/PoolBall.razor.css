@@ -1,0 +1,36 @@
+/* =====================================================================
+   PoolBall.razor.css  (Blazor scoped)
+   ---------------------------------------------------------------------
+   Inline SVG of a numbered pool/billiard ball. Most styling lives on the
+   SVG primitives themselves (gradients, fills) since the ball pigments
+   are physical-object colors rather than theme tokens. This file only
+   handles the wrapper-level concerns: dim transition for ball pickers
+   and the typography of the inner number disc.
+   ===================================================================== */
+
+.nn-pool-ball {
+    flex-shrink: 0;
+    transition: filter var(--nn-transition-fast);
+}
+
+/* Dim mode is used in ball-picker grids to fade unselected balls. */
+.nn-pool-ball--dim {
+    filter: grayscale(0.7) opacity(0.45);
+}
+
+/* Inner number disc — viewBox-coordinate font sizing scales with Size. */
+.nn-pool-ball__number {
+    font-family: var(--nn-font-mono);
+    font-weight: 700;
+    font-size: 11px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    fill: #1a1208;
+    user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nn-pool-ball {
+        transition: none;
+    }
+}

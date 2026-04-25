@@ -1,0 +1,105 @@
+@*
+    PoolBall — inline SVG rendering of a numbered pool/billiard ball (1-9).
+
+    Standard P&B colors per the Pool & Billiard rules. Balls 1-8 are solid;
+    the 9-ball is a white sphere with a yellow horizontal band. Each ball is
+    fully self-contained — no external assets and no theme tokens consumed.
+    Ball pigments are physical-object colors, not UI tokens, so they stay
+    hardcoded against any future theme repaint.
+
+    A 3-d look is built from two radial gradients (base shading + upper-left
+    specular highlight) plus a small white number disc. Rendering at any
+    Size scales the inner geometry uniformly via the 40x40 viewBox.
+
+    Parameters:
+        Number  : 1-9. Numbers outside that range render but fall back to
+                  ball 1's color (to keep the SVG well-formed).
+        Size    : pixel diameter (default 36).
+        Dim     : true => grayscale(0.7) opacity(0.45). Used by ball pickers
+                  for unselected balls.
+        Striped : null = auto (ball 9 is striped, others solid).
+                  true / false = override the auto choice.
+*@
+
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="@Size" height="@Size"
+     viewBox="0 0 40 40"
+     class="@CssClass"
+     role="img"
+     aria-label="@AriaLabel">
+    <defs>
+        <radialGradient id="@BgradId" cx="35%" cy="32%" r="70%">
+            <stop offset="0%" stop-color="#fff" stop-opacity="0.55" />
+            <stop offset="18%" stop-color="#fff" stop-opacity="0.25" />
+            <stop offset="55%" stop-color="@Color" stop-opacity="1" />
+            <stop offset="100%" stop-color="#000" stop-opacity="0.45" />
+        </radialGradient>
+        <radialGradient id="@HighlightId" cx="32%" cy="28%" r="18%">
+            <stop offset="0%" stop-color="#fff" stop-opacity="0.95" />
+            <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+        </radialGradient>
+    </defs>
+
+    @if (IsStriped)
+    {
+        @* White sphere with a colored horizontal band, then shaded over. *@
+        <circle cx="20" cy="20" r="19" fill="#f8f5ec" />
+        <rect x="1" y="13" width="38" height="14" fill="@Color" />
+        <circle cx="20" cy="20" r="19" fill="url(#@BgradId)" fill-opacity="0.55" />
+    }
+    else
+    {
+        <circle cx="20" cy="20" r="19" fill="url(#@BgradId)" />
+    }
+
+    @* Number disc — off-white pigment, dark numeral. *@
+    <circle cx="20" cy="20" r="8.5" fill="#fdfbf4" />
+    <text x="20" y="20"
+          text-anchor="middle"
+          dominant-baseline="central"
+          class="nn-pool-ball__number">@Number</text>
+
+    @* Specular highlight — upper-left "wet light" reflection. *@
+    <circle cx="13" cy="12" r="4" fill="url(#@HighlightId)" />
+</svg>
+
+@code {
+    [Parameter] public int Number { get; set; } = 1;
+    [Parameter] public int Size { get; set; } = 36;
+    [Parameter] public bool Dim { get; set; }
+    [Parameter] public bool? Striped { get; set; }
+
+    /// <summary>
+    /// Standard P&B ball pigments (hex). The 9-ball uses the same yellow as
+    /// the 1-ball and is rendered with a stripe band rather than a solid fill.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<int, string> BallColors =
+        new Dictionary<int, string>
+        {
+            [1] = "#e5c107", // yellow
+            [2] = "#0a3a8c", // blue
+            [3] = "#b8211b", // red
+            [4] = "#4a1d72", // purple
+            [5] = "#d66616", // orange
+            [6] = "#0b6b3a", // green
+            [7] = "#6b1f18", // maroon
+            [8] = "#0f0f0f", // black
+            [9] = "#e5c107", // yellow (rendered as a stripe band)
+        };
+
+    private string Color =>
+        BallColors.TryGetValue(Number, out var c) ? c : BallColors[1];
+
+    private bool IsStriped => Striped ?? Number >= 9;
+
+    // Gradient IDs: per-ball-number is sufficient. Multiple SVG instances of
+    // the same number share an id, but every gradient with that id has the
+    // same stops, so url(#id) resolution stays correct.
+    private string BgradId => $"nn-pool-ball-bgrad-{Number}";
+    private string HighlightId => $"nn-pool-ball-hl-{Number}";
+
+    private string CssClass =>
+        Dim ? "nn-pool-ball nn-pool-ball--dim" : "nn-pool-ball";
+
+    private string AriaLabel => $"{Number} ball";
+}
