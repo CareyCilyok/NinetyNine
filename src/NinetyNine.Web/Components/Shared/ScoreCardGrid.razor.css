@@ -123,38 +123,10 @@
     gap: var(--nn-space-3);
 }
 
-/* Override the bigger frame number inside the mobile detail card.
-   This .frame-number is local to the mobile detail view (not the FrameCell),
-   so the rule lives here and does not cross the isolation boundary. */
-.sc-mobile-detail .frame-number {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: var(--nn-radius-full);
-    background-color: transparent;
-    color: var(--nn-text-secondary);
-    border: 2px solid var(--nn-border-default);
-    font-family: var(--nn-font-sans);
-    font-weight: 700;
-    font-size: 1.25rem;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.sc-mobile-detail-completed .frame-number {
-    background-color: var(--nn-accent-teal);
-    color: var(--nn-text-on-accent);
-    border-color: var(--nn-accent-teal);
-}
-
-.sc-mobile-detail-active .frame-number {
-    background-color: var(--nn-accent-gold);
-    color: var(--nn-text-inverse);
-    border-color: var(--nn-accent-gold);
-    box-shadow: 0 0 0 3px var(--nn-accent-gold-muted);
-}
+/* The mobile detail's leading badge is now a <PoolBall /> SVG. The card's
+   own border + background + status text already carry the v2 second-signal
+   for state, so the ball needs no per-state recoloring (its physical
+   pigment is already its identity). */
 
 .sc-mobile-detail-meta {
     display: flex;
@@ -312,13 +284,9 @@
     outline-offset: 2px;
 }
 
-.sc-picker-chip-number {
-    font-family: var(--nn-font-sans);
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: var(--nn-text-primary);
-    line-height: 1;
-}
+/* The chip's leading element is now a <PoolBall /> SVG; no .sc-picker-chip-number
+   span. The running-total readout below carries the second signal — colored
+   teal for completed chips, default tertiary for pending. */
 
 .sc-picker-chip-total {
     font-family: var(--nn-font-mono);
@@ -343,10 +311,6 @@
 .sc-picker-chip-active {
     border-color: var(--nn-accent-gold);
     box-shadow: inset 0 0 0 1px var(--nn-accent-gold);
-}
-
-.sc-picker-chip-active .sc-picker-chip-number {
-    color: var(--nn-accent-gold);
 }
 
 /* Selected (user-chosen in picker). Shared styling on top of the others. */
@@ -494,4 +458,12 @@
 .sc-summary-total .sc-summary-number {
     color: var(--nn-accent-gold);
     font-size: 1.75rem;
+}
+
+/* Threshold glow — applied when running score crosses the v2 max-90 mark.
+   Two signals: the teal box-shadow plus a subtle teal-tinted border so the
+   state still reads on themes/contexts where shadows are flattened. */
+.sc-summary-total--threshold {
+    box-shadow: var(--nn-shadow-glow-teal);
+    border: 1px solid var(--nn-accent-teal);
 }

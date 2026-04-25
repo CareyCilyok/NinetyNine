@@ -1,18 +1,22 @@
 @*
-    ScoreCardGrid — the full 9-frame P&B score card.
+    ScoreCardGrid — the full 9-frame P&B score card (v2 visual refresh).
 
     Desktop (>= 768px):
         9-column CSS grid. Each column is a <FrameCell> rendering a
-        vertically-stacked (Break Bonus / Ball Count / Running Total) card.
+        vertically-stacked (Break Bonus / Ball Count / Running Total) card
+        with a numbered <PoolBall /> as its frame-number badge.
 
     Mobile (< 768px):
         Large "frame-detail" card at the top shows the currently focused
-        frame's three stats, followed by a horizontally-scrolling strip of
-        nine tiny thumbnail chips (scroll-snap, no JS interop) that act as a
-        picker. Tapping a chip focuses that frame.
+        frame's three stats with a 44px <PoolBall /> as the leading icon,
+        followed by a horizontally-scrolling strip of nine compact chips
+        (scroll-snap, no JS interop) that act as a picker. Each chip uses
+        a 20px <PoolBall /> over its running-total readout.
 
-    Below both layouts: a summary strip showing total score, completed count,
-    average per frame, and the active frame number — with Phosphor icons.
+    Below both layouts: a summary strip showing total score, completed
+    count, average per frame, and the active frame number — with Phosphor
+    icons. The Total tile gets a conditional teal glow when score >= 90
+    (sc-summary-total--threshold).
 
     Parent API (STABLE — do not rename or remove):
         Game             : the game to render (null shows empty placeholder)
@@ -44,19 +48,22 @@
 
         @if (mobileFrame is not null)
         {
-            var isMobileActive = mobileFrame.IsActive && Mode == ScoreCardMode.Edit;
-            var mobileStateClass = isMobileActive
-                ? "sc-mobile-detail sc-mobile-detail-active"
-                : mobileFrame.IsCompleted
-                    ? "sc-mobile-detail sc-mobile-detail-completed"
-                    : "sc-mobile-detail sc-mobile-detail-pending";
+            var mobileStatus = StatusFor(mobileFrame);
+            var canRecordMobile = mobileFrame.IsActive && Mode == ScoreCardMode.Edit;
+            var mobileStateClass = mobileStatus switch
+            {
+                FrameStatus.Active    => "sc-mobile-detail sc-mobile-detail-active",
+                FrameStatus.Completed => "sc-mobile-detail sc-mobile-detail-completed",
+                _                     => "sc-mobile-detail sc-mobile-detail-pending"
+            };
+            var isMobileBallDim = mobileStatus is FrameStatus.Pending or FrameStatus.Future;
 
             <div class="@mobileStateClass"
                  role="group"
                  aria-label="Frame @mobileFrame.FrameNumber detail">
 
                 <div class="sc-mobile-detail-header">
-                    <span class="frame-number" aria-hidden="true">@mobileFrame.FrameNumber</span>
+                    <PoolBall Number="@mobileFrame.FrameNumber" Size="44" Dim="@isMobileBallDim" />
                     <div class="sc-mobile-detail-meta">
                         <div class="sc-mobile-detail-title">Frame @mobileFrame.FrameNumber</div>
                         <div class="sc-mobile-detail-status">@MobileStatusLabel(mobileFrame)</div>
@@ -84,7 +91,7 @@
                     </div>
                 </div>
 
-                @if (isMobileActive)
+                @if (canRecordMobile)
                 {
                     <button type="button"
                             class="btn btn-primary sc-mobile-action"
@@ -101,6 +108,8 @@
             {
                 var f = frame;
                 var isSelected = f.FrameNumber == _mobileActiveFrame;
+                var status = StatusFor(f);
+                var isBallDim = status is FrameStatus.Pending or FrameStatus.Future;
                 var chipClass = "sc-picker-chip";
                 if (isSelected) chipClass += " sc-picker-chip-selected";
                 if (f.IsCompleted) chipClass += " sc-picker-chip-completed";
@@ -112,7 +121,7 @@
                         aria-selected="@(isSelected ? "true" : "false")"
                         aria-label="@PickerAriaLabel(f)"
                         @onclick="() => SelectMobileFrame(f.FrameNumber)">
-                    <span class="sc-picker-chip-number" aria-hidden="true">@f.FrameNumber</span>
+                    <PoolBall Number="@f.FrameNumber" Size="20" Dim="@isBallDim" />
                     <span class="sc-picker-chip-total" aria-hidden="true">
                         @(f.IsCompleted ? f.RunningTotal.ToString() : EmDash)
                     </span>
@@ -125,7 +134,7 @@
     @if (Game is not null)
     {
         <div class="sc-summary" aria-live="polite" aria-atomic="true">
-            <div class="sc-summary-item sc-summary-total">
+            <div class="@SummaryTotalClass">
                 <img src="icons/phosphor/regular/trophy.svg"
                      class="nn-icon sc-summary-icon" alt="" aria-hidden="true" />
                 <div class="sc-summary-body">
@@ -185,7 +194,14 @@
     [Parameter] public ScoreCardMode Mode { get; set; } = ScoreCardMode.View;
     [Parameter] public EventCallback<FrameSubmitArgs> OnFrameSubmit { get; set; }
 
-    private const string EmDash = "\u2014";
+    private const string EmDash = "—";
+
+    /// <summary>
+    /// Score threshold above which the Total summary tile picks up the
+    /// teal "approaching perfect" glow. Per the v2 mockup; aligns with the
+    /// max-10-per-frame × 9 frames = 90 point ceiling.
+    /// </summary>
+    private const int TotalThresholdForGlow = 90;
 
     private bool _dialogVisible;
     private int _dialogFrameNumber;
@@ -223,6 +239,23 @@
 
         return Game.Frames;
     }
+
+    /// <summary>
+    /// Classify a frame using the four-value FrameStatus form — ScoreCardGrid
+    /// has Game.CurrentFrameNumber on hand, so it can differentiate the
+    /// next-up Pending frame from further-out Future ones.
+    /// </summary>
+    private FrameStatus StatusFor(Frame frame) => frame.GetStatus(Game?.CurrentFrameNumber);
+
+    /// <summary>
+    /// Total tile gains a teal glow modifier when the running score crosses
+    /// the threshold. Driven by a CSS class so the second-signal rule still
+    /// holds on light theme (where shadows render differently).
+    /// </summary>
+    private string SummaryTotalClass =>
+        Game is not null && Game.TotalScore >= TotalThresholdForGlow
+            ? "sc-summary-item sc-summary-total sc-summary-total--threshold"
+            : "sc-summary-item sc-summary-total";
 
     private void SelectMobileFrame(int frameNumber)
     {
