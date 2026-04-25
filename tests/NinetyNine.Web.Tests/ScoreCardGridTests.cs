@@ -133,4 +133,44 @@ public class ScoreCardGridTests : TestContext
         frameNumbers.Should().BeEquivalentTo(Enumerable.Range(1, 9),
             "frame numbers must be 1 through 9 in order");
     }
+
+    [Fact]
+    public void SummaryStrip_EfrenGame_GetsEfrenIlluminationClass()
+    {
+        var gameId = Guid.NewGuid();
+        var game = new Game
+        {
+            GameId = gameId,
+            IsEfrenVariant = true,
+            Frames = MakeNineFrames(gameId)
+        };
+
+        var cut = RenderComponent<ScoreCardGrid>(p => p
+            .Add(x => x.Game, game)
+            .Add(x => x.Mode, ScoreCardMode.View));
+
+        cut.Find(".sc-summary").ClassList
+            .Should().Contain("sc-summary--efren",
+                "the stats strip must illuminate gold whenever the Game is the Efren variant");
+    }
+
+    [Fact]
+    public void SummaryStrip_StandardGame_DoesNotGetEfrenClass()
+    {
+        var gameId = Guid.NewGuid();
+        var game = new Game
+        {
+            GameId = gameId,
+            IsEfrenVariant = false,
+            Frames = MakeNineFrames(gameId)
+        };
+
+        var cut = RenderComponent<ScoreCardGrid>(p => p
+            .Add(x => x.Game, game)
+            .Add(x => x.Mode, ScoreCardMode.View));
+
+        cut.Find(".sc-summary").ClassList
+            .Should().NotContain("sc-summary--efren",
+                "non-Efren games must not carry the gold illumination");
+    }
 }

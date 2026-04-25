@@ -139,7 +139,7 @@
     @* ============= SUMMARY STRIP ============= *@
     @if (Game is not null)
     {
-        <div class="sc-summary" aria-live="polite" aria-atomic="true">
+        <div class="@SummaryStripClass" aria-live="polite" aria-atomic="true">
             <div class="@SummaryTotalClass">
                 <img src="icons/phosphor/regular/trophy.svg"
                      class="nn-icon sc-summary-icon" alt="" aria-hidden="true" />
@@ -247,6 +247,16 @@
         Game is not null && Game.TotalScore >= TotalThresholdForGlow
             ? "sc-summary-item sc-summary-total sc-summary-total--threshold"
             : "sc-summary-item sc-summary-total";
+
+    // When the active player's Game is the Efren variant, illuminate the
+    // whole stat-pill row with a subtle gold ring + glow. In single-player
+    // mode the only player is always the active shooter, so the strip
+    // glows whenever Game.IsEfrenVariant. Multi-player (v0.5.x) will gate
+    // this through ScoreCardGrid being rendered for the active section.
+    private string SummaryStripClass =>
+        Game is not null && Game.IsEfrenVariant
+            ? "sc-summary sc-summary--efren"
+            : "sc-summary";
 
     private void SelectMobileFrame(int frameNumber) => _mobileActiveFrame = frameNumber;
 

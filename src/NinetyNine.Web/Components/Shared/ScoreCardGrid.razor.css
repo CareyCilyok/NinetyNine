@@ -467,3 +467,14 @@
     box-shadow: var(--nn-shadow-glow-teal);
     border: 1px solid var(--nn-accent-teal);
 }
+
+/* Efren-variant illumination — when the active player's Game is the Efren
+   variant, the whole stat-pill row glows subtly gold. Pairs with the gold
+   ring on individual FrameCell tiles to carry the always-on "this game's
+   being scored differently" signal across the card. The Total tile's
+   threshold-teal glow can stack on top without conflict — the strip's
+   gold border sits outside the per-tile teal box-shadow. */
+.sc-summary--efren {
+    border-color: var(--nn-accent-gold);
+    box-shadow: var(--nn-shadow-glow-gold);
+}
