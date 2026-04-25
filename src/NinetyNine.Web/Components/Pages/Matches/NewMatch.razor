@@ -15,9 +15,7 @@
         <header class="nn-new-match-page__header">
             <h1 class="nn-new-match-page__title">Start a match</h1>
             <p class="nn-new-match-page__subtitle">
-                @(_model.Rotation == MatchRotation.Concurrent
-                    ? "Group play (2–4 players, alternating innings)."
-                    : "Head-to-head scoring with frame-by-frame comparison.")
+                Players alternate innings frame-by-frame; each player runs their own 9-frame game.
             </p>
         </header>
 
@@ -47,119 +45,61 @@
                       FormName="new-match">
                 <DataAnnotationsValidator />
 
-                @* ─ Match rotation: Sequential vs Concurrent ─ *@
-                <div class="form-group">
-                    <label class="form-label">Match type</label>
-                    <InputRadioGroup @bind-Value="_model.Rotation" Name="_model.Rotation">
-                        <div class="nn-new-match-page__radio-group" role="radiogroup">
-                            <label class="nn-new-match-page__radio-option" for="rotation-sequential">
-                                <InputRadio id="rotation-sequential" Value="@MatchRotation.Sequential" />
-                                <span>Head-to-head</span>
-                            </label>
-                            <label class="nn-new-match-page__radio-option" for="rotation-concurrent">
-                                <InputRadio id="rotation-concurrent" Value="@MatchRotation.Concurrent" />
-                                <span>Group (2–4 players)</span>
-                            </label>
-                        </div>
-                    </InputRadioGroup>
-                </div>
+                @* ─ Roster: 2–4 players with per-player Efren ───────────── *@
+                <fieldset class="nn-new-match-page__roster">
+                    <legend class="form-label">Players</legend>
+                    <p class="form-text nn-new-match-page__roster-hint">
+                        Add 1–3 friends to play alongside you (2–4 players total).
+                        Innings rotate seat 1 → seat 2 → … → seat 1 frame 2 → … .
+                        Efren mode is per player — flip the gold ring on whoever
+                        is running it out from where the cue ball lies.
+                    </p>
 
-                @if (_model.Rotation == MatchRotation.Sequential)
-                {
-                    @* ─ Sequential: single opponent + format/target ─ *@
-                    <div class="form-group">
-                        <label class="form-label" for="opponent">Opponent</label>
-                        <InputSelect id="opponent" class="form-select"
-                                     @bind-Value="_model.OpponentId">
-                            <option value="@Guid.Empty">-- Select opponent --</option>
-                            @foreach (var p in _opponents)
-                            {
-                                <option value="@p.PlayerId">@p.DisplayName</option>
-                            }
-                        </InputSelect>
+                    @* Seat 0: the creator (you) — fixed slot. *@
+                    <div class="nn-new-match-page__roster-row nn-new-match-page__roster-row--you">
+                        <span class="nn-new-match-page__roster-seat">1.</span>
+                        <span class="nn-new-match-page__roster-name">You</span>
+                        <label class="nn-new-match-page__efren-toggle">
+                            <InputCheckbox @bind-Value="_model.CreatorEfren" />
+                            <span>Efren</span>
+                        </label>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="format">Format</label>
-                        <InputSelect id="format" class="form-select"
-                                     @bind-Value="_model.Format">
-                            <option value="@MatchFormat.Single">Single game</option>
-                            <option value="@MatchFormat.RaceTo">Race to N</option>
-                            <option value="@MatchFormat.BestOf">Best of N</option>
-                        </InputSelect>
-                    </div>
-
-                    @if (_model.Format != MatchFormat.Single)
+                    @for (int i = 0; i < _model.OpponentSeats.Count; i++)
                     {
-                        <div class="form-group">
-                            <label class="form-label" for="target">N (number of games)</label>
-                            <InputNumber id="target" class="form-control"
-                                         @bind-Value="_model.Target" min="2" max="21" />
-                            <div class="form-text">
-                                Race to: first player to win N games. Best of: first to win ⌈N/2⌉.
-                            </div>
-                        </div>
-                    }
-                }
-                else
-                {
-                    @* ─ Concurrent: per-player roster with Efren toggles ─ *@
-                    <fieldset class="nn-new-match-page__roster">
-                        <legend class="form-label">Players</legend>
-                        <p class="form-text nn-new-match-page__roster-hint">
-                            Add 1–3 friends to play alongside you (2–4 players total).
-                            Each player runs their own 9-frame game; innings rotate
-                            seat 0 → seat 1 → … → seat 0 frame 2 → … . Efren mode is
-                            per player — flip the gold ring on the players running
-                            it out from where the cue ball lies.
-                        </p>
-
-                        @* Seat 0: the creator (you) — fixed slot. *@
-                        <div class="nn-new-match-page__roster-row nn-new-match-page__roster-row--you">
-                            <span class="nn-new-match-page__roster-seat">1.</span>
-                            <span class="nn-new-match-page__roster-name">You</span>
+                        var idx = i;            // capture for lambda
+                        var seat = _model.OpponentSeats[idx];
+                        var seatNumber = idx + 2;       // seat 0 is "you" → row label 1
+                        <div class="nn-new-match-page__roster-row">
+                            <span class="nn-new-match-page__roster-seat">@seatNumber.</span>
+                            <InputSelect class="form-select nn-new-match-page__roster-select"
+                                         @bind-Value="seat.PlayerId">
+                                <option value="@Guid.Empty">-- Select player --</option>
+                                @foreach (var p in _opponents)
+                                {
+                                    <option value="@p.PlayerId">@p.DisplayName</option>
+                                }
+                            </InputSelect>
                             <label class="nn-new-match-page__efren-toggle">
-                                <InputCheckbox @bind-Value="_model.CreatorEfren" />
+                                <InputCheckbox @bind-Value="seat.IsEfrenVariant" />
                                 <span>Efren</span>
                             </label>
                         </div>
+                    }
 
-                        @for (int i = 0; i < _model.ConcurrentSeats.Count; i++)
-                        {
-                            var idx = i;            // capture for lambda
-                            var seat = _model.ConcurrentSeats[idx];
-                            var seatNumber = idx + 2;       // seat 0 is "you" → row label 1
-                            <div class="nn-new-match-page__roster-row">
-                                <span class="nn-new-match-page__roster-seat">@seatNumber.</span>
-                                <InputSelect class="form-select nn-new-match-page__roster-select"
-                                             @bind-Value="seat.PlayerId">
-                                    <option value="@Guid.Empty">-- Select player --</option>
-                                    @foreach (var p in _opponents)
-                                    {
-                                        <option value="@p.PlayerId">@p.DisplayName</option>
-                                    }
-                                </InputSelect>
-                                <label class="nn-new-match-page__efren-toggle">
-                                    <InputCheckbox @bind-Value="seat.IsEfrenVariant" />
-                                    <span>Efren</span>
-                                </label>
-                            </div>
-                        }
-
-                        <div class="nn-new-match-page__roster-actions">
-                            <button type="button" class="btn btn-ghost btn-sm"
-                                    disabled="@(!CanAddSeat)"
-                                    @onclick="AddSeat">
-                                + Add player
-                            </button>
-                            <button type="button" class="btn btn-ghost btn-sm"
-                                    disabled="@(!CanRemoveSeat)"
-                                    @onclick="RemoveLastSeat">
-                                − Remove last
-                            </button>
-                        </div>
-                    </fieldset>
-                }
+                    <div class="nn-new-match-page__roster-actions">
+                        <button type="button" class="btn btn-ghost btn-sm"
+                                disabled="@(!CanAddSeat)"
+                                @onclick="AddSeat">
+                            + Add player
+                        </button>
+                        <button type="button" class="btn btn-ghost btn-sm"
+                                disabled="@(!CanRemoveSeat)"
+                                @onclick="RemoveLastSeat">
+                            − Remove last
+                        </button>
+                    </div>
+                </fieldset>
 
                 <div class="form-group">
                     <label class="form-label" for="venue">Venue</label>
@@ -234,17 +174,16 @@
     private Guid _creatorId;
     private string _errorMessage = "";
 
-    // Concurrent matches require 2–4 players total. Seat 0 is the creator,
-    // so additional opponent slots range from 1 (a 2-player concurrent
-    // match) to 3 (a 4-player match).
-    private const int MaxConcurrentOpponents = 3;
-    private const int MinConcurrentOpponents = 1;
+    // Matches require 2–4 players total. Seat 0 is the creator, so opponent
+    // slots range from 1 (a 2-player match) to 3 (a 4-player match).
+    private const int MaxOpponents = 3;
+    private const int MinOpponents = 1;
 
     private bool CanAddSeat =>
-        _model.ConcurrentSeats.Count < MaxConcurrentOpponents;
+        _model.OpponentSeats.Count < MaxOpponents;
 
     private bool CanRemoveSeat =>
-        _model.ConcurrentSeats.Count > MinConcurrentOpponents;
+        _model.OpponentSeats.Count > MinOpponents;
 
     private static readonly BreakMethod[] _breakMethods =
     [
@@ -274,25 +213,22 @@
         _venues = (await VenueService.ListAsync(includePrivate: true)).ToList();
         _opponents = (await FriendService.ListFriendsAsync(_creatorId)).ToList();
 
-        // Default Concurrent roster: one empty opponent slot. The user
-        // can grow it up to three (4-player match total) or fill in
-        // exactly one (2-player concurrent match — semantically
-        // equivalent to a head-to-head Sequential single game, but
-        // chosen explicitly when the user wants alternating innings).
-        if (_model.ConcurrentSeats.Count == 0)
-            _model.ConcurrentSeats.Add(new ConcurrentSeatModel());
+        // Default roster: one empty opponent slot (= 2-player match). The
+        // user can grow it up to three opponent slots for a 4-player match.
+        if (_model.OpponentSeats.Count == 0)
+            _model.OpponentSeats.Add(new OpponentSeatModel());
     }
 
     private void AddSeat()
     {
         if (CanAddSeat)
-            _model.ConcurrentSeats.Add(new ConcurrentSeatModel());
+            _model.OpponentSeats.Add(new OpponentSeatModel());
     }
 
     private void RemoveLastSeat()
     {
         if (CanRemoveSeat)
-            _model.ConcurrentSeats.RemoveAt(_model.ConcurrentSeats.Count - 1);
+            _model.OpponentSeats.RemoveAt(_model.OpponentSeats.Count - 1);
     }
 
     private async Task HandleSubmitAsync()
@@ -303,61 +239,21 @@
             return;
         }
 
-        if (_model.Rotation == MatchRotation.Sequential)
-        {
-            await SubmitSequentialAsync();
-        }
-        else
-        {
-            await SubmitConcurrentAsync();
-        }
-    }
-
-    private async Task SubmitSequentialAsync()
-    {
-        if (_model.OpponentId == Guid.Empty)
-        {
-            _errorMessage = "Opponent is required.";
-            return;
-        }
-
-        var result = await MatchService.CreateMatchAsync(
-            _creatorId,
-            _model.OpponentId,
-            _model.VenueId,
-            _model.TableSize,
-            _model.Format,
-            _model.Format == MatchFormat.Single ? 1 : _model.Target,
-            _model.BreakMethod,
-            _model.TableNumber,
-            _model.Stakes);
-
-        if (!result.Success)
-        {
-            _errorMessage = result.ErrorMessage ?? "Could not create the match.";
-            return;
-        }
-
-        Navigation.NavigateTo($"/matches/{result.Value!.MatchId}/play");
-    }
-
-    private async Task SubmitConcurrentAsync()
-    {
-        // Build the player setup list from the form. Seat 0 is the
-        // creator with their Efren toggle; seats 1+ are the configured
-        // opponent rows. Skip rows whose PlayerId hasn't been chosen
-        // (the user may have added a slot and never picked anyone).
+        // Build the player setup list. Seat 0 is the creator with their
+        // Efren toggle; seats 1+ are the opponent rows. Skip rows whose
+        // PlayerId hasn't been chosen (the user may have added a slot
+        // and never picked anyone).
         var setups = new List<ConcurrentMatchPlayerSetup>
         {
             new(_creatorId, _model.CreatorEfren),
         };
-        setups.AddRange(_model.ConcurrentSeats
+        setups.AddRange(_model.OpponentSeats
             .Where(s => s.PlayerId != Guid.Empty)
             .Select(s => new ConcurrentMatchPlayerSetup(s.PlayerId, s.IsEfrenVariant)));
 
         if (setups.Count < 2)
         {
-            _errorMessage = "Pick at least one other player to start a group match.";
+            _errorMessage = "Pick at least one other player to start a match.";
             return;
         }
 
@@ -388,19 +284,9 @@
 
     private sealed class NewMatchModel
     {
-        public MatchRotation Rotation { get; set; } = MatchRotation.Sequential;
-
-        // Sequential
-        public Guid OpponentId { get; set; }
-        public MatchFormat Format { get; set; } = MatchFormat.Single;
-        public int Target { get; set; } = 3;
-
-        // Concurrent: per-seat roster (seat 0 is the creator, kept
-        // separately as CreatorEfren; ConcurrentSeats holds seats 1+).
         public bool CreatorEfren { get; set; }
-        public List<ConcurrentSeatModel> ConcurrentSeats { get; set; } = [];
+        public List<OpponentSeatModel> OpponentSeats { get; set; } = [];
 
-        // Common
         public Guid VenueId { get; set; }
         public BreakMethod BreakMethod { get; set; } = BreakMethod.Lagged;
         public TableSize TableSize { get; set; } = TableSize.SevenFoot;
@@ -408,7 +294,7 @@
         public string? Stakes { get; set; }
     }
 
-    private sealed class ConcurrentSeatModel
+    private sealed class OpponentSeatModel
     {
         public Guid PlayerId { get; set; }
         public bool IsEfrenVariant { get; set; }
