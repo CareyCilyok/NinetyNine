@@ -142,7 +142,12 @@ public sealed partial class DataSeeder(
         var (mockCommunitiesCreated, mockCommunityMembersAdded) =
             await ReconcileMockCommunitiesAsync(ct);
 
-        // 6. Expiration sweep
+        // 6. Mock game histories — see DataSeeder.MockHistory.cs.
+        //    Skips any mock player who already has games, so this only
+        //    fires for newly-added templates.
+        var mockGamesAdded = await ReconcileMockGameHistoriesAsync(ct);
+
+        // 7. Expiration sweep
         var expired = await SweepExpiredPendingAsync(ct);
 
         // ── Seed guard: if players already exist, log reconcile
@@ -161,6 +166,7 @@ public sealed partial class DataSeeder(
             if (mockPlayersAdded > 0) parts.Add($"added {mockPlayersAdded} mock player(s)");
             if (mockCommunitiesCreated > 0) parts.Add($"created {mockCommunitiesCreated} mock community/ies");
             if (mockCommunityMembersAdded > 0) parts.Add($"added {mockCommunityMembersAdded} mock-community member(s)");
+            if (mockGamesAdded > 0) parts.Add($"seeded {mockGamesAdded} mock game(s)");
             var totalExpired = expired.FriendRequests + expired.Invitations + expired.JoinRequests + expired.Transfers;
             if (totalExpired > 0) parts.Add($"expired {totalExpired} stale pending item(s)");
             if (parts.Count > 0)
