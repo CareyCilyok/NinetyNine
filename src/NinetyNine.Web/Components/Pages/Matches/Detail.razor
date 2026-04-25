@@ -17,13 +17,9 @@
         else
         {
             <header class="nn-match-detail-page__header">
-                <h1 class="nn-match-detail-page__title">
-                    @_playerNames.GetValueOrDefault(_detail.Match.PlayerIds[0], "—")
-                    vs
-                    @_playerNames.GetValueOrDefault(_detail.Match.PlayerIds[1], "—")
-                </h1>
+                <h1 class="nn-match-detail-page__title">@MatchTitle</h1>
                 <p class="nn-match-detail-page__meta">
-                    @FormatLabel(_detail.Match.Format, _detail.Match.Target)
+                    @MatchSubtitle
                     &middot; @_detail.Match.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")
                     @if (!string.IsNullOrWhiteSpace(_venueName))
                     {
@@ -51,10 +47,10 @@
                     @foreach (var playerId in _detail.Match.PlayerIds)
                     {
                         var name = _playerNames.GetValueOrDefault(playerId, "—");
-                        var wins = _detail.Games.Count(g => g.PlayerId == playerId && g.GameState == GameState.Completed);
+                        var statValue = ScoreboardValueFor(playerId);
                         <div class="nn-match-detail-page__player-score">
                             <span class="nn-match-detail-page__player-name">@name</span>
-                            <span class="nn-match-detail-page__player-wins">@wins</span>
+                            <span class="nn-match-detail-page__player-wins">@statValue</span>
                         </div>
                     }
                 </div>
@@ -128,4 +124,50 @@
         MatchFormat.BestOf => $"Best of {target}",
         _ => format.ToString(),
     };
+
+    private string MatchTitle
+    {
+        get
+        {
+            if (_detail is null) return "";
+            var ids = _detail.Match.PlayerIds;
+            if (_detail.Match.Rotation == MatchRotation.Concurrent || ids.Count > 2)
+            {
+                // Group play — list every seat. For a 4-player Match
+                // "vs" doesn't read; use comma separation.
+                return string.Join(", ",
+                    ids.Select(id => _playerNames.GetValueOrDefault(id, "—")));
+            }
+            // Sequential head-to-head.
+            return ids.Count >= 2
+                ? $"{_playerNames.GetValueOrDefault(ids[0], "—")} vs {_playerNames.GetValueOrDefault(ids[1], "—")}"
+                : (ids.Count == 1 ? _playerNames.GetValueOrDefault(ids[0], "—") : "—");
+        }
+    }
+
+    private string MatchSubtitle =>
+        _detail is null
+            ? ""
+            : _detail.Match.Rotation == MatchRotation.Concurrent
+                ? $"Group match · {_detail.Match.PlayerIds.Count} players · alternating innings"
+                : FormatLabel(_detail.Match.Format, _detail.Match.Target);
+
+    /// <summary>
+    /// Sequential matches scoreboard the per-player game wins.
+    /// Concurrent matches scoreboard each player's TotalScore (the
+    /// arbiter that picks the winner) — wins is meaningless because
+    /// every Concurrent player runs exactly one Game.
+    /// </summary>
+    private string ScoreboardValueFor(Guid playerId)
+    {
+        if (_detail is null) return "—";
+        if (_detail.Match.Rotation == MatchRotation.Concurrent)
+        {
+            var game = _detail.Games.FirstOrDefault(g => g.PlayerId == playerId);
+            return game is null ? "—" : game.TotalScore.ToString();
+        }
+        var wins = _detail.Games.Count(g =>
+            g.PlayerId == playerId && g.GameState == GameState.Completed);
+        return wins.ToString();
+    }
 }

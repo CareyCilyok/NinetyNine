@@ -15,8 +15,9 @@ public sealed class MatchRepository(
         ArgumentNullException.ThrowIfNull(match);
         await _collection.InsertOneAsync(match, cancellationToken: ct);
         logger.LogInformation(
-            "Created match {MatchId}: {Format} {Target}, venue {VenueId}, {PlayerCount} players",
-            match.MatchId, match.Format, match.Target, match.VenueId, match.PlayerIds.Count);
+            "Created match {MatchId}: {Rotation}/{Format} {Target}, venue {VenueId}, {PlayerCount} players",
+            match.MatchId, match.Rotation, match.Format, match.Target,
+            match.VenueId, match.PlayerIds.Count);
     }
 
     public async Task<Match?> GetByIdAsync(Guid matchId, CancellationToken ct = default)

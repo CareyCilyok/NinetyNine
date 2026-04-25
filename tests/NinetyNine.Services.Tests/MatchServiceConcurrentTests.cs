@@ -271,6 +271,53 @@ public class MatchServiceConcurrentTests(MongoFixture fixture)
     }
 
     [Fact]
+    public async Task EndToEnd_TwoPlayerConcurrentMatch_PlaysToCompletion()
+    {
+        // Drives a 2-player concurrent match through all 18 innings
+        // (9 frames each) using the real RecordFrameAsync + FinishInningAsync
+        // API. Validates the rotation, the per-Game completion, and the
+        // final winner-selection arbiter against actual frame scores.
+        var (matchSvc, gameSvc, _) = CreateServices();
+        var winner = Guid.NewGuid(); // seat 0 — perfect 99
+        var loser  = Guid.NewGuid(); // seat 1 — 0 across the board
+
+        var created = (await matchSvc.CreateConcurrentMatchAsync(
+            creatorPlayerId: winner,
+            players: Setups(winner, loser),
+            venueId: Guid.NewGuid(),
+            tableSize: TableSize.NineFoot,
+            breakMethod: BreakMethod.Lagged)).Value!;
+
+        // 9 frames × 2 players = 18 innings, alternating.
+        for (int frame = 1; frame <= 9; frame++)
+        {
+            // Seat 0 (winner) inning: a perfect 11-point frame.
+            var winnerGameId = created.GameIds[0];
+            await gameSvc.RecordFrameAsync(
+                winnerGameId, frame, breakBonus: 1, ballCount: 10, notes: null);
+            await matchSvc.FinishInningAsync(created.MatchId);
+
+            // Seat 1 (loser) inning: a scratch — 0 points.
+            var loserGameId = created.GameIds[1];
+            await gameSvc.RecordFrameAsync(
+                loserGameId, frame, breakBonus: 0, ballCount: 0, notes: null);
+            await matchSvc.FinishInningAsync(created.MatchId);
+        }
+
+        var final = (await matchSvc.GetMatchDetailAsync(created.MatchId))!;
+        final.Match.Status.Should().Be(MatchStatus.Completed);
+        final.Match.WinnerPlayerId.Should().Be(winner,
+            "perfect 99 beats 0 every time");
+        final.Match.CompletedAt.Should().NotBeNull();
+
+        var winnerGame = final.Games.Single(g => g.PlayerId == winner);
+        var loserGame  = final.Games.Single(g => g.PlayerId == loser);
+        winnerGame.TotalScore.Should().Be(99);
+        winnerGame.IsPerfectGame.Should().BeTrue();
+        loserGame.TotalScore.Should().Be(0);
+    }
+
+    [Fact]
     public async Task FinishInningAsync_SkipsCompletedSeats()
     {
         var (matchSvc, _, gameRepo) = CreateServices();
