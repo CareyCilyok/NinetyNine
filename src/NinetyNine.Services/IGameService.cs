@@ -8,7 +8,11 @@ namespace NinetyNine.Services;
 public interface IGameService
 {
     /// <summary>Starts a new game for the given player at the specified venue.</summary>
-    Task<Game> StartNewGameAsync(Guid playerId, Guid venueId, TableSize tableSize, CancellationToken ct = default);
+    /// <param name="isEfrenVariant">
+    /// True if the game should be scored under "Efren" variant rules
+    /// (no ball-in-hand placement after the break). Defaults to false.
+    /// </param>
+    Task<Game> StartNewGameAsync(Guid playerId, Guid venueId, TableSize tableSize, bool isEfrenVariant = false, CancellationToken ct = default);
 
     /// <summary>Records a completed frame score and advances the game state.</summary>
     Task<Game> RecordFrameAsync(Guid gameId, int frameNumber, int breakBonus, int ballCount, string? notes, CancellationToken ct = default);

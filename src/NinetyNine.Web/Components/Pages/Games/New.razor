@@ -90,6 +90,19 @@
                         </InputRadioGroup>
                     </div>
 
+                    <div class="nn-new-page__field">
+                        <label class="nn-new-page__variant-row">
+                            <InputCheckbox @bind-Value="_model.IsEfrenVariant"
+                                           class="nn-new-page__variant-checkbox" />
+                            <div class="nn-new-page__variant-copy">
+                                <span class="nn-new-page__variant-title">Efren mode</span>
+                                <span class="nn-new-page__variant-helper">
+                                    Run-out from break — no ball in hand. Named for Efren Reyes.
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+
                     <button type="submit"
                             class="btn btn-primary nn-new-page__submit"
                             disabled="@_isSaving"
@@ -178,7 +191,8 @@
             game = await GameService.StartNewGameAsync(
                 _playerId.Value,
                 Guid.Parse(_model.VenueId),
-                _model.TableSize);
+                _model.TableSize,
+                isEfrenVariant: _model.IsEfrenVariant);
         }
         catch (Exception ex)
         {
@@ -202,5 +216,11 @@
         public string? VenueId { get; set; }
 
         public TableSize TableSize { get; set; } = TableSize.SevenFoot;
+
+        /// <summary>
+        /// True when the player is choosing the Efren variant — runout from
+        /// break, no ball in hand. Defaults to false (standard rules).
+        /// </summary>
+        public bool IsEfrenVariant { get; set; }
     }
 }

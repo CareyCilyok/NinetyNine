@@ -230,6 +230,36 @@ public class GameTests
         game.BestFrame.Should().BeNull();
     }
 
+    // ── IsEfrenVariant ────────────────────────────────────────────────────────
+
+    [Fact]
+    public void IsEfrenVariant_DefaultsToFalse()
+    {
+        var game = new Game();
+        game.IsEfrenVariant.Should().BeFalse(
+            "standard rules apply unless the player explicitly opts into Efren mode");
+    }
+
+    [Fact]
+    public void IsEfrenVariant_DoesNotAffectScoring()
+    {
+        // The flag is data-only — it drives visual indication and stats
+        // filters, not score math. Two games with identical frames must
+        // produce identical TotalScore regardless of the flag.
+        var standard = CreateInitializedGame();
+        var efren = CreateInitializedGame();
+        efren.IsEfrenVariant = true;
+
+        for (int i = 1; i <= 9; i++)
+        {
+            standard.CompleteCurrentFrame(1, 5);
+            efren.CompleteCurrentFrame(1, 5);
+        }
+
+        standard.TotalScore.Should().Be(efren.TotalScore,
+            "Efren mode is data-only — score math is unchanged");
+    }
+
     // ── AverageScore ──────────────────────────────────────────────────────────
 
     [Fact]

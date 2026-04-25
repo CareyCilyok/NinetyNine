@@ -12,18 +12,20 @@ public sealed class GameService(IGameRepository gameRepository, ILogger<GameServ
     : IGameService
 {
     public async Task<Game> StartNewGameAsync(
-        Guid playerId, Guid venueId, TableSize tableSize, CancellationToken ct = default)
+        Guid playerId, Guid venueId, TableSize tableSize,
+        bool isEfrenVariant = false, CancellationToken ct = default)
     {
         logger.LogInformation(
-            "Starting new game for player {PlayerId} at venue {VenueId} on {TableSize} table",
-            playerId, venueId, tableSize);
+            "Starting new game for player {PlayerId} at venue {VenueId} on {TableSize} table (Efren={IsEfren})",
+            playerId, venueId, tableSize, isEfrenVariant);
 
         var game = new Game
         {
             PlayerId = playerId,
             VenueId = venueId,
             TableSize = tableSize,
-            WhenPlayed = DateTime.UtcNow
+            WhenPlayed = DateTime.UtcNow,
+            IsEfrenVariant = isEfrenVariant
         };
 
         game.InitializeFrames();

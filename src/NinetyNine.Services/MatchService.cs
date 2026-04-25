@@ -48,7 +48,7 @@ public sealed class MatchService(
 
         // Create the first game for the creator (seat 0 breaks first).
         var firstGame = await gameService.StartNewGameAsync(
-            creatorPlayerId, venueId, tableSize, ct);
+            creatorPlayerId, venueId, tableSize, ct: ct);
         match.GameIds.Add(firstGame.GameId);
 
         await matches.CreateAsync(match, ct);
@@ -144,7 +144,7 @@ public sealed class MatchService(
 
         // Create the next game using the completed game's venue + table size.
         var nextGame = await gameService.StartNewGameAsync(
-            nextBreakerId, completedGame.VenueId, completedGame.TableSize, ct);
+            nextBreakerId, completedGame.VenueId, completedGame.TableSize, ct: ct);
         match.GameIds.Add(nextGame.GameId);
         await matches.UpdateAsync(match, ct);
 

@@ -37,6 +37,18 @@ public class Game
     public List<Frame> Frames { get; set; } = new(9);
     public string? Notes { get; set; }
 
+    /// <summary>
+    /// True when this game is being scored under "Efren" variant rules:
+    /// the player runs out from where the cue ball stops after the break,
+    /// with no ball-in-hand placement. Named for Efren Reyes. Score math
+    /// is unchanged from the standard rule (max 11 per frame, max 99 per
+    /// game); this flag drives the visual indicator on frame tiles and
+    /// later filters in stats. The narrow interpretation applies — only
+    /// post-break placement is removed; mid-frame foul recovery follows
+    /// the normal rule.
+    /// </summary>
+    public bool IsEfrenVariant { get; set; }
+
     // ── Computed properties (BsonIgnored in BSON class map) ──────────────────
 
     /// <summary>Sum of FrameScore for all completed frames.</summary>
