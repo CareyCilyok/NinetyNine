@@ -63,6 +63,52 @@
     color: var(--nn-text-tertiary);
 }
 
+/* Visually-hidden utility for screen-reader-only labels. Keeps the
+   "Balls pocketed" header text in the accessibility tree even though
+   the visible header now hosts the Break & Run / Clear buttons. */
+.nn-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Break & Run — opposite of Clear. Same text-button shape, but tinted
+   teal to read as a positive action ("fill the frame") vs Clear's
+   destructive vibe. */
+.nn-ball-picker__break-and-run {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: 0;
+    color: var(--nn-accent-teal);
+    font-family: var(--nn-font-sans);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: var(--nn-radius-sm);
+    cursor: pointer;
+    transition: color var(--nn-transition-fast),
+                background-color var(--nn-transition-fast);
+}
+
+.nn-ball-picker__break-and-run:hover {
+    color: var(--nn-accent-teal-hover);
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.10);
+}
+
+.nn-ball-picker__break-and-run:focus-visible {
+    outline: 2px solid var(--nn-accent-gold);
+    outline-offset: 2px;
+}
+
 .nn-ball-picker__clear {
     appearance: none;
     -webkit-appearance: none;

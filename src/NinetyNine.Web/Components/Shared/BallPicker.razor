@@ -13,10 +13,14 @@
     balls render dimmed.
 
     Parameters
-        Selected   : the current set of pocketed ball numbers (1–9)
-        OnToggle   : invoked with a ball number when the user taps a ball
-        OnClear    : invoked when the user taps "CLEAR"
-        OnDone     : invoked when the user taps "Done · N balls"
+        Selected      : the current set of pocketed ball numbers (1–9)
+        OnToggle      : invoked with a ball number when the user taps a ball
+        OnClear       : invoked when the user taps "CLEAR"
+        OnBreakAndRun : invoked when the user taps "BREAK & RUN" — the
+                         shortcut for a perfect frame (break bonus + all
+                         9 balls pocketed). The consumer fills the buffer
+                         and closes the picker.
+        OnDone        : invoked when the user taps "Done · N balls"
 
     Outside-click and Esc handling are owned by the consumer (FrameCell
     via JS interop). This component renders the popover panel only.
@@ -34,7 +38,15 @@
     <div class="nn-ball-picker__caret" aria-hidden="true"></div>
 
     <div class="nn-ball-picker__header">
-        <span class="nn-ball-picker__title">Balls pocketed</span>
+        <button type="button"
+                class="nn-ball-picker__break-and-run"
+                @onclick="HandleBreakAndRun"
+                aria-label="Break and run — record a perfect frame">
+            Break &amp; run
+        </button>
+        @* Title is preserved as a visually-hidden screen-reader label so
+           the dialog's purpose still announces clearly. *@
+        <span class="nn-ball-picker__title nn-visually-hidden">Balls pocketed</span>
         <button type="button"
                 class="nn-ball-picker__clear"
                 @onclick="HandleClear"
@@ -89,6 +101,7 @@
 
     [Parameter] public EventCallback<int> OnToggle { get; set; }
     [Parameter] public EventCallback OnClear { get; set; }
+    [Parameter] public EventCallback OnBreakAndRun { get; set; }
     [Parameter] public EventCallback OnDone { get; set; }
 
     private int SelectedCount => Selected?.Count ?? 0;
@@ -117,6 +130,14 @@
         if (OnClear.HasDelegate)
         {
             await OnClear.InvokeAsync();
+        }
+    }
+
+    private async Task HandleBreakAndRun()
+    {
+        if (OnBreakAndRun.HasDelegate)
+        {
+            await OnBreakAndRun.InvokeAsync();
         }
     }
 

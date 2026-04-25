@@ -22,6 +22,8 @@
         OnBallToggle       — fired with ball number when a picker ball
                               is tapped
         OnBallsClear       — fired when picker's Clear is tapped
+        OnBreakAndRun      — fired when picker's "Break & run" shortcut
+                              is tapped (perfect frame in one tap)
         OnPickerOpen       — fired when Ball button opens the picker
         OnPickerClose      — fired when picker's Done is tapped or
                               Ball button toggles closed
@@ -90,6 +92,7 @@
         <BallPicker Selected="@(BallsPocketed ?? EmptyBallSet)"
                     OnToggle="HandleBallToggle"
                     OnClear="HandleBallsClear"
+                    OnBreakAndRun="HandleBreakAndRun"
                     OnDone="HandlePickerClose" />
     }
 </div>
@@ -111,6 +114,7 @@
     [Parameter] public EventCallback OnBreakToggle { get; set; }
     [Parameter] public EventCallback<int> OnBallToggle { get; set; }
     [Parameter] public EventCallback OnBallsClear { get; set; }
+    [Parameter] public EventCallback OnBreakAndRun { get; set; }
     [Parameter] public EventCallback OnPickerOpen { get; set; }
     [Parameter] public EventCallback OnPickerClose { get; set; }
 
@@ -351,6 +355,13 @@
         if (ControlsDisabled) return;
         if (OnBallsClear.HasDelegate)
             await OnBallsClear.InvokeAsync();
+    }
+
+    private async Task HandleBreakAndRun()
+    {
+        if (ControlsDisabled) return;
+        if (OnBreakAndRun.HasDelegate)
+            await OnBreakAndRun.InvokeAsync();
     }
 
     private async Task HandlePickerClose()

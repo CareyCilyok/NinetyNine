@@ -211,4 +211,69 @@ public class BallPickerTests : TestContext
         cut.Find(".nn-ball-picker__done").GetAttribute("aria-label")
             .Should().Be("Done, 2 balls selected");
     }
+
+    // ─── Break & Run shortcut (v0.3.7) ────────────────────────────────────────
+
+    [Fact]
+    public void BallPicker_RendersBreakAndRunButton()
+    {
+        var cut = RenderComponent<BallPicker>();
+
+        cut.Find(".nn-ball-picker__break-and-run").Should().NotBeNull(
+            "Break & Run shortcut must render at the top of the picker");
+    }
+
+    [Fact]
+    public void BallPicker_BreakAndRunButton_HasAccessibleLabel()
+    {
+        var cut = RenderComponent<BallPicker>();
+
+        var btn = cut.Find(".nn-ball-picker__break-and-run");
+        btn.GetAttribute("aria-label")
+            .Should().Contain("Break and run",
+                "screen readers must hear what the shortcut does");
+    }
+
+    [Fact]
+    public void BallPicker_ClickingBreakAndRun_FiresOnBreakAndRun()
+    {
+        bool fired = false;
+
+        var cut = RenderComponent<BallPicker>(p => p
+            .Add(x => x.OnBreakAndRun, EventCallback.Factory.Create(this, () => fired = true)));
+
+        cut.Find(".nn-ball-picker__break-and-run").Click();
+
+        fired.Should().BeTrue();
+    }
+
+    [Fact]
+    public void BallPicker_BreakAndRun_DoesNot_AlsoFireOtherEvents()
+    {
+        // The shortcut is a single intent; the consumer fills the buffer.
+        // BallPicker itself must not also dispatch toggle/clear/done.
+        bool toggled = false;
+        bool cleared = false;
+        bool done = false;
+
+        var cut = RenderComponent<BallPicker>(p => p
+            .Add(x => x.OnToggle, EventCallback.Factory.Create<int>(this, _ => toggled = true))
+            .Add(x => x.OnClear,  EventCallback.Factory.Create(this, () => cleared = true))
+            .Add(x => x.OnDone,   EventCallback.Factory.Create(this, () => done = true)));
+
+        cut.Find(".nn-ball-picker__break-and-run").Click();
+
+        toggled.Should().BeFalse();
+        cleared.Should().BeFalse();
+        done.Should().BeFalse();
+    }
+
+    [Fact]
+    public void BallPicker_BreakAndRunAndClear_AreSeparateButtons()
+    {
+        var cut = RenderComponent<BallPicker>();
+
+        cut.FindAll(".nn-ball-picker__break-and-run").Should().HaveCount(1);
+        cut.FindAll(".nn-ball-picker__clear").Should().HaveCount(1);
+    }
 }

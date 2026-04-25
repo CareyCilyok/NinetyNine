@@ -25,6 +25,7 @@
         OnBreakToggle       : fired by the active cell's Break button
         OnBallToggle        : fired with ball number from the picker
         OnBallsClear        : fired by the picker's Clear button
+        OnBreakAndRun       : fired by the picker's "Break & run" shortcut
         OnPickerOpen        : fired when the active cell opens its picker
         OnPickerClose       : fired when the picker closes
 *@
@@ -48,6 +49,7 @@
                        OnBreakToggle="@(isActiveCell ? OnBreakToggle : EventCallback.Empty)"
                        OnBallToggle="@(isActiveCell ? OnBallToggle : EventCallback<int>.Empty)"
                        OnBallsClear="@(isActiveCell ? OnBallsClear : EventCallback.Empty)"
+                       OnBreakAndRun="@(isActiveCell ? OnBreakAndRun : EventCallback.Empty)"
                        OnPickerOpen="@(isActiveCell ? OnPickerOpen : EventCallback.Empty)"
                        OnPickerClose="@(isActiveCell ? OnPickerClose : EventCallback.Empty)" />
         }
@@ -202,6 +204,7 @@
     [Parameter] public EventCallback OnBreakToggle { get; set; }
     [Parameter] public EventCallback<int> OnBallToggle { get; set; }
     [Parameter] public EventCallback OnBallsClear { get; set; }
+    [Parameter] public EventCallback OnBreakAndRun { get; set; }
     [Parameter] public EventCallback OnPickerOpen { get; set; }
     [Parameter] public EventCallback OnPickerClose { get; set; }
 

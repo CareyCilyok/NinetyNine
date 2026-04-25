@@ -107,6 +107,7 @@
                            OnBreakToggle="HandleBreakToggle"
                            OnBallToggle="HandleBallToggle"
                            OnBallsClear="HandleBallsClear"
+                           OnBreakAndRun="HandleBreakAndRun"
                            OnPickerOpen="HandlePickerOpen"
                            OnPickerClose="HandlePickerClose" />
         </section>
@@ -248,6 +249,21 @@
     private void HandleBallsClear()
     {
         _ballsPocketed.Clear();
+    }
+
+    /// <summary>
+    /// Break & Run shortcut: the player broke legally, pocketed on the
+    /// break (break bonus = 1), and ran the rest of the table (all 9
+    /// balls pocketed). Fills the in-flight buffer with the perfect
+    /// frame and closes the picker. The user still has to tap
+    /// Finish-frame to land it — gives them a moment to undo if the
+    /// shortcut was a mis-tap.
+    /// </summary>
+    private void HandleBreakAndRun()
+    {
+        _breakBonus = true;
+        _ballsPocketed = new HashSet<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        _pickerOpen = false;
     }
 
     private void HandlePickerOpen() => _pickerOpen = true;
