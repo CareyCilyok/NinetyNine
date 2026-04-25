@@ -27,9 +27,6 @@
         OnBallsClear        : fired by the picker's Clear button
         OnPickerOpen        : fired when the active cell opens its picker
         OnPickerClose       : fired when the picker closes
-        OnFrameSubmit       : RETAINED but unwired (legacy from v0.2.x;
-                              Play.razor still binds this. Removed in
-                              v0.3.4 alongside FrameInputDialog deletion.)
 *@
 
 <div class="sc-wrapper" aria-label="Score card for current game">
@@ -208,13 +205,6 @@
     [Parameter] public EventCallback OnPickerOpen { get; set; }
     [Parameter] public EventCallback OnPickerClose { get; set; }
 
-    /// <summary>
-    /// Legacy v0.2.x event. Retained as an unwired parameter so Play.razor
-    /// still compiles while it transitions to the v0.3.x flow in v0.3.4.
-    /// Deleted in v0.3.4 alongside FrameInputDialog.
-    /// </summary>
-    [Parameter] public EventCallback<FrameSubmitArgs> OnFrameSubmit { get; set; }
-
     private const string EmDash = "—";
     private const int TotalThresholdForGlow = 90;
 
@@ -287,15 +277,4 @@
             return $"Frame {frame.FrameNumber}, currently active";
         return $"Frame {frame.FrameNumber}, not yet played";
     }
-
-    /// <summary>
-    /// Legacy submit args — retained so Play.razor's existing
-    /// HandleFrameSubmit signature still compiles. Removed in v0.3.4.
-    /// </summary>
-    public sealed record FrameSubmitArgs(
-        Guid GameId,
-        int FrameNumber,
-        int BreakBonus,
-        int BallCount,
-        string? Notes);
 }

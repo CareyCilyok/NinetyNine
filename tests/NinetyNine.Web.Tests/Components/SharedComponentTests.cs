@@ -106,90 +106,9 @@ public class SharedComponentTests : TestContext
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // FrameInputDialog
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    [Fact]
-    public void FrameInputDialog_WhenNotVisible_RendersNoDialogMarkup()
-    {
-        var cut = RenderComponent<FrameInputDialog>(p => p
-            .Add(x => x.IsVisible, false)
-            .Add(x => x.FrameNumber, 1));
-
-        cut.FindAll("[role='dialog']").Should().BeEmpty(
-            "dialog markup must not be rendered when IsVisible is false");
-    }
-
-    [Fact]
-    public void FrameInputDialog_WhenVisible_HasRoleDialogAndAriaModal()
-    {
-        var cut = RenderComponent<FrameInputDialog>(p => p
-            .Add(x => x.IsVisible, true)
-            .Add(x => x.FrameNumber, 3));
-
-        var dialog = cut.Find("[role='dialog']");
-        dialog.Should().NotBeNull("dialog element must be rendered when IsVisible is true");
-        dialog.GetAttribute("aria-modal").Should().Be("true",
-            "aria-modal must be 'true' on the dialog element");
-    }
-
-    [Fact]
-    public void FrameInputDialog_WhenVisible_BreakBonusRadioGroup_HasTwoOptions()
-    {
-        var cut = RenderComponent<FrameInputDialog>(p => p
-            .Add(x => x.IsVisible, true)
-            .Add(x => x.FrameNumber, 2));
-
-        var radioGroup = cut.Find("[role='radiogroup']");
-        var radioInputs = radioGroup.QuerySelectorAll("input[type='radio']");
-        radioInputs.Should().HaveCount(2,
-            "break bonus radio group must have exactly two options: 0 and 1");
-    }
-
-    [Fact]
-    public void FrameInputDialog_WhenVisible_BallCountStepper_HasMinusAndPlusButtons()
-    {
-        var cut = RenderComponent<FrameInputDialog>(p => p
-            .Add(x => x.IsVisible, true)
-            .Add(x => x.FrameNumber, 5));
-
-        var decrementBtn = cut.Find("button[aria-label='Decrease ball count']");
-        var incrementBtn = cut.Find("button[aria-label='Increase ball count']");
-
-        decrementBtn.Should().NotBeNull("decrement (-) button must be present");
-        incrementBtn.Should().NotBeNull("increment (+) button must be present");
-    }
-
-    [Fact]
-    public void FrameInputDialog_WhenVisible_SubmitButton_IsEnabled_WithValidScore()
-    {
-        // Default values: BreakBonus=0, BallCount=0 → PreviewScore=0 ≤ 11 → enabled
-        var cut = RenderComponent<FrameInputDialog>(p => p
-            .Add(x => x.IsVisible, true)
-            .Add(x => x.FrameNumber, 4));
-
-        var submitBtn = cut.Find("button[type='submit']");
-        submitBtn.HasAttribute("disabled").Should().BeFalse(
-            "submit button must be enabled when BreakBonus + BallCount <= 11");
-    }
-
-    [Fact]
-    public void FrameInputDialog_Clicking_Cancel_Fires_OnCancelCallback()
-    {
-        var cancelFired = false;
-
-        var cut = RenderComponent<FrameInputDialog>(p => p
-            .Add(x => x.IsVisible, true)
-            .Add(x => x.FrameNumber, 6)
-            .Add(x => x.OnCancel, EventCallback.Factory.Create(this, () => cancelFired = true)));
-
-        // Click the footer Cancel button
-        var cancelBtn = cut.FindAll("button")
-            .First(b => b.TextContent.Trim() == "Cancel");
-        cancelBtn.Click();
-
-        cancelFired.Should().BeTrue("OnCancel callback must fire when the Cancel button is clicked");
-    }
+    // FrameInputDialog tests deleted in v0.3.4 — the dialog itself was
+    // removed when Play.razor moved to the in-cell scoring flow (in-cell
+    // Break/Ball + BallPicker + Finish-frame on TurnCalloutCard).
 
     // ═══════════════════════════════════════════════════════════════════════════
     // TableSizePicker

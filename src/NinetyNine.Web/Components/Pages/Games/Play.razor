@@ -58,7 +58,7 @@
     }
     else
     {
-        @* Header strip *@
+        @* Header strip — venue, table size, start time, status pill *@
         <header class="nn-play-page__header">
             <div class="nn-play-page__meta">
                 <span class="nn-play-page__venue" aria-label="Venue">
@@ -90,14 +90,27 @@
             </div>
         }
 
-        @* Score card *@
+        @* Turn callout card — eyebrow, "Frame N of 9", helper text, ball pair, Finish-frame button *@
+        <TurnCalloutCard FrameNumber="@_game.CurrentFrameNumber"
+                         CanFinish="@_canFinish"
+                         OnFinishFrame="HandleFinishFrame" />
+
+        @* Score card — desktop grid + mobile picker, all driven by the in-flight buffer *@
         <section class="nn-play-page__main" aria-label="Score card">
             <ScoreCardGrid Game="_game"
                            Mode="ScoreCardMode.Edit"
-                           OnFrameSubmit="HandleFrameSubmit" />
+                           ActiveBreakBonus="_breakBonus"
+                           ActiveBallsPocketed="_ballsPocketed"
+                           ActivePickerOpen="_pickerOpen"
+                           ActiveLiveRunningTotal="_liveRunningTotal"
+                           OnBreakToggle="HandleBreakToggle"
+                           OnBallToggle="HandleBallToggle"
+                           OnBallsClear="HandleBallsClear"
+                           OnPickerOpen="HandlePickerOpen"
+                           OnPickerClose="HandlePickerClose" />
         </section>
 
-        @* Footer strip *@
+        @* Footer — frame indicator, running score, exit *@
         <footer class="nn-play-page__footer">
             <div class="nn-play-page__footer-info">
                 <span class="nn-play-page__frame-indicator">
@@ -111,7 +124,6 @@
             <a href="/games" class="nn-play-page__exit-link">Exit to history</a>
         </footer>
     }
-
 </div>
 
 @code {
@@ -122,6 +134,17 @@
     private string _errorMessage = "";
     private string? _venueName;
     private Guid? _playerId;
+
+    // ── In-flight buffer for the active frame ────────────────────────────────
+    // Local-only state. Refreshing the page discards in-flight edits — the
+    // README's data model only persists completed frames server-side. This
+    // matches the v2 mockup behavior.
+
+    private bool _breakBonus;
+    private HashSet<int> _ballsPocketed = new();
+    private bool _pickerOpen;
+
+    // ── Initial load ─────────────────────────────────────────────────────────
 
     protected override void OnInitialized()
     {
@@ -147,27 +170,24 @@
     {
         var game = await GameService.GetGameAsync(GameId);
 
-        // Ownership guard: don't reveal existence via 403 — just show "not found"
+        // Ownership guard: don't reveal existence via 403 — just show "not found".
         if (game is null || game.PlayerId != _playerId)
         {
             _game = null;
             return;
         }
 
-        // Redirect completed games to the details page
+        // Redirect completed games to the details page.
         if (game.IsCompleted)
         {
             Navigation.NavigateTo($"/games/{GameId}", forceLoad: false);
             return;
         }
 
-        // Defensive: initialize frames if somehow still NotStarted
+        // Defensive: initialize frames if somehow still NotStarted.
         if (game.GameState == GameState.NotStarted)
         {
             game.InitializeFrames();
-            // Persist via a dummy RecordFrame would mutate state — instead just
-            // rely on the service to have already done this on StartNewGameAsync.
-            // This path should not occur in normal operation.
             Logger.LogWarning(
                 "Game {GameId} was in NotStarted state on Play page load — frames initialized defensively.",
                 GameId);
@@ -175,7 +195,6 @@
 
         _game = game;
 
-        // Resolve venue name (best-effort; no N+1 since it's a single game)
         try
         {
             var venue = await VenueService.GetAsync(game.VenueId);
@@ -187,29 +206,84 @@
         }
     }
 
-    private async Task HandleFrameSubmit(ScoreCardGrid.FrameSubmitArgs args)
+    // ── Computed values ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Running total displayed on the active cell: sum of completed frames'
+    /// FrameScore + (in-flight break bonus + balls). Recomputed on every
+    /// buffer change.
+    /// </summary>
+    private int? _liveRunningTotal => _game is null ? null : ComputeLiveRunningTotal();
+
+    private int ComputeLiveRunningTotal()
     {
+        var completedTotal = _game!.RunningTotal; // last completed frame's RunningTotal, or 0
+        var inFlight = (_breakBonus ? 1 : 0) + _ballsPocketed.Count;
+        return completedTotal + inFlight;
+    }
+
+    /// <summary>
+    /// Finish button is enabled once the user has captured at least one
+    /// input (break bonus or any ball). A 0-score frame is recordable, but
+    /// the user must intentionally toggle and untoggle to land it — this
+    /// catches the accidental Finish-on-empty-frame case.
+    /// </summary>
+    private bool _canFinish => _breakBonus || _ballsPocketed.Count > 0;
+
+    // ── Event handlers (in-flight buffer manipulation) ───────────────────────
+
+    private void HandleBreakToggle()
+    {
+        _breakBonus = !_breakBonus;
+    }
+
+    private void HandleBallToggle(int ballNumber)
+    {
+        if (!_ballsPocketed.Add(ballNumber))
+            _ballsPocketed.Remove(ballNumber);
+    }
+
+    private void HandleBallsClear()
+    {
+        _ballsPocketed.Clear();
+    }
+
+    private void HandlePickerOpen() => _pickerOpen = true;
+    private void HandlePickerClose() => _pickerOpen = false;
+
+    // ── Finish frame: persist the in-flight buffer, reset, advance ───────────
+
+    private async Task HandleFinishFrame()
+    {
+        if (_game is null || !_canFinish) return;
+
         _errorMessage = "";
 
         try
         {
-            _game = await GameService.RecordFrameAsync(
-                args.GameId,
-                args.FrameNumber,
-                args.BreakBonus,
-                args.BallCount,
-                args.Notes);
+            var frameNumber = _game.CurrentFrameNumber;
+            var breakBonus = _breakBonus ? 1 : 0;
+            var ballCount = _ballsPocketed.Count;
 
-            // Completion state is shown inline (celebration state in markup above).
-            // No redirect — let the user see the completed grid and use the action links.
+            _game = await GameService.RecordFrameAsync(
+                GameId, frameNumber, breakBonus, ballCount, notes: null);
+
+            // Reset the buffer for the next frame.
+            ResetBuffer();
         }
         catch (Exception ex)
         {
             _errorMessage = "Failed to record the frame. Please try again.";
             Logger.LogWarning(ex,
-                "Failed to record frame {Frame} for game {GameId}.",
-                args.FrameNumber, args.GameId);
+                "Failed to record frame for game {GameId}.", GameId);
         }
+    }
+
+    private void ResetBuffer()
+    {
+        _breakBonus = false;
+        _ballsPocketed = new();
+        _pickerOpen = false;
     }
 
     private static string TableSizeLabel(TableSize size) => size switch
