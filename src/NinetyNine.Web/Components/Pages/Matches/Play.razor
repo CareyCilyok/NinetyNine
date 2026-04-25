@@ -7,16 +7,22 @@
 
 <PageTitle>Match &mdash; NinetyNine</PageTitle>
 
+@if (_detail is not null && _detail.Match.Rotation == MatchRotation.Concurrent)
+{
+    @* Concurrent matches render the full 9-column ScoreCardGrid which needs
+       ~72rem of horizontal room. The Sequential page wrapper below caps at
+       40rem (sized for the small "Continue game N" CTA card), so Concurrent
+       has to bail out of that wrapper and use its own .nn-concurrent-match
+       container's max-width: 72rem layout. *@
+    <ConcurrentMatchPlay MatchId="@MatchId" />
+}
+else
+{
 <div class="nn-page nn-match-play-page">
     <div class="nn-match-play-page__inner">
         @if (_detail is null)
         {
             <p>Loading&hellip;</p>
-        }
-        else if (_detail.Match.Rotation == MatchRotation.Concurrent)
-        {
-            @* ── Concurrent (alternating-innings) match scoring ─────── *@
-            <ConcurrentMatchPlay MatchId="@MatchId" />
         }
         else if (_detail.Match.Status == MatchStatus.Completed)
         {
@@ -108,6 +114,7 @@
         }
     </div>
 </div>
+}
 
 @code {
     [Parameter] public Guid MatchId { get; set; }
