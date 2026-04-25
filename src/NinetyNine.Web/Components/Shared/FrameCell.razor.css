@@ -213,6 +213,38 @@
 }
 
 /* -------------------------------------------------------------------
+   EFREN VARIANT — thin gold ring around every tile in an Efren game,
+   plus a small rail-diamond glyph in the top-right corner of completed
+   frames. Per George (poolplayer agent): the ring carries the always-on
+   "this game's being scored differently" signal; the diamond marks
+   "this frame was earned the hard way" on every completed cell.
+   ------------------------------------------------------------------- */
+
+.frame-cell-efren {
+    box-shadow: var(--nn-shadow-sm),
+                inset 0 0 0 2px rgba(var(--nn-accent-gold-rgb), 0.45);
+}
+
+.frame-cell-efren.frame-cell-active {
+    /* Don't double up the active glow with the Efren ring — the active
+       cell already reads as "different" via its solid gold border + glow.
+       Drop the inset ring on the active cell so the visual hierarchy
+       stays clean. */
+    box-shadow: var(--nn-shadow-glow-gold);
+}
+
+/* Corner diamond — small, decorative, current-color teal so it lifts
+   off the gold ring without competing with the active state's gold. */
+.frame-cell-efren-diamond {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    color: var(--nn-accent-teal);
+    line-height: 0;
+    pointer-events: none;
+}
+
+/* -------------------------------------------------------------------
    STATE — pending (default + dashed + dimmed)
    ------------------------------------------------------------------- */
 

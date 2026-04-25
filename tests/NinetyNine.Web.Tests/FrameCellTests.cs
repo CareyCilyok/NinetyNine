@@ -311,4 +311,84 @@ public class FrameCellTests : TestContext
             .Should().Contain("frame-cell-perfect",
                 "1 break bonus + 10 ball points = 11 = a perfect frame");
     }
+
+    // ─── Efren variant indicator (v0.4.2) ─────────────────────────────────────
+
+    [Fact]
+    public void FrameCell_DefaultGame_HasNo_EfrenModifier()
+    {
+        var frame = MakeFrame();
+        var cut = RenderComponent<FrameCell>(p => p.Add(x => x.Frame, frame));
+
+        cut.Find("[role='gridcell']").ClassList
+            .Should().NotContain("frame-cell-efren");
+    }
+
+    [Fact]
+    public void FrameCell_EfrenVariant_AppliesEfrenModifier()
+    {
+        var frame = MakeFrame();
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsEfrenVariant, true));
+
+        cut.Find("[role='gridcell']").ClassList
+            .Should().Contain("frame-cell-efren");
+    }
+
+    [Fact]
+    public void FrameCell_EfrenVariant_PendingFrame_DoesNotShowDiamond()
+    {
+        // Diamond marks "earned the hard way" — only meaningful on
+        // completed frames. Pending Efren frames get the ring only.
+        var frame = MakeFrame();
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsEfrenVariant, true));
+
+        cut.FindAll(".frame-cell-efren-diamond").Should().BeEmpty();
+    }
+
+    [Fact]
+    public void FrameCell_EfrenVariant_CompletedFrame_RendersDiamond()
+    {
+        var frame = new Frame
+        {
+            FrameId = Guid.NewGuid(),
+            FrameNumber = 3,
+            BreakBonus = 1,
+            BallCount = 6,
+            RunningTotal = 7,
+            IsCompleted = true
+        };
+
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsEfrenVariant, true));
+
+        cut.FindAll(".frame-cell-efren-diamond").Should().HaveCount(1,
+            "completed Efren frames carry the corner diamond badge");
+    }
+
+    [Fact]
+    public void FrameCell_StandardGame_CompletedFrame_HasNoDiamond()
+    {
+        // A completed frame in a standard game must NOT show the Efren
+        // diamond — the badge is variant-specific.
+        var frame = new Frame
+        {
+            FrameId = Guid.NewGuid(),
+            FrameNumber = 3,
+            BreakBonus = 1,
+            BallCount = 6,
+            RunningTotal = 7,
+            IsCompleted = true
+        };
+
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsEfrenVariant, false));
+
+        cut.FindAll(".frame-cell-efren-diamond").Should().BeEmpty();
+    }
 }

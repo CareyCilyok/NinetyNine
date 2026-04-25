@@ -91,8 +91,10 @@
         }
 
         @* Turn callout card — eyebrow, "Frame N of 9", helper text, ball pair, Scratch-break shortcut,
-           Finish-frame button. CanFinish is intentionally unbound (defaults to null = enabled). *@
+           Finish-frame button. CanFinish is intentionally unbound (defaults to null = enabled).
+           Eyebrow override flags Efren-variant games at the top of the page. *@
         <TurnCalloutCard FrameNumber="@_game.CurrentFrameNumber"
+                         Eyebrow="@(_game.IsEfrenVariant ? "Efren · your turn" : "Your turn")"
                          OnFinishFrame="HandleFinishFrame"
                          OnScratchOnBreak="HandleScratchOnBreak" />
 

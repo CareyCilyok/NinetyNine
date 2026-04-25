@@ -12,6 +12,10 @@
         Frame              — the frame to render
         IsActive           — caller-supplied "is this the live frame" hint
         Mode               — View | Edit
+        IsEfrenVariant     — the parent game is being scored under Efren
+                              variant rules. Drives a thin gold ring around
+                              the tile and (on completed frames) a small
+                              rail-diamond glyph in the corner.
         BreakBonus         — in-flight break bonus state (active cell only)
         BallsPocketed      — in-flight ball selection (active cell only)
         IsPickerOpen       — is THIS cell's BallPicker shown
@@ -41,6 +45,16 @@
 
     <div class="frame-cell-header">
         <span class="frame-number" aria-hidden="true"><PoolBall Number="@Frame.FrameNumber" Size="22" Dim="@IsBallDim" /></span>
+        @if (ShowEfrenDiamond)
+        {
+            <span class="frame-cell-efren-diamond"
+                  aria-label="Efren-mode frame"
+                  title="Scored under Efren rules — runout from break, no ball in hand">
+                <svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true">
+                    <polygon points="5,0 10,5 5,10 0,5" fill="currentColor" />
+                </svg>
+            </span>
+        }
     </div>
 
     <div class="frame-cell-controls">
@@ -101,6 +115,7 @@
     [Parameter, EditorRequired] public Frame Frame { get; set; } = default!;
     [Parameter] public bool IsActive { get; set; }
     [Parameter] public ScoreCardMode Mode { get; set; } = ScoreCardMode.View;
+    [Parameter] public bool IsEfrenVariant { get; set; }
 
     // ── In-flight buffer (active cell only) ──────────────────────────────────
 
@@ -148,9 +163,17 @@
                 FrameStatus.Completed => "frame-cell frame-cell-completed",
                 _                     => "frame-cell frame-cell-pending"
             };
-            return IsPerfectFrameDisplay ? $"{baseClass} frame-cell-perfect" : baseClass;
+            if (IsPerfectFrameDisplay) baseClass += " frame-cell-perfect";
+            if (IsEfrenVariant) baseClass += " frame-cell-efren";
+            return baseClass;
         }
     }
+
+    /// <summary>
+    /// True when a corner diamond should render — only on completed
+    /// frames in an Efren game (the "earned the hard way" badge).
+    /// </summary>
+    private bool ShowEfrenDiamond => IsEfrenVariant && Frame.IsCompleted;
 
     private string? AriaCurrent =>
         Status == FrameStatus.Active ? "true" : null;

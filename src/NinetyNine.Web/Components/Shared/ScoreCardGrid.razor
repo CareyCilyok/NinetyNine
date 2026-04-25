@@ -42,6 +42,7 @@
             <FrameCell Frame="f"
                        IsActive="@isActiveCell"
                        Mode="Mode"
+                       IsEfrenVariant="@(Game?.IsEfrenVariant == true)"
                        BreakBonus="@(isActiveCell && ActiveBreakBonus)"
                        BallsPocketed="@(isActiveCell ? ActiveBallsPocketed : null)"
                        IsPickerOpen="@(isActiveCell && ActivePickerOpen)"
