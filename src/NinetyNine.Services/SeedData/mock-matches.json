@@ -1,0 +1,838 @@
+{
+  "schemaVersion": 1,
+  "description": "Hand-picked concurrent (alternating-innings) matches between similarly-rated players. Each row in PlayerFrameScores is one seat in PlayerDisplayNames order. The winner is the seat with the highest TotalScore (ties broken by perfect frames, then earliest completion — same arbiter MatchService.SelectConcurrentWinner uses).",
+  "matches": [
+    {
+      "rotation": "concurrent",
+      "venueName": "Bumpers Billiards of Huntsville",
+      "daysAgo": 2,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "b_chris",
+        "b_kaitlyn"
+      ],
+      "playerFrameScores": [
+        [
+          7,
+          0,
+          8,
+          0,
+          6,
+          10,
+          4,
+          0,
+          1
+        ],
+        [
+          5,
+          5,
+          2,
+          10,
+          2,
+          5,
+          5,
+          7,
+          7
+        ]
+      ],
+      "winnerDisplayName": "b_kaitlyn"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Steve's Cue and Grill",
+      "daysAgo": 5,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "b_doug",
+        "b_marco"
+      ],
+      "playerFrameScores": [
+        [
+          10,
+          0,
+          5,
+          2,
+          0,
+          4,
+          2,
+          7,
+          4
+        ],
+        [
+          3,
+          0,
+          6,
+          10,
+          8,
+          5,
+          11,
+          7,
+          7
+        ]
+      ],
+      "winnerDisplayName": "b_marco"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Bumpers Billiards of Huntsville",
+      "daysAgo": 8,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "bp_kevin",
+        "bp_dale"
+      ],
+      "playerFrameScores": [
+        [
+          10,
+          10,
+          4,
+          10,
+          5,
+          3,
+          6,
+          10,
+          5
+        ],
+        [
+          6,
+          0,
+          1,
+          8,
+          7,
+          10,
+          4,
+          10,
+          5
+        ]
+      ],
+      "winnerDisplayName": "bp_kevin"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Iron City Billiards",
+      "daysAgo": 14,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "bp_anh",
+        "bp_sam"
+      ],
+      "playerFrameScores": [
+        [
+          9,
+          3,
+          5,
+          7,
+          10,
+          7,
+          0,
+          5,
+          0
+        ],
+        [
+          10,
+          3,
+          3,
+          9,
+          0,
+          4,
+          7,
+          10,
+          1
+        ]
+      ],
+      "winnerDisplayName": "bp_sam"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Chips & Salsa Sports Bar & Grill",
+      "daysAgo": 4,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "b_priya",
+        "b_jen"
+      ],
+      "playerFrameScores": [
+        [
+          4,
+          4,
+          0,
+          9,
+          7,
+          5,
+          10,
+          2,
+          5
+        ],
+        [
+          0,
+          2,
+          2,
+          0,
+          3,
+          2,
+          8,
+          0,
+          5
+        ]
+      ],
+      "winnerDisplayName": "b_priya"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Good Timez Billiards",
+      "daysAgo": 10,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "c_marie",
+        "c_jason"
+      ],
+      "playerFrameScores": [
+        [
+          0,
+          2,
+          5,
+          2,
+          3,
+          0,
+          6,
+          3,
+          3
+        ],
+        [
+          2,
+          0,
+          4,
+          7,
+          7,
+          2,
+          1,
+          2,
+          0
+        ]
+      ],
+      "winnerDisplayName": "c_jason"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Limestone Legends Billiards",
+      "daysAgo": 16,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "danny_c",
+        "c_ricky"
+      ],
+      "playerFrameScores": [
+        [
+          0,
+          3,
+          0,
+          6,
+          2,
+          2,
+          3,
+          3,
+          10
+        ],
+        [
+          0,
+          5,
+          0,
+          3,
+          2,
+          7,
+          1,
+          3,
+          2
+        ]
+      ],
+      "winnerDisplayName": "danny_c"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Iron City Billiards",
+      "daysAgo": 6,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "a_mike",
+        "a_sarah"
+      ],
+      "playerFrameScores": [
+        [
+          1,
+          4,
+          9,
+          10,
+          8,
+          5,
+          9,
+          3,
+          3
+        ],
+        [
+          6,
+          10,
+          5,
+          5,
+          10,
+          8,
+          5,
+          8,
+          9
+        ]
+      ],
+      "winnerDisplayName": "a_sarah"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "MrCues II Billiards",
+      "daysAgo": 11,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "a_jorge",
+        "a_quentin"
+      ],
+      "playerFrameScores": [
+        [
+          2,
+          4,
+          11,
+          8,
+          5,
+          6,
+          8,
+          3,
+          10
+        ],
+        [
+          10,
+          8,
+          11,
+          10,
+          11,
+          9,
+          7,
+          11,
+          4
+        ]
+      ],
+      "winnerDisplayName": "a_quentin"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Melrose Billiard Parlor",
+      "daysAgo": 9,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "ap_riley",
+        "ap_dom"
+      ],
+      "playerFrameScores": [
+        [
+          11,
+          7,
+          10,
+          8,
+          0,
+          10,
+          4,
+          10,
+          9
+        ],
+        [
+          10,
+          10,
+          10,
+          1,
+          9,
+          9,
+          10,
+          9,
+          6
+        ]
+      ],
+      "winnerDisplayName": "ap_dom"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Steve's Cue and Grill",
+      "daysAgo": 18,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "b_chris",
+        "b_kaitlyn",
+        "bp_kevin"
+      ],
+      "playerFrameScores": [
+        [
+          7,
+          4,
+          0,
+          1,
+          7,
+          10,
+          6,
+          6,
+          3
+        ],
+        [
+          5,
+          4,
+          2,
+          0,
+          3,
+          0,
+          1,
+          4,
+          4
+        ],
+        [
+          6,
+          4,
+          11,
+          4,
+          6,
+          5,
+          11,
+          11,
+          4
+        ]
+      ],
+      "winnerDisplayName": "bp_kevin"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Iron City Billiards",
+      "daysAgo": 22,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "a_mike",
+        "a_jorge",
+        "a_sarah"
+      ],
+      "playerFrameScores": [
+        [
+          10,
+          4,
+          8,
+          10,
+          8,
+          9,
+          9,
+          10,
+          3
+        ],
+        [
+          11,
+          6,
+          2,
+          10,
+          1,
+          11,
+          9,
+          4,
+          8
+        ],
+        [
+          9,
+          7,
+          8,
+          9,
+          10,
+          2,
+          8,
+          0,
+          4
+        ]
+      ],
+      "winnerDisplayName": "a_mike"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Bumpers Billiards of Huntsville",
+      "daysAgo": 25,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "bp_dale",
+        "bp_sam",
+        "a_quentin"
+      ],
+      "playerFrameScores": [
+        [
+          10,
+          3,
+          8,
+          3,
+          7,
+          10,
+          8,
+          1,
+          6
+        ],
+        [
+          4,
+          8,
+          5,
+          1,
+          5,
+          11,
+          8,
+          6,
+          8
+        ],
+        [
+          7,
+          9,
+          6,
+          10,
+          9,
+          11,
+          6,
+          8,
+          9
+        ]
+      ],
+      "winnerDisplayName": "a_quentin"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Good Timez Billiards",
+      "daysAgo": 30,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "c_nina",
+        "c_jason",
+        "danny_c"
+      ],
+      "playerFrameScores": [
+        [
+          7,
+          1,
+          5,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          4,
+          3,
+          0,
+          3,
+          2,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          2,
+          0,
+          1,
+          2,
+          2,
+          0,
+          1
+        ]
+      ],
+      "winnerDisplayName": "c_jason"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Bumpers Billiards of Huntsville",
+      "daysAgo": 35,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "b_chris",
+        "b_doug",
+        "b_marco",
+        "bp_anh"
+      ],
+      "playerFrameScores": [
+        [
+          7,
+          2,
+          3,
+          1,
+          10,
+          6,
+          3,
+          2,
+          6
+        ],
+        [
+          6,
+          0,
+          5,
+          7,
+          5,
+          7,
+          1,
+          0,
+          1
+        ],
+        [
+          6,
+          4,
+          5,
+          3,
+          1,
+          0,
+          4,
+          2,
+          2
+        ],
+        [
+          3,
+          10,
+          0,
+          5,
+          6,
+          7,
+          6,
+          9,
+          3
+        ]
+      ],
+      "winnerDisplayName": "bp_anh"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Iron City Billiards",
+      "daysAgo": 40,
+      "isEfrenVariant": false,
+      "playerDisplayNames": [
+        "a_mike",
+        "ap_riley",
+        "elite_trent",
+        "a_sarah"
+      ],
+      "playerFrameScores": [
+        [
+          8,
+          10,
+          5,
+          10,
+          11,
+          7,
+          6,
+          9,
+          6
+        ],
+        [
+          9,
+          7,
+          10,
+          10,
+          6,
+          8,
+          10,
+          9,
+          11
+        ],
+        [
+          10,
+          8,
+          11,
+          3,
+          7,
+          11,
+          10,
+          8,
+          5
+        ],
+        [
+          10,
+          8,
+          0,
+          1,
+          4,
+          6,
+          5,
+          7,
+          4
+        ]
+      ],
+      "winnerDisplayName": "ap_riley"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "MrCues II Billiards",
+      "daysAgo": 12,
+      "isEfrenVariant": true,
+      "playerDisplayNames": [
+        "pro_svb",
+        "pro_filler"
+      ],
+      "playerFrameScores": [
+        [
+          8,
+          9,
+          8,
+          4,
+          10,
+          9,
+          9,
+          8,
+          10
+        ],
+        [
+          10,
+          9,
+          10,
+          8,
+          10,
+          9,
+          8,
+          7,
+          9
+        ]
+      ],
+      "winnerDisplayName": "pro_filler"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Melrose Billiard Parlor",
+      "daysAgo": 19,
+      "isEfrenVariant": true,
+      "playerDisplayNames": [
+        "pro_shaw",
+        "pro_ko"
+      ],
+      "playerFrameScores": [
+        [
+          10,
+          8,
+          10,
+          9,
+          9,
+          10,
+          8,
+          10,
+          7
+        ],
+        [
+          8,
+          7,
+          10,
+          9,
+          9,
+          9,
+          7,
+          6,
+          7
+        ]
+      ],
+      "winnerDisplayName": "pro_shaw"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "Iron City Billiards",
+      "daysAgo": 28,
+      "isEfrenVariant": true,
+      "playerDisplayNames": [
+        "pro_gorst",
+        "pro_hohmann",
+        "pro_efren"
+      ],
+      "playerFrameScores": [
+        [
+          8,
+          7,
+          10,
+          10,
+          9,
+          9,
+          7,
+          7,
+          9
+        ],
+        [
+          8,
+          8,
+          8,
+          9,
+          7,
+          7,
+          9,
+          10,
+          10
+        ],
+        [
+          9,
+          1,
+          8,
+          7,
+          8,
+          7,
+          8,
+          10,
+          7
+        ]
+      ],
+      "winnerDisplayName": "pro_gorst"
+    },
+    {
+      "rotation": "concurrent",
+      "venueName": "MrCues II Billiards",
+      "daysAgo": 45,
+      "isEfrenVariant": true,
+      "playerDisplayNames": [
+        "pro_svb",
+        "pro_filler",
+        "pro_gorst",
+        "pro_shaw"
+      ],
+      "playerFrameScores": [
+        [
+          7,
+          9,
+          8,
+          8,
+          7,
+          7,
+          9,
+          9,
+          10
+        ],
+        [
+          10,
+          10,
+          10,
+          9,
+          3,
+          10,
+          9,
+          7,
+          9
+        ],
+        [
+          8,
+          8,
+          7,
+          10,
+          9,
+          8,
+          10,
+          10,
+          9
+        ],
+        [
+          8,
+          9,
+          3,
+          10,
+          9,
+          8,
+          9,
+          9,
+          10
+        ]
+      ],
+      "winnerDisplayName": "pro_gorst"
+    }
+  ]
+}

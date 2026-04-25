@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "description": "Mock player roster for NinetyNine dev/integration testing. Amateurs span the Fargo skill spectrum (270–799); pros are the current top of the world (FargoRate ~810–842) and Efren Reyes. All pros carry EfrenOnly = true so every seeded game for them is the Efren variant (no ball-in-hand after break). Score modeling vetted by the project's pool SME.",
+  "amateurs": [
+    {
+      "displayName": "rookie_brad",
+      "firstName": "Brad",
+      "lastName": "Henson",
+      "fargoRating": 310,
+      "efrenOnly": false,
+      "bracket": "RecBeginner (270–349)"
+    },
+    {
+      "displayName": "learner_alice",
+      "firstName": "Alice",
+      "lastName": "Park",
+      "fargoRating": 325,
+      "efrenOnly": false,
+      "bracket": "RecBeginner (270–349)"
+    },
+    {
+      "displayName": "newbie_marcus",
+      "firstName": "Marcus",
+      "lastName": "Vaughn",
+      "fargoRating": 340,
+      "efrenOnly": false,
+      "bracket": "RecBeginner (270–349)"
+    },
+    {
+      "displayName": "jules_fresh",
+      "firstName": "Jules",
+      "lastName": "Mason",
+      "fargoRating": 295,
+      "efrenOnly": false,
+      "bracket": "RecBeginner (270–349)"
+    },
+    {
+      "displayName": "danny_c",
+      "firstName": "Danny",
+      "lastName": "Reilly",
+      "fargoRating": 380,
+      "efrenOnly": false,
+      "bracket": "DevelopingC (350–449)"
+    },
+    {
+      "displayName": "c_marie",
+      "firstName": "Marie",
+      "lastName": "Thompson",
+      "fargoRating": 410,
+      "efrenOnly": false,
+      "bracket": "DevelopingC (350–449)"
+    },
+    {
+      "displayName": "c_jason",
+      "firstName": "Jason",
+      "lastName": "Holt",
+      "fargoRating": 425,
+      "efrenOnly": false,
+      "bracket": "DevelopingC (350–449)"
+    },
+    {
+      "displayName": "c_nina",
+      "firstName": "Nina",
+      "lastName": "Park",
+      "fargoRating": 395,
+      "efrenOnly": false,
+      "bracket": "DevelopingC (350–449)"
+    },
+    {
+      "displayName": "c_ricky",
+      "firstName": "Ricky",
+      "lastName": "Andrews",
+      "fargoRating": 440,
+      "efrenOnly": false,
+      "bracket": "DevelopingC (350–449)"
+    },
+    {
+      "displayName": "b_chris",
+      "firstName": "Chris",
+      "lastName": "Bauer",
+      "fargoRating": 480,
+      "efrenOnly": false,
+      "bracket": "MidAmateurB (450–549)"
+    },
+    {
+      "displayName": "b_kaitlyn",
+      "firstName": "Kaitlyn",
+      "lastName": "Greer",
+      "fargoRating": 510,
+      "efrenOnly": false,
+      "bracket": "MidAmateurB (450–549)"
+    },
+    {
+      "displayName": "b_doug",
+      "firstName": "Doug",
+      "lastName": "Newman",
+      "fargoRating": 530,
+      "efrenOnly": false,
+      "bracket": "MidAmateurB (450–549)"
+    },
+    {
+      "displayName": "b_priya",
+      "firstName": "Priya",
+      "lastName": "Rao",
+      "fargoRating": 495,
+      "efrenOnly": false,
+      "bracket": "MidAmateurB (450–549)"
+    },
+    {
+      "displayName": "b_marco",
+      "firstName": "Marco",
+      "lastName": "Belluschi",
+      "fargoRating": 540,
+      "efrenOnly": false,
+      "bracket": "MidAmateurB (450–549)"
+    },
+    {
+      "displayName": "b_jen",
+      "firstName": "Jen",
+      "lastName": "Sayers",
+      "fargoRating": 470,
+      "efrenOnly": false,
+      "bracket": "MidAmateurB (450–549)"
+    },
+    {
+      "displayName": "bp_kevin",
+      "firstName": "Kevin",
+      "lastName": "Davila",
+      "fargoRating": 575,
+      "efrenOnly": false,
+      "bracket": "StrongAmateurB+ (550–619)"
+    },
+    {
+      "displayName": "bp_anh",
+      "firstName": "Anh",
+      "lastName": "Tran",
+      "fargoRating": 600,
+      "efrenOnly": false,
+      "bracket": "StrongAmateurB+ (550–619)"
+    },
+    {
+      "displayName": "bp_dale",
+      "firstName": "Dale",
+      "lastName": "Henson",
+      "fargoRating": 580,
+      "efrenOnly": false,
+      "bracket": "StrongAmateurB+ (550–619)"
+    },
+    {
+      "displayName": "bp_sam",
+      "firstName": "Sam",
+      "lastName": "Whitlock",
+      "fargoRating": 615,
+      "efrenOnly": false,
+      "bracket": "StrongAmateurB+ (550–619)"
+    },
+    {
+      "displayName": "a_mike",
+      "firstName": "Mike",
+      "lastName": "Cardenas",
+      "fargoRating": 650,
+      "efrenOnly": false,
+      "bracket": "AdvancedA- (620–699)"
+    },
+    {
+      "displayName": "a_sarah",
+      "firstName": "Sarah",
+      "lastName": "Olstead",
+      "fargoRating": 685,
+      "efrenOnly": false,
+      "bracket": "AdvancedA- (620–699)"
+    },
+    {
+      "displayName": "a_jorge",
+      "firstName": "Jorge",
+      "lastName": "Espinosa",
+      "fargoRating": 670,
+      "efrenOnly": false,
+      "bracket": "AdvancedA- (620–699)"
+    },
+    {
+      "displayName": "a_quentin",
+      "firstName": "Quentin",
+      "lastName": "Brooks",
+      "fargoRating": 695,
+      "efrenOnly": false,
+      "bracket": "AdvancedA- (620–699)"
+    },
+    {
+      "displayName": "ap_riley",
+      "firstName": "Riley",
+      "lastName": "Tanaka",
+      "fargoRating": 720,
+      "efrenOnly": false,
+      "bracket": "StrongA+ (700–749)"
+    },
+    {
+      "displayName": "ap_dom",
+      "firstName": "Dom",
+      "lastName": "Costa",
+      "fargoRating": 745,
+      "efrenOnly": false,
+      "bracket": "StrongA+ (700–749)"
+    },
+    {
+      "displayName": "elite_trent",
+      "firstName": "Trent",
+      "lastName": "Marshall",
+      "fargoRating": 775,
+      "efrenOnly": false,
+      "bracket": "EliteAmateur (750–799)"
+    }
+  ],
+  "pros": [
+    {
+      "displayName": "pro_efren",
+      "firstName": "Efren",
+      "lastName": "Reyes",
+      "fargoRating": 775,
+      "efrenOnly": true,
+      "bracket": "EliteAmateur (750–799)"
+    },
+    {
+      "displayName": "pro_svb",
+      "firstName": "Shane",
+      "lastName": "Van Boening",
+      "fargoRating": 840,
+      "efrenOnly": true,
+      "bracket": "TouringPro (800–850)"
+    },
+    {
+      "displayName": "pro_filler",
+      "firstName": "Joshua",
+      "lastName": "Filler",
+      "fargoRating": 842,
+      "efrenOnly": true,
+      "bracket": "TouringPro (800–850)"
+    },
+    {
+      "displayName": "pro_ko",
+      "firstName": "Pin-Yi",
+      "lastName": "Ko",
+      "fargoRating": 832,
+      "efrenOnly": true,
+      "bracket": "TouringPro (800–850)"
+    },
+    {
+      "displayName": "pro_shaw",
+      "firstName": "Jayson",
+      "lastName": "Shaw",
+      "fargoRating": 831,
+      "efrenOnly": true,
+      "bracket": "TouringPro (800–850)"
+    },
+    {
+      "displayName": "pro_gorst",
+      "firstName": "Fedor",
+      "lastName": "Gorst",
+      "fargoRating": 825,
+      "efrenOnly": true,
+      "bracket": "TouringPro (800–850)"
+    },
+    {
+      "displayName": "pro_hohmann",
+      "firstName": "Thorsten",
+      "lastName": "Hohmann",
+      "fargoRating": 814,
+      "efrenOnly": true,
+      "bracket": "TouringPro (800–850)"
+    }
+  ]
+}

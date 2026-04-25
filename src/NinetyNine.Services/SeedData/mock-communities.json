@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "description": "Themed mock communities tying the new player roster together. First entry in each MemberDisplayNames list is the owner. Visibility is always 'public' for these seed communities.",
+  "communities": [
+    {
+      "name": "Rocket City Pool League",
+      "slug": "rocket-city-pool",
+      "description": "Huntsville-area APA + open league players — B/B+/C amateurs sharing the Bumpers and Steve's tables.",
+      "visibility": "public",
+      "memberDisplayNames": [
+        "b_chris",
+        "b_kaitlyn",
+        "b_doug",
+        "bp_kevin",
+        "bp_dale",
+        "b_jen",
+        "danny_c",
+        "c_marie",
+        "c_ricky"
+      ]
+    },
+    {
+      "name": "North AL Aces",
+      "slug": "north-al-aces",
+      "description": "Strong-side amateurs from Athens, Decatur, and Florence. Mostly B+ and A- players who travel for tournaments.",
+      "visibility": "public",
+      "memberDisplayNames": [
+        "a_mike",
+        "a_sarah",
+        "ap_riley",
+        "bp_sam",
+        "bp_anh",
+        "b_marco",
+        "elite_trent",
+        "a_quentin"
+      ]
+    },
+    {
+      "name": "Filipino Cue Heritage",
+      "slug": "filipino-cue-heritage",
+      "description": "Honoring Efren Reyes and the Filipino school of cue artistry. Open to anyone who wants to study The Magician's game.",
+      "visibility": "public",
+      "memberDisplayNames": [
+        "pro_efren",
+        "b_priya",
+        "a_jorge",
+        "ap_dom",
+        "elite_trent"
+      ]
+    },
+    {
+      "name": "Mosconi Cup Watch Party",
+      "slug": "mosconi-watch",
+      "description": "Pool fans following the Mosconi Cup and the pro tour. Several pros drop in here too.",
+      "visibility": "public",
+      "memberDisplayNames": [
+        "a_quentin",
+        "ap_riley",
+        "elite_trent",
+        "b_chris",
+        "bp_dale",
+        "pro_svb",
+        "pro_filler",
+        "pro_shaw"
+      ]
+    },
+    {
+      "name": "99-Ball Devotees",
+      "slug": "99-ball-devotees",
+      "description": "Players who specifically love the P&B 9-frame Ninety-Nine format. Discussion of break strategies, Efren-mode runouts, and scoresheet trivia.",
+      "visibility": "public",
+      "memberDisplayNames": [
+        "b_doug",
+        "b_marco",
+        "ap_dom",
+        "a_sarah",
+        "bp_anh",
+        "pro_efren",
+        "pro_gorst",
+        "pro_hohmann"
+      ]
+    }
+  ]
+}
