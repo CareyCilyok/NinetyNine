@@ -90,9 +90,10 @@
             </div>
         }
 
-        @* Turn callout card — eyebrow, "Frame N of 9", helper text, ball pair, Finish-frame button *@
+        @* Turn callout card — eyebrow, "Frame N of 9", helper text, ball pair, Finish-frame button.
+           CanFinish is intentionally unbound (defaults to null = enabled). A scratch break with
+           no balls pocketed is a legitimate 0-point frame the player must be able to advance. *@
         <TurnCalloutCard FrameNumber="@_game.CurrentFrameNumber"
-                         CanFinish="@_canFinish"
                          OnFinishFrame="HandleFinishFrame" />
 
         @* Score card — desktop grid + mobile picker, all driven by the in-flight buffer *@
@@ -231,14 +232,6 @@
         return completedTotal + inFlight;
     }
 
-    /// <summary>
-    /// Finish button is enabled once the user has captured at least one
-    /// input (break bonus or any ball). A 0-score frame is recordable, but
-    /// the user must intentionally toggle and untoggle to land it — this
-    /// catches the accidental Finish-on-empty-frame case.
-    /// </summary>
-    private bool _canFinish => _breakBonus || _ballsPocketed.Count > 0;
-
     // ── Event handlers (in-flight buffer manipulation) ───────────────────────
 
     private void HandleBreakToggle()
@@ -264,7 +257,7 @@
 
     private async Task HandleFinishFrame()
     {
-        if (_game is null || !_canFinish) return;
+        if (_game is null) return;
 
         _errorMessage = "";
 
