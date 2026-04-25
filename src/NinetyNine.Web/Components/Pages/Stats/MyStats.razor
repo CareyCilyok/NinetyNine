@@ -42,7 +42,14 @@
     {
         <header class="nn-mystats__header">
             <div>
-                <h1 class="nn-mystats__title">My Stats</h1>
+                <h1 class="nn-mystats__title">
+                    My Stats
+                    @if (_filterModel.EfrenOnly)
+                    {
+                        <span class="nn-mystats__title-badge"
+                              title="Filtered to Efren-variant games only">Efren only</span>
+                    }
+                </h1>
                 @if (_stats.LastPlayed.HasValue)
                 {
                     <p class="nn-mystats__subtitle">
@@ -53,6 +60,22 @@
                     </p>
                 }
             </div>
+
+            <EditForm Model="_filterModel" method="post"
+                      OnValidSubmit="HandleFilterAsync"
+                      FormName="mystats-filter"
+                      class="nn-mystats__filter-form">
+                <label class="nn-mystats__variant-toggle"
+                       title="Restrict stats to games scored under Efren rules">
+                    <input type="checkbox"
+                           name="_filterModel.EfrenOnly"
+                           value="true"
+                           checked="@_filterModel.EfrenOnly"
+                           class="nn-mystats__variant-checkbox" />
+                    <span>Efren only</span>
+                </label>
+                <button type="submit" class="btn btn-ghost btn-sm">Apply</button>
+            </EditForm>
         </header>
 
         @* ── Summary cards grid ─────────────────────────────────────────── *@
@@ -339,6 +362,9 @@
 </div>
 
 @code {
+    [SupplyParameterFromForm(FormName = "mystats-filter")]
+    private FilterModel _filterModel { get; set; } = new();
+
     private PlayerStats? _stats;
     private List<Game> _bestGames = [];
     private List<Game> _recentGames = [];
@@ -362,11 +388,22 @@
             return;
         }
 
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        if (_playerId is null) return;
+
+        var efrenOnly = _filterModel.EfrenOnly;
+
         try
         {
-            // Fetch all three data sets concurrently
-            var statsTask      = StatisticsService.GetPlayerStatsAsync(_playerId.Value);
-            var bestGamesTask  = StatisticsService.GetBestGamesAsync(_playerId.Value, limit: 5);
+            // Fetch all three data sets concurrently. Stats and best-games
+            // are scoped by the Efren-only filter; recent games stays
+            // unfiltered (the recent feed is informational, not aggregated).
+            var statsTask      = StatisticsService.GetPlayerStatsAsync(_playerId.Value, efrenOnly: efrenOnly);
+            var bestGamesTask  = StatisticsService.GetBestGamesAsync(_playerId.Value, limit: 5, efrenOnly: efrenOnly);
             var recentTask     = GameRepository.GetByPlayerAsync(_playerId.Value, skip: 0, limit: 5);
 
             await Task.WhenAll(statsTask, bestGamesTask, recentTask);
@@ -408,6 +445,27 @@
         {
             _loading = false;
         }
+    }
+
+    private async Task HandleFilterAsync()
+    {
+        _loading = true;
+        try
+        {
+            await LoadDataAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private sealed class FilterModel
+    {
+        /// <summary>
+        /// Restricts stats aggregation to Efren-variant games only.
+        /// </summary>
+        public bool EfrenOnly { get; set; }
     }
 
     // ── Display helpers ───────────────────────────────────────────────

@@ -22,7 +22,7 @@
                       class="nn-leaderboard__filter-form">
                 <select name="_filterModel.Filter"
                         class="form-select nn-leaderboard__filter-select"
-                        aria-label="Filter leaderboard">
+                        aria-label="Filter leaderboard scope">
                     <option value="" selected="@(string.IsNullOrEmpty(_filterModel.Filter))">
                         All players
                     </option>
@@ -42,6 +42,15 @@
                         </optgroup>
                     }
                 </select>
+                <label class="nn-leaderboard__variant-toggle"
+                       title="Restrict to games scored under Efren rules — runout from break, no ball in hand">
+                    <input type="checkbox"
+                           name="_filterModel.EfrenOnly"
+                           value="true"
+                           checked="@_filterModel.EfrenOnly"
+                           class="nn-leaderboard__variant-checkbox" />
+                    <span>Efren only</span>
+                </label>
                 <button type="submit" class="btn btn-ghost btn-sm">Filter</button>
             </EditForm>
         }
@@ -252,21 +261,30 @@
     private async Task<IReadOnlyList<LeaderboardEntry>> LoadEntriesAsync()
     {
         var filter = _filterModel.Filter?.Trim();
+        var efrenOnly = _filterModel.EfrenOnly;
 
         if (string.IsNullOrEmpty(filter))
-            return await StatisticsService.GetLeaderboardAsync(limit: 20);
+            return await StatisticsService.GetLeaderboardAsync(limit: 20, efrenOnly: efrenOnly);
 
         if (filter == "friends" && _viewerId is not null)
-            return await StatisticsService.GetLeaderboardForFriendsAsync(_viewerId.Value, limit: 20);
+            return await StatisticsService.GetLeaderboardForFriendsAsync(
+                _viewerId.Value, limit: 20, efrenOnly: efrenOnly);
 
         if (Guid.TryParse(filter, out var communityId))
-            return await StatisticsService.GetLeaderboardForCommunityAsync(communityId, limit: 20);
+            return await StatisticsService.GetLeaderboardForCommunityAsync(
+                communityId, limit: 20, efrenOnly: efrenOnly);
 
-        return await StatisticsService.GetLeaderboardAsync(limit: 20);
+        return await StatisticsService.GetLeaderboardAsync(limit: 20, efrenOnly: efrenOnly);
     }
 
     private sealed class FilterModel
     {
         public string? Filter { get; set; }
+
+        /// <summary>
+        /// Restricts the leaderboard to Efren-variant games only. Composes
+        /// orthogonally with the scope filter (Friends, Community, etc.).
+        /// </summary>
+        public bool EfrenOnly { get; set; }
     }
 }

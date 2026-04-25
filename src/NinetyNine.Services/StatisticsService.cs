@@ -7,6 +7,8 @@ namespace NinetyNine.Services;
 
 /// <summary>
 /// Computes player statistics and leaderboard entries by aggregating over completed game records.
+/// All public reads support an optional <c>efrenOnly</c> filter that narrows
+/// the aggregation to games where <see cref="Game.IsEfrenVariant"/> is true.
 /// </summary>
 public sealed class StatisticsService(
     IGameRepository gameRepository,
@@ -16,12 +18,15 @@ public sealed class StatisticsService(
     ILogger<StatisticsService> logger)
     : IStatisticsService
 {
-    public async Task<PlayerStats> GetPlayerStatsAsync(Guid playerId, CancellationToken ct = default)
+    public async Task<PlayerStats> GetPlayerStatsAsync(
+        Guid playerId, bool efrenOnly = false, CancellationToken ct = default)
     {
-        logger.LogDebug("Computing stats for player {PlayerId}", playerId);
+        logger.LogDebug("Computing stats for player {PlayerId} (efrenOnly={EfrenOnly})",
+            playerId, efrenOnly);
 
         var allGames = await gameRepository.GetByPlayerAsync(playerId, skip: 0, limit: int.MaxValue, ct);
-        var completedGames = allGames.Where(g => g.GameState == GameState.Completed).ToList();
+        var scopedGames = ApplyVariantFilter(allGames, efrenOnly).ToList();
+        var completedGames = scopedGames.Where(g => g.GameState == GameState.Completed).ToList();
 
         int gamesCompleted = completedGames.Count;
         double averageScore = gamesCompleted > 0
@@ -30,13 +35,13 @@ public sealed class StatisticsService(
         int bestScore = gamesCompleted > 0 ? completedGames.Max(g => g.TotalScore) : 0;
         int perfectGames = completedGames.Count(g => g.IsPerfectGame);
         int perfectFrames = completedGames.Sum(g => g.PerfectFrames);
-        DateTime? lastPlayed = allGames.Count > 0
-            ? allGames.Max(g => g.WhenPlayed)
+        DateTime? lastPlayed = scopedGames.Count > 0
+            ? scopedGames.Max(g => g.WhenPlayed)
             : null;
 
         return new PlayerStats(
             PlayerId: playerId,
-            GamesPlayed: allGames.Count,
+            GamesPlayed: scopedGames.Count,
             GamesCompleted: gamesCompleted,
             AverageScore: Math.Round(averageScore, 2),
             BestScore: bestScore,
@@ -46,14 +51,14 @@ public sealed class StatisticsService(
     }
 
     public async Task<IReadOnlyList<LeaderboardEntry>> GetLeaderboardAsync(
-        int limit, CancellationToken ct = default)
+        int limit, bool efrenOnly = false, CancellationToken ct = default)
     {
-        logger.LogDebug("Generating leaderboard (top {Limit})", limit);
+        logger.LogDebug("Generating leaderboard (top {Limit}, efrenOnly={EfrenOnly})",
+            limit, efrenOnly);
 
-        // Get recent games and group by player
         var recentGames = await gameRepository.GetRecentAsync(limit: 5000, ct);
 
-        var completedByPlayer = recentGames
+        var completedByPlayer = ApplyVariantFilter(recentGames, efrenOnly)
             .Where(g => g.GameState == GameState.Completed)
             .GroupBy(g => g.PlayerId);
 
@@ -79,7 +84,6 @@ public sealed class StatisticsService(
                 BestScore: games.Max(g => g.TotalScore)));
         }
 
-        // Sort by average score descending, then best score
         var result = entries
             .OrderByDescending(e => e.AverageScore)
             .ThenByDescending(e => e.BestScore)
@@ -90,11 +94,11 @@ public sealed class StatisticsService(
     }
 
     public async Task<IReadOnlyList<Game>> GetBestGamesAsync(
-        Guid playerId, int limit, CancellationToken ct = default)
+        Guid playerId, int limit, bool efrenOnly = false, CancellationToken ct = default)
     {
         var completedGames = await gameRepository.GetCompletedByPlayerAsync(playerId, ct);
 
-        var best = completedGames
+        var best = ApplyVariantFilter(completedGames, efrenOnly)
             .OrderByDescending(g => g.TotalScore)
             .Take(limit)
             .ToList();
@@ -103,37 +107,36 @@ public sealed class StatisticsService(
     }
 
     public async Task<IReadOnlyList<LeaderboardEntry>> GetLeaderboardForFriendsAsync(
-        Guid viewerId, int limit, CancellationToken ct = default)
+        Guid viewerId, int limit, bool efrenOnly = false, CancellationToken ct = default)
     {
         var friendships = await friendshipRepository.ListForPlayerAsync(viewerId, ct);
         var playerIds = new HashSet<Guid> { viewerId };
         foreach (var f in friendships)
             playerIds.Add(f.OtherParty(viewerId));
 
-        return await GetLeaderboardForPlayerSetAsync(playerIds, limit, ct);
+        return await GetLeaderboardForPlayerSetAsync(playerIds, limit, efrenOnly, ct);
     }
 
     public async Task<IReadOnlyList<LeaderboardEntry>> GetLeaderboardForCommunityAsync(
-        Guid communityId, int limit, CancellationToken ct = default)
+        Guid communityId, int limit, bool efrenOnly = false, CancellationToken ct = default)
     {
         var memberships = await communityMemberRepository.ListMembersAsync(
             communityId, skip: 0, limit: int.MaxValue, ct);
         var playerIds = memberships.Select(m => m.PlayerId).ToHashSet();
 
-        return await GetLeaderboardForPlayerSetAsync(playerIds, limit, ct);
+        return await GetLeaderboardForPlayerSetAsync(playerIds, limit, efrenOnly, ct);
     }
 
     /// <summary>
-    /// Core leaderboard logic filtered to a specific set of player IDs.
-    /// Reuses the same aggregation logic as <see cref="GetLeaderboardAsync"/>
-    /// but only includes games from the given player set.
+    /// Core leaderboard logic filtered to a specific set of player IDs and
+    /// optionally to Efren-variant games only.
     /// </summary>
     private async Task<IReadOnlyList<LeaderboardEntry>> GetLeaderboardForPlayerSetAsync(
-        HashSet<Guid> playerIds, int limit, CancellationToken ct)
+        HashSet<Guid> playerIds, int limit, bool efrenOnly, CancellationToken ct)
     {
         var recentGames = await gameRepository.GetRecentAsync(limit: 5000, ct);
 
-        var completedByPlayer = recentGames
+        var completedByPlayer = ApplyVariantFilter(recentGames, efrenOnly)
             .Where(g => g.GameState == GameState.Completed && playerIds.Contains(g.PlayerId))
             .GroupBy(g => g.PlayerId);
 
@@ -166,4 +169,12 @@ public sealed class StatisticsService(
             .ToList()
             .AsReadOnly();
     }
+
+    /// <summary>
+    /// Applies the Efren-variant filter when <paramref name="efrenOnly"/> is true.
+    /// When false, returns the input unchanged. Centralizing the filter here
+    /// keeps the per-method aggregation paths free of conditional bookkeeping.
+    /// </summary>
+    private static IEnumerable<Game> ApplyVariantFilter(IEnumerable<Game> games, bool efrenOnly) =>
+        efrenOnly ? games.Where(g => g.IsEfrenVariant) : games;
 }

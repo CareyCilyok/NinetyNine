@@ -28,6 +28,56 @@
     margin-bottom: 0;
 }
 
+/* ── Filter form (scope select + Efren toggle) ──────────────────────── */
+.nn-leaderboard__filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--nn-space-2);
+    margin-top: var(--nn-space-3);
+}
+
+.nn-leaderboard__filter-select {
+    flex: 0 1 auto;
+    min-width: 12rem;
+}
+
+/* Efren-only checkbox label — gold-tinted toggle next to the scope select. */
+.nn-leaderboard__variant-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-2) var(--nn-space-3);
+    background-color: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-sm);
+    color: var(--nn-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--nn-transition-fast),
+                color var(--nn-transition-fast),
+                background-color var(--nn-transition-fast);
+}
+
+.nn-leaderboard__variant-toggle:hover {
+    border-color: var(--nn-accent-gold);
+    color: var(--nn-text-primary);
+}
+
+.nn-leaderboard__variant-toggle:has(.nn-leaderboard__variant-checkbox:checked) {
+    border-color: var(--nn-accent-gold);
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.10);
+    color: var(--nn-text-primary);
+}
+
+.nn-leaderboard__variant-checkbox {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--nn-accent-gold);
+    cursor: pointer;
+}
+
 /* ── Loading state ───────────────────────────────────────────────────── */
 .nn-leaderboard__loading {
     padding: var(--nn-space-8);
