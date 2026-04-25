@@ -1,5 +1,6 @@
 @page "/matches/new"
 @attribute [Authorize]
+@rendermode InteractiveServer
 @inject IMatchService MatchService
 @inject IVenueService VenueService
 @inject IFriendService FriendService
@@ -40,9 +41,8 @@
         }
         else
         {
-            <EditForm Model="_model" method="post"
-                      OnValidSubmit="HandleSubmitAsync"
-                      FormName="new-match">
+            <EditForm Model="_model"
+                      OnValidSubmit="HandleSubmitAsync">
                 <DataAnnotationsValidator />
 
                 @* ─ Roster: 2–4 players with per-player Efren ───────────── *@
@@ -166,8 +166,11 @@
 </div>
 
 @code {
-    [SupplyParameterFromForm(FormName = "new-match")]
-    private NewMatchModel _model { get; set; } = new();
+    // Plain field — InteractiveServer rendering means the form lives in the
+    // SignalR-backed component lifetime, not a per-request POST cycle.
+    // [SupplyParameterFromForm] is the static-SSR mechanism and would null
+    // this out on the initial GET when the model has nested List<T>.
+    private NewMatchModel _model = new();
 
     private List<Venue> _venues = [];
     private List<Player> _opponents = [];
