@@ -1,0 +1,364 @@
+/* =============================================================
+   NinetyNine — theme tokens (lifted verbatim from
+   src/NinetyNine.Web/wwwroot/css/theme.css for these mockups).
+   ============================================================= */
+:root {
+  --nn-bg-primary:       #141719;
+  --nn-bg-secondary:     #1c2024;
+  --nn-bg-tertiary:      #262b30;
+  --nn-surface-raised:   #2e353b;
+  --nn-surface-overlay:  #3a434a;
+
+  --nn-text-primary:     #e8ecef;
+  --nn-text-secondary:   #a9b2b9;
+  --nn-text-tertiary:    #848e96;
+  --nn-text-inverse:     #0a0d0f;
+  --nn-text-on-accent:   #0a1512;
+
+  --nn-accent-teal:         #1fb892;
+  --nn-accent-teal-hover:   #26d0a6;
+  --nn-accent-teal-muted:   #0e5c48;
+  --nn-accent-teal-rgb:     31, 184, 146;
+
+  --nn-accent-gold:         #e0b46c;
+  --nn-accent-gold-hover:   #edc88a;
+  --nn-accent-gold-muted:   #5a4520;
+  --nn-accent-gold-rgb:     224, 180, 108;
+
+  --nn-success:        #4ade80;
+  --nn-success-bg:     #0e2a1a;
+  --nn-success-border: #1f6b42;
+
+  --nn-danger:         #f87171;
+  --nn-danger-bg:      #2a0e0e;
+  --nn-danger-border:  #7a2020;
+
+  --nn-warning:        #fbbf24;
+  --nn-warning-bg:     #2a200a;
+  --nn-warning-border: #7a5a14;
+
+  --nn-info:           #38bdf8;
+  --nn-info-bg:        #0a1f2a;
+  --nn-info-border:    #1d5a7a;
+
+  --nn-border-subtle:    rgba(255, 255, 255, 0.06);
+  --nn-border-default:   rgba(255, 255, 255, 0.12);
+  --nn-border-strong:    rgba(255, 255, 255, 0.24);
+  --nn-focus-ring:       rgba(31, 184, 146, 0.55);
+
+  --nn-shadow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  --nn-shadow-md:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  --nn-shadow-lg:
+    0 18px 40px rgba(0, 0, 0, 0.55),
+    0 6px 12px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  --nn-shadow-glow-teal:
+    0 0 0 1px rgba(31, 184, 146, 0.6),
+    0 0 18px rgba(31, 184, 146, 0.35);
+  --nn-shadow-glow-gold:
+    0 0 0 1px rgba(224, 180, 108, 0.6),
+    0 0 18px rgba(224, 180, 108, 0.35);
+
+  --nn-font-sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans", sans-serif;
+  --nn-font-mono:
+    "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
+    "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --nn-radius-sm:   0.25rem;
+  --nn-radius-md:   0.5rem;
+  --nn-radius-lg:   0.875rem;
+  --nn-radius-full: 9999px;
+
+  --nn-space-1:  0.25rem;
+  --nn-space-2:  0.5rem;
+  --nn-space-3:  0.75rem;
+  --nn-space-4:  1rem;
+  --nn-space-5:  1.5rem;
+  --nn-space-6:  2rem;
+  --nn-space-7:  2.5rem;
+  --nn-space-8:  3rem;
+
+  --nn-touch-target: 2.75rem;
+  --nn-navbar-height: 3.5rem;
+  --nn-footer-height: 3rem;
+}
+
+/* Artboards reset — each artboard renders the NN dark shell */
+.nn-artboard {
+  font-family: var(--nn-font-sans);
+  background: var(--nn-bg-primary);
+  color: var(--nn-text-primary);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.nn-artboard * { box-sizing: border-box; }
+
+/* ---- Sidebar ---- */
+.nn-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--nn-bg-secondary);
+  border-right: 1px solid var(--nn-border-subtle);
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+.nn-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--nn-space-3);
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--nn-border-subtle);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-size: 17px;
+}
+.nn-sidebar__brand .nn-brand-glyph {
+  width: 28px; height: 28px; flex-shrink: 0;
+  object-fit: contain;
+  /* tint black source → --nn-accent-teal (#1fb892) */
+  filter: brightness(0) saturate(100%) invert(58%) sepia(78%) saturate(380%) hue-rotate(120deg) brightness(92%) contrast(88%);
+}
+.nn-nav__icon { width: 20px; height: 20px; flex-shrink: 0; object-fit: contain; }
+.nn-sidebar__nav {
+  flex: 1 1 auto;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.nn-nav__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 8px 12px;
+  color: var(--nn-text-secondary);
+  text-decoration: none;
+  border-radius: var(--nn-radius-md);
+  border-left: 3px solid transparent;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.005em;
+}
+.nn-nav__link:hover {
+  background: var(--nn-bg-tertiary);
+  color: var(--nn-text-primary);
+}
+.nn-nav__link.active {
+  color: var(--nn-accent-teal);
+  background: rgba(var(--nn-accent-teal-rgb), 0.10);
+  border-left-color: var(--nn-accent-teal);
+}
+/* .nn-nav__icon declared above (img + object-fit) */
+.nn-nav__label { flex: 1 1 auto; }
+.nn-nav__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: var(--nn-accent-teal);
+  color: var(--nn-text-on-accent);
+}
+.nn-sidebar__footer {
+  border-top: 1px solid var(--nn-border-subtle);
+  padding: 12px 10px 14px;
+}
+.nn-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--nn-radius-md);
+}
+.nn-user-menu:hover { background: var(--nn-bg-tertiary); }
+.nn-user-menu__avatar {
+  width: 32px; height: 32px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--nn-accent-teal) 0%, var(--nn-accent-teal-muted) 100%);
+  color: var(--nn-text-on-accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  flex-shrink: 0;
+}
+.nn-user-menu__name { font-size: 13px; font-weight: 600; color: var(--nn-text-primary); line-height: 1.2;}
+.nn-user-menu__meta { font-size: 11px; color: var(--nn-text-tertiary); }
+
+/* ---- Main pane ---- */
+.nn-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--nn-bg-primary);
+  overflow: hidden;
+}
+.nn-content {
+  flex: 1 1 auto;
+  padding: 28px 32px;
+  overflow: hidden;
+}
+.nn-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+.nn-page-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--nn-text-primary);
+  margin: 0;
+  line-height: 1.1;
+}
+.nn-page-sub { font-size: 14px; color: var(--nn-text-secondary); margin: 6px 0 0; }
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--nn-radius-md);
+  font-weight: 600;
+  font-size: 13px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.2;
+  font-family: inherit;
+}
+.btn-primary {
+  background: var(--nn-accent-teal);
+  color: var(--nn-text-on-accent);
+  border-color: var(--nn-accent-teal);
+}
+.btn-primary:hover { background: var(--nn-accent-teal-hover); border-color: var(--nn-accent-teal-hover); }
+.btn-outline {
+  background: transparent;
+  color: var(--nn-accent-teal);
+  border-color: var(--nn-border-default);
+}
+.btn-outline:hover { border-color: var(--nn-accent-teal); }
+.btn-ghost {
+  background: transparent;
+  color: var(--nn-text-secondary);
+  border-color: transparent;
+}
+.btn-ghost:hover { background: var(--nn-bg-tertiary); color: var(--nn-text-primary); }
+.btn-lg { padding: 12px 22px; font-size: 14px; }
+
+/* ---- Cards ---- */
+.nn-card {
+  background: var(--nn-bg-secondary);
+  border: 1px solid var(--nn-border-subtle);
+  border-radius: var(--nn-radius-lg);
+  box-shadow: var(--nn-shadow-sm);
+}
+.nn-card--padded { padding: 20px; }
+
+/* ---- Status pills ---- */
+.nn-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.nn-status-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.nn-status-pill--completed {
+  color: var(--nn-success);
+  background: var(--nn-success-bg);
+  border-color: var(--nn-success-border);
+}
+.nn-status-pill--inprogress {
+  color: var(--nn-accent-gold);
+  background: var(--nn-accent-gold-muted);
+  border-color: rgba(var(--nn-accent-gold-rgb), 0.4);
+}
+.nn-status-pill--muted {
+  color: var(--nn-text-tertiary);
+  background: var(--nn-bg-tertiary);
+  border-color: var(--nn-border-subtle);
+}
+
+/* Monospace numbers */
+.mono { font-family: var(--nn-font-mono); font-variant-numeric: tabular-nums; }
+
+/* Icon helper: img with filter (Phosphor SVGs are stroke-only, so
+   a mask-image approach produces opaque squares — we use filter
+   matrices instead, matching the real app's NavMenu.razor.css). */
+.nn-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  vertical-align: -3px;
+  object-fit: contain;
+  /* Default tone = --nn-text-secondary (#a9b2b9). Consumers override with a
+     .nn-icon--<tone> class or an inline `filter`. */
+  filter: var(--nn-icon-filter, brightness(0) saturate(100%) invert(76%) sepia(5%) saturate(287%) hue-rotate(174deg) brightness(93%) contrast(89%));
+}
+/* Tones — each filter chain is `brightness(0) saturate(100%) invert(...)` pre-computed
+   so the black source SVG lands on the target color. */
+.nn-icon--primary    { filter: brightness(0) saturate(100%) invert(94%) sepia(2%) saturate(90%) hue-rotate(169deg) brightness(97%) contrast(92%); }   /* #e8ecef */
+.nn-icon--secondary  { filter: brightness(0) saturate(100%) invert(76%) sepia(5%) saturate(287%) hue-rotate(174deg) brightness(93%) contrast(89%); } /* #a9b2b9 */
+.nn-icon--tertiary   { filter: brightness(0) saturate(100%) invert(60%) sepia(8%) saturate(260%) hue-rotate(170deg) brightness(92%) contrast(88%); } /* #848e96 */
+.nn-icon--teal       { filter: brightness(0) saturate(100%) invert(58%) sepia(78%) saturate(380%) hue-rotate(120deg) brightness(92%) contrast(88%); } /* #1fb892 */
+.nn-icon--gold       { filter: brightness(0) saturate(100%) invert(74%) sepia(30%) saturate(458%) hue-rotate(358deg) brightness(94%) contrast(87%); } /* #e0b46c */
+.nn-icon--on-accent  { filter: brightness(0) saturate(100%) invert(5%) sepia(10%) saturate(400%) hue-rotate(120deg) brightness(95%) contrast(92%); }  /* #0a1512 (near-black) */
+
+/* Context overrides — inside buttons/cards, icons pick up the right tone
+   without every call site needing to pass `tone={...}`. */
+.btn-primary  .nn-icon { filter: brightness(0) saturate(100%) invert(5%) sepia(10%) saturate(400%) hue-rotate(120deg) brightness(95%) contrast(92%); }
+.btn-outline  .nn-icon,
+.btn-primary:hover .nn-icon { /* primary hover still dark; outline is teal */ }
+.btn-outline  .nn-icon { filter: brightness(0) saturate(100%) invert(58%) sepia(78%) saturate(380%) hue-rotate(120deg) brightness(92%) contrast(88%); }
+.btn-ghost   .nn-icon { filter: brightness(0) saturate(100%) invert(76%) sepia(5%) saturate(287%) hue-rotate(174deg) brightness(93%) contrast(89%); }
+
+/* Avatar helpers */
+.nn-avatar {
+  width: 36px; height: 36px;
+  border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px;
+  color: var(--nn-text-on-accent);
+  flex-shrink: 0;
+}
+.nn-avatar--teal   { background: linear-gradient(135deg, #1fb892, #0e5c48); }
+.nn-avatar--gold   { background: linear-gradient(135deg, #e0b46c, #5a4520); color: #1a1208; }
+.nn-avatar--slate  { background: linear-gradient(135deg, #64748b, #334155); color: #e8ecef; }
+.nn-avatar--plum   { background: linear-gradient(135deg, #a855f7, #6b21a8); color: #fff; }
+.nn-avatar--rose   { background: linear-gradient(135deg, #f472b6, #be185d); color: #fff; }
+.nn-avatar--sky    { background: linear-gradient(135deg, #38bdf8, #075985); color: #041822; }
