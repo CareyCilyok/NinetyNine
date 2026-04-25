@@ -1,0 +1,171 @@
+/* =====================================================================
+   BallPicker.razor.css  (Blazor scoped) — v0.3.x
+   ---------------------------------------------------------------------
+   3×3 popover for selecting which balls were pocketed in the active
+   frame. Anchored below the active FrameCell's Ball button (positioning
+   is provided by the consumer). All ball pigments come from <PoolBall />
+   and are not theme tokens.
+   ===================================================================== */
+
+.nn-ball-picker {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translate(-50%, 8px);
+    z-index: var(--nn-z-dropdown);
+    width: 14rem;            /* 224px per v2 mockup */
+    padding: var(--nn-space-3) var(--nn-space-3);
+    background-color: var(--nn-surface-raised);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+    color: var(--nn-text-primary);
+}
+
+/* -------------------------------------------------------------------
+   CARET — small upward triangle that points at the Ball button.
+   Implemented as a rotated square so it inherits the panel's border
+   and background; only its top + left edges read as the visible
+   triangle outline.
+   ------------------------------------------------------------------- */
+
+.nn-ball-picker__caret {
+    position: absolute;
+    top: -7px;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    transform: translateX(-50%) rotate(45deg);
+    background-color: var(--nn-surface-raised);
+    border-top: 1px solid var(--nn-border-default);
+    border-left: 1px solid var(--nn-border-default);
+}
+
+/* -------------------------------------------------------------------
+   HEADER — "BALLS POCKETED" label + Clear button.
+   ------------------------------------------------------------------- */
+
+.nn-ball-picker__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nn-ball-picker__title {
+    font-family: var(--nn-font-sans);
+    font-size: 0.6875rem;     /* 11px per v2 mockup */
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--nn-text-tertiary);
+}
+
+.nn-ball-picker__clear {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: 0;
+    color: var(--nn-text-tertiary);
+    font-family: var(--nn-font-sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: var(--nn-radius-sm);
+    cursor: pointer;
+    transition: color var(--nn-transition-fast),
+                background-color var(--nn-transition-fast);
+}
+
+.nn-ball-picker__clear:hover {
+    color: var(--nn-text-secondary);
+    background-color: var(--nn-bg-tertiary);
+}
+
+.nn-ball-picker__clear:focus-visible {
+    outline: 2px solid var(--nn-accent-gold);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------
+   GRID — 3 columns × 3 rows of ball buttons.
+   ------------------------------------------------------------------- */
+
+.nn-ball-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--nn-space-2);
+}
+
+.nn-ball-picker__ball {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    aspect-ratio: 1 / 1;
+    padding: 6px;
+    background-color: transparent;
+    border: 1.5px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--nn-transition-fast),
+                border-color var(--nn-transition-fast);
+    min-height: var(--nn-touch-target);
+}
+
+.nn-ball-picker__ball:hover:not(.nn-ball-picker__ball--selected) {
+    border-color: var(--nn-border-default);
+    background-color: var(--nn-bg-tertiary);
+}
+
+.nn-ball-picker__ball:focus-visible {
+    outline: 2px solid var(--nn-accent-gold);
+    outline-offset: 2px;
+}
+
+.nn-ball-picker__ball--selected {
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.12);
+    border-color: var(--nn-accent-teal);
+}
+
+/* Small teal check badge on the upper-right of a selected ball. */
+.nn-ball-picker__check {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: var(--nn-radius-full);
+    background-color: var(--nn-accent-teal);
+    color: var(--nn-text-on-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+/* -------------------------------------------------------------------
+   DONE — full-width primary button at the bottom of the popover.
+   The .btn / .btn-primary classes come from Bootstrap and inherit
+   the theme's --bs-primary token (teal). We only adjust width here.
+   ------------------------------------------------------------------- */
+
+.nn-ball-picker__done {
+    width: 100%;
+    justify-content: center;
+    min-height: var(--nn-touch-target);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nn-ball-picker__ball,
+    .nn-ball-picker__clear {
+        transition: none;
+    }
+}

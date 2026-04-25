@@ -1,0 +1,142 @@
+@*
+    BallPicker — 3×3 grid popover for selecting which balls were pocketed
+    in a single frame. Opens below an active <FrameCell />'s Ball button;
+    closes when the user taps outside, hits the Done button, or presses Esc.
+
+    The selection set is owned by the parent (the per-frame state lives in
+    Play.razor's in-flight buffer). This component is a controlled view:
+    it renders the current Set, fires events for toggle / clear / done,
+    and never holds state itself.
+
+    Built on the existing <PoolBall />. Selected balls render at full color
+    with a teal-tinted background and a small teal checkmark; unselected
+    balls render dimmed.
+
+    Parameters
+        Selected   : the current set of pocketed ball numbers (1–9)
+        OnToggle   : invoked with a ball number when the user taps a ball
+        OnClear    : invoked when the user taps "CLEAR"
+        OnDone     : invoked when the user taps "Done · N balls"
+
+    Outside-click and Esc handling are owned by the consumer (FrameCell
+    via JS interop). This component renders the popover panel only.
+*@
+
+<div class="nn-ball-picker"
+     role="dialog"
+     aria-label="Balls pocketed picker"
+     @onclick:stopPropagation
+     @onkeydown="HandleKeyDown"
+     @onkeydown:stopPropagation
+     tabindex="-1">
+
+    @* Caret pointing at the cell's Ball button above. *@
+    <div class="nn-ball-picker__caret" aria-hidden="true"></div>
+
+    <div class="nn-ball-picker__header">
+        <span class="nn-ball-picker__title">Balls pocketed</span>
+        <button type="button"
+                class="nn-ball-picker__clear"
+                @onclick="HandleClear"
+                aria-label="Clear all selected balls">
+            Clear
+        </button>
+    </div>
+
+    <div class="nn-ball-picker__grid" role="group" aria-label="Pool balls 1 through 9">
+        @for (int n = 1; n <= 9; n++)
+        {
+            var ball = n;
+            var isSelected = Selected?.Contains(ball) == true;
+            var btnClass = isSelected
+                ? "nn-ball-picker__ball nn-ball-picker__ball--selected"
+                : "nn-ball-picker__ball";
+
+            <button type="button"
+                    class="@btnClass"
+                    aria-pressed="@(isSelected ? "true" : "false")"
+                    aria-label="@($"Ball {ball}{(isSelected ? ", pocketed" : ", not pocketed")}")"
+                    @onclick="() => HandleToggle(ball)">
+                <PoolBall Number="@ball" Size="44" Dim="@(!isSelected)" />
+                @if (isSelected)
+                {
+                    <span class="nn-ball-picker__check" aria-hidden="true">
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"
+                             stroke="currentColor" stroke-width="2.4"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2.5 6L5 8.5L9.5 3.5" />
+                        </svg>
+                    </span>
+                }
+            </button>
+        }
+    </div>
+
+    <button type="button"
+            class="btn btn-primary nn-ball-picker__done"
+            @onclick="HandleDone"
+            aria-label="@DoneAriaLabel">
+        Done @DoneSuffix
+    </button>
+</div>
+
+@code {
+    /// <summary>
+    /// Current selection. The parent owns this set; the picker reads but does not mutate.
+    /// Null is treated as an empty set.
+    /// </summary>
+    [Parameter] public IReadOnlySet<int>? Selected { get; set; }
+
+    [Parameter] public EventCallback<int> OnToggle { get; set; }
+    [Parameter] public EventCallback OnClear { get; set; }
+    [Parameter] public EventCallback OnDone { get; set; }
+
+    private int SelectedCount => Selected?.Count ?? 0;
+
+    private string DoneSuffix => SelectedCount switch
+    {
+        0 => "· no balls",
+        1 => "· 1 ball",
+        _ => $"· {SelectedCount} balls"
+    };
+
+    private string DoneAriaLabel => SelectedCount == 1
+        ? "Done, 1 ball selected"
+        : $"Done, {SelectedCount} balls selected";
+
+    private async Task HandleToggle(int ballNumber)
+    {
+        if (OnToggle.HasDelegate)
+        {
+            await OnToggle.InvokeAsync(ballNumber);
+        }
+    }
+
+    private async Task HandleClear()
+    {
+        if (OnClear.HasDelegate)
+        {
+            await OnClear.InvokeAsync();
+        }
+    }
+
+    private async Task HandleDone()
+    {
+        if (OnDone.HasDelegate)
+        {
+            await OnDone.InvokeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Esc closes the picker (treated as Done — no destructive cancel; selections
+    /// are already captured by OnToggle as the user tapped balls).
+    /// </summary>
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await HandleDone();
+        }
+    }
+}
