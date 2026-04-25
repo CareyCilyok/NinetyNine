@@ -25,7 +25,9 @@ public class FrameCellTests : TestContext
             .Add(x => x.Frame, frame)
             .Add(x => x.IsActive, false));
 
-        cut.Find(".frame-number").TextContent.Should().Be("3");
+        // Trim() because the .frame-number wrapper now contains an SVG
+        // PoolBall whose internal whitespace bleeds into TextContent.
+        cut.Find(".frame-number").TextContent.Trim().Should().Be("3");
     }
 
     [Fact]

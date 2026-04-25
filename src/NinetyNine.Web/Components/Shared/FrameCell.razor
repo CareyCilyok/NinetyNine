@@ -1,20 +1,29 @@
 @*
-    FrameCell — a single column of the P&B score card grid.
+    FrameCell — a single column of the P&B score card grid (v2 visual refresh).
 
-    Vertical stack of four visual parts:
-      1. Circled frame number header
-      2. Break Bonus row  (label + 0/1 or em-dash)
-      3. Ball Count row   (label + 0-10 or em-dash)
-      4. Running Total row (label + total, emphasized)
+    Replaces the v1 circled-number badge with a numbered <PoolBall /> SVG and
+    drives state classes from FrameStatus, retiring the inline if/else chain
+    that lived in CellCssClass. FrameCell has no access to the parent Game,
+    so the Status switch uses a 3-value classification (Active / Completed /
+    Pending). The four-value form including Future lives in ScoreCardGrid,
+    which has Game.CurrentFrameNumber on hand.
 
-    States (two signals each — never color alone):
-      - Empty     : tertiary text + dashed border
-      - Active    : gold fill + thick top/bottom borders + inset glow + lift
-      - Completed : teal ring + filled frame number + secondary text
+    Public parameter API is unchanged from the v1 cell:
+        Frame              — the frame to render
+        IsActive           — caller-supplied "is this the live frame" hint
+                             (production sources set IsActive = Frame.IsActive,
+                             tests sometimes diverge to exercise edge states)
+        Mode               — View | Edit
+        OnFrameActivated   — fired when the active+edit cell is clicked
 
-    When Mode == Edit && IsActive, the entire cell is a <button type="button">
-    so the whole column is clickable and keyboard-accessible. Otherwise it is
-    a plain <div role="gridcell"> with no focusable affordance.
+    Two-signal state rule (never communicate state by color alone):
+        Active    : gold border + glow shadow + translateY(-2px) + bright ball
+        Completed : teal border + bright ball
+        Pending   : dashed default-gray border + dimmed ball + opacity 0.6
+
+    The button-vs-div wrapper still depends on Edit mode (only an active+edit
+    cell is interactive); the visual-state class is now independent of mode,
+    so an active cell in View mode also reads as "current".
 *@
 
 @if (IsInteractive)
@@ -26,7 +35,7 @@
             aria-current="true"
             @onclick="OnEnterScore">
         <div class="frame-cell-header">
-            <span class="frame-number" aria-hidden="true">@Frame.FrameNumber</span>
+            <span class="frame-number" aria-hidden="true"><PoolBall Number="@Frame.FrameNumber" Size="22" Dim="@IsBallDim" /></span>
         </div>
 
         <div class="frame-cell-row frame-cell-break-bonus">
@@ -54,7 +63,6 @@
         </div>
 
         <div class="frame-cell-row frame-cell-running-total">
-            <span class="frame-cell-label" aria-hidden="true">Total</span>
             @if (Frame.IsCompleted)
             {
                 <span class="score-value running-total">@Frame.RunningTotal</span>
@@ -70,9 +78,10 @@ else
 {
     <div class="@CellCssClass"
          role="gridcell"
-         aria-label="@AriaLabel">
+         aria-label="@AriaLabel"
+         aria-current="@AriaCurrent">
         <div class="frame-cell-header">
-            <span class="frame-number" aria-hidden="true">@Frame.FrameNumber</span>
+            <span class="frame-number" aria-hidden="true"><PoolBall Number="@Frame.FrameNumber" Size="22" Dim="@IsBallDim" /></span>
         </div>
 
         <div class="frame-cell-row frame-cell-break-bonus">
@@ -100,7 +109,6 @@ else
         </div>
 
         <div class="frame-cell-row frame-cell-running-total">
-            <span class="frame-cell-label" aria-hidden="true">Total</span>
             @if (Frame.IsCompleted)
             {
                 <span class="score-value running-total">@Frame.RunningTotal</span>
@@ -119,25 +127,55 @@ else
     [Parameter] public ScoreCardMode Mode { get; set; } = ScoreCardMode.View;
     [Parameter] public EventCallback<Frame> OnFrameActivated { get; set; }
 
-    private const string EmDash = "\u2014";
+    private const string EmDash = "—";
+
+    /// <summary>
+    /// Visual classification for this cell. Resolution mirrors the
+    /// FrameStatusExtensions.GetStatus rule, but uses the IsActive parameter
+    /// (not Frame.IsActive) so callers can override activeness at the edge.
+    /// </summary>
+    private FrameStatus Status
+    {
+        get
+        {
+            if (Frame.IsCompleted) return FrameStatus.Completed;
+            if (IsActive) return FrameStatus.Active;
+            return FrameStatus.Pending;
+        }
+    }
 
     private bool IsInteractive => IsActive && Mode == ScoreCardMode.Edit;
+
+    private bool IsBallDim => Status == FrameStatus.Pending;
+
+    /// <summary>
+    /// True when the completed frame hits the v2 per-frame max of 10 points
+    /// (1 break bonus + 9 balls). Used to gold-accent the running total.
+    /// </summary>
+    private bool IsPerfectFrame =>
+        Frame.IsCompleted && Frame.BreakBonus + Frame.BallCount == 10;
 
     private string CellCssClass
     {
         get
         {
-            if (IsActive && Mode == ScoreCardMode.Edit)
+            var baseClass = Status switch
             {
-                return "frame-cell frame-cell-active";
-            }
-            if (Frame.IsCompleted)
-            {
-                return "frame-cell frame-cell-completed";
-            }
-            return "frame-cell frame-cell-pending";
+                FrameStatus.Active    => "frame-cell frame-cell-active",
+                FrameStatus.Completed => "frame-cell frame-cell-completed",
+                _                     => "frame-cell frame-cell-pending"
+            };
+            return IsPerfectFrame ? $"{baseClass} frame-cell-perfect" : baseClass;
         }
     }
+
+    /// <summary>
+    /// Mirror aria-current onto the non-interactive active cell so assistive
+    /// tech in View mode still reads "current" — the button branch sets the
+    /// attribute directly.
+    /// </summary>
+    private string? AriaCurrent =>
+        Status == FrameStatus.Active ? "true" : null;
 
     private string AriaLabel
     {

@@ -1,50 +1,57 @@
 /* =====================================================================
-   FrameCell.razor.css  (Blazor scoped)
+   FrameCell.razor.css  (Blazor scoped) — v2 visual refresh
    ---------------------------------------------------------------------
-   A single 4-row column of the ScoreCardGrid:
+   A single column of the ScoreCardGrid:
+
        ┌─────────────┐
-       │    ( n )    │  frame number circle
+       │   ( ball )  │   PoolBall SVG (22px)
        ├─────────────┤
        │ Break   —   │
-       ├─────────────┤
        │ Ball    —   │
-       ├─────────────┤
-       │ Total   —   │  (emphasized, larger, bolder)
+       │             │
+       │     —       │   running total — large, no label
        └─────────────┘
 
-   Three visual states, each signalled by TWO cues:
-     • pending    : dashed border + tertiary text
-     • active     : gold fill + thick top/bottom borders + inset glow + lift
-     • completed  : teal ring + filled frame number + secondary text
+   Three visual states, each signalled by TWO cues (never color alone):
+     • pending    : 1.5px dashed border + dimmed PoolBall + opacity 0.6
+     • active     : 1.5px solid gold + glow shadow + lift + bright PoolBall
+     • completed  : 1.5px solid teal + bright PoolBall
 
-   All colors reference the --nn-* token namespace from theme.css.
+   All colors come from the global --nn-* token namespace. The PoolBall
+   itself uses physical-object pigments rather than theme tokens (see
+   PoolBall.razor.css for the why).
    ===================================================================== */
 
 .frame-cell {
-    /* Structural layout */
+    /* Layout */
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 0;
+    gap: var(--nn-space-2);
     min-width: 0;
-    min-height: calc(var(--nn-touch-target) * 4);
-    padding: var(--nn-space-3) var(--nn-space-2) var(--nn-space-2);
+    min-height: 146px;
+    padding: 8px 8px 10px;
     border-radius: var(--nn-radius-md);
+
+    /* Default appearance — overridden by per-state classes below. */
     background-color: var(--nn-bg-secondary);
-    border: 1px solid var(--nn-border-subtle);
+    border: 1.5px solid var(--nn-border-default);
     color: var(--nn-text-primary);
+
+    /* Numerals throughout the cell. */
     font-family: var(--nn-font-mono);
     font-variant-numeric: tabular-nums;
+
+    /* Layering & motion. */
     position: relative;
     text-align: center;
     box-shadow: var(--nn-shadow-sm);
-    transition: border-color var(--nn-transition-fast),
-                background-color var(--nn-transition-fast),
+    transition: transform var(--nn-transition-base),
                 box-shadow var(--nn-transition-base),
-                transform var(--nn-transition-base);
+                border-color var(--nn-transition-fast),
+                background-color var(--nn-transition-fast);
 }
 
-/* When the cell is a <button> it must reset the UA styling. */
+/* When the cell is a <button>, reset UA styling and stretch full-width. */
 button.frame-cell {
     appearance: none;
     -webkit-appearance: none;
@@ -60,82 +67,58 @@ button.frame-cell:focus-visible {
 }
 
 /* -------------------------------------------------------------------
-   HEADER — circled frame number
+   HEADER — PoolBall badge replaces the v1 circled-number span.
+   The .frame-number wrapper kept for selector continuity (existing
+   tests query by class, treat its TextContent as the frame number).
    ------------------------------------------------------------------- */
 
 .frame-cell-header {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: var(--nn-space-2);
-    padding-bottom: var(--nn-space-2);
-    border-bottom: 1px solid var(--nn-border-subtle);
+    line-height: 0;       /* keep the SVG flush — no descender padding */
 }
 
 .frame-number {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: var(--nn-radius-full);
-    background-color: transparent;
-    color: var(--nn-text-secondary);
-    border: 2px solid var(--nn-border-default);
-    font-family: var(--nn-font-sans);
-    font-weight: 700;
-    font-size: 0.8125rem;
-    line-height: 1;
-    flex-shrink: 0;
-    transition: background-color var(--nn-transition-fast),
-                color var(--nn-transition-fast),
-                border-color var(--nn-transition-fast);
-}
-
-@media (min-width: 768px) {
-    .frame-number {
-        width: 2rem;
-        height: 2rem;
-        font-size: 0.9375rem;
-    }
+    line-height: 0;
 }
 
 /* -------------------------------------------------------------------
-   ROWS — Break / Ball / Total
+   ROWS — Break / Ball / Running Total
+   Break and Ball stack vertically with their labels on top of values.
+   Running Total drops the label per v2 mockup; the row keeps its class
+   so the parent count assertion (3 rows) still holds.
    ------------------------------------------------------------------- */
 
 .frame-cell-row {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--nn-space-1);
-    padding: var(--nn-space-1) var(--nn-space-1);
-    min-height: 1.75rem;
-    font-size: 0.9375rem;
+    justify-content: center;
+    gap: 2px;
+    padding: 0 var(--nn-space-1);
     line-height: 1.1;
-}
-
-.frame-cell-row + .frame-cell-row {
-    border-top: 1px solid var(--nn-border-subtle);
 }
 
 .frame-cell-label {
     font-family: var(--nn-font-sans);
-    font-size: 0.625rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    font-size: 0.5625rem;     /* 9px per v2 mockup */
+    font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--nn-text-tertiary);
-    flex-shrink: 0;
 }
 
 .score-value {
     font-family: var(--nn-font-mono);
     font-variant-numeric: tabular-nums;
-    font-weight: 500;
+    font-weight: 700;
+    font-size: 1.125rem;      /* 18px per v2 mockup */
     color: var(--nn-text-primary);
-    min-width: 1.75ch;
-    text-align: right;
+    line-height: 1;
 }
 
 .score-value.score-placeholder {
@@ -143,19 +126,18 @@ button.frame-cell:focus-visible {
     font-weight: 400;
 }
 
-/* Running Total row — the emphasized value. */
+/* Running total — large numerals, no label, hairline divider above. */
 .frame-cell-running-total {
-    margin-top: var(--nn-space-1);
+    margin-top: auto;
     padding-top: var(--nn-space-2);
-    border-top: 1px solid var(--nn-border-default) !important;
-    min-height: 2.25rem;
+    border-top: 1px solid var(--nn-border-subtle);
+    min-height: 2.5rem;
 }
 
 .frame-cell-running-total .score-value {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--nn-text-primary);
-    letter-spacing: -0.02em;
+    font-size: 1.875rem;      /* 30px per v2 mockup */
+    font-weight: 800;
+    letter-spacing: -0.03em;
 }
 
 .frame-cell-running-total .score-value.score-placeholder {
@@ -164,89 +146,51 @@ button.frame-cell:focus-visible {
 }
 
 /* -------------------------------------------------------------------
-   STATE — PENDING (empty, not yet reached)
+   STATE — PENDING (default border + dashed + dimmed)
    ------------------------------------------------------------------- */
 
 .frame-cell-pending {
-    background-color: var(--nn-bg-secondary);
-    border: 1px dashed var(--nn-border-default);
-}
-
-.frame-cell-pending .score-value {
-    color: var(--nn-text-tertiary);
-}
-
-.frame-cell-pending .frame-number {
-    border-color: var(--nn-border-default);
-    color: var(--nn-text-tertiary);
+    border-style: dashed;
+    opacity: 0.6;
 }
 
 /* -------------------------------------------------------------------
-   STATE — COMPLETED
+   STATE — COMPLETED (teal ring)
    ------------------------------------------------------------------- */
 
 .frame-cell-completed {
-    background-color: var(--nn-bg-secondary);
-    border: 1px solid var(--nn-accent-teal-muted);
-    box-shadow: var(--nn-shadow-sm),
-                inset 0 0 0 1px rgba(var(--nn-accent-teal-rgb), 0.35);
-}
-
-.frame-cell-completed .score-value {
-    color: var(--nn-text-secondary);
-}
-
-.frame-cell-completed .frame-cell-running-total .score-value {
-    color: var(--nn-text-primary);
-}
-
-.frame-cell-completed .frame-number {
-    background-color: var(--nn-accent-teal);
-    color: var(--nn-text-on-accent);
     border-color: var(--nn-accent-teal);
-    box-shadow: 0 0 0 2px rgba(var(--nn-accent-teal-rgb), 0.15);
+}
+
+/* Perfect frame: per-frame total of 10 (1 break + 9 balls) — gold the
+   running total to celebrate it. The cell border still reads as
+   "completed teal" so the second signal (border style) stays consistent. */
+.frame-cell-perfect .frame-cell-running-total .score-value {
+    color: var(--nn-accent-gold);
 }
 
 /* -------------------------------------------------------------------
-   STATE — ACTIVE (current frame, edit mode)
+   STATE — ACTIVE (gold border + muted gold fill + glow + lift)
    ------------------------------------------------------------------- */
 
 .frame-cell-active {
-    background-color: var(--nn-bg-tertiary);
-    border-top: 3px solid var(--nn-accent-gold);
-    border-bottom: 3px solid var(--nn-accent-gold);
-    border-left: 1px solid var(--nn-accent-gold);
-    border-right: 1px solid var(--nn-accent-gold);
-    box-shadow: var(--nn-shadow-glow-gold),
-                inset 0 1px 0 var(--nn-border-subtle);
+    background-color: var(--nn-accent-gold-muted);
+    border-color: var(--nn-accent-gold);
+    box-shadow: var(--nn-shadow-glow-gold);
     transform: translateY(-2px);
-}
-
-.frame-cell-active .score-value {
-    color: var(--nn-text-primary);
-}
-
-.frame-cell-active .score-value.score-placeholder {
-    color: var(--nn-accent-gold);
-    font-weight: 600;
 }
 
 .frame-cell-active .frame-cell-label {
     color: var(--nn-text-secondary);
 }
 
-.frame-cell-active .frame-number {
-    background-color: var(--nn-accent-gold);
-    color: var(--nn-text-inverse);
-    border-color: var(--nn-accent-gold);
-    box-shadow: 0 0 0 3px var(--nn-accent-gold-muted);
-}
+/* -------------------------------------------------------------------
+   MOTION — respect prefers-reduced-motion.
+   ------------------------------------------------------------------- */
 
-/* Reduced-motion users: no lift, no transitions. */
 @media (prefers-reduced-motion: reduce) {
     .frame-cell,
-    .frame-cell-active,
-    .frame-number {
+    .frame-cell-active {
         transform: none !important;
         transition: none !important;
     }
@@ -254,22 +198,18 @@ button.frame-cell:focus-visible {
 
 /* -------------------------------------------------------------------
    RESPONSIVE — mobile (<768px)
+   The 9-column grid is hidden by the parent on mobile, so this rule
+   only fires for tablets in portrait or other in-between widths where
+   the grid still renders. Reduce the per-cell vertical density.
    ------------------------------------------------------------------- */
 
-/* On mobile the 9-column grid is hidden by the parent; only the
-   mobile detail+picker view is visible. So we shrink cell padding
-   for the unlikely case the grid is still shown (tablets in portrait). */
 @media (max-width: 767.98px) {
     .frame-cell {
         padding: var(--nn-space-2) var(--nn-space-1);
         min-height: calc(var(--nn-touch-target) * 3);
     }
 
-    .frame-cell-row {
-        font-size: 0.8125rem;
-    }
-
     .frame-cell-running-total .score-value {
-        font-size: 1.0625rem;
+        font-size: 1.5rem;       /* 24px on tighter widths */
     }
 }

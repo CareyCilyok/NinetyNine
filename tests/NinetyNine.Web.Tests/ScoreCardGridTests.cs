@@ -124,7 +124,9 @@ public class ScoreCardGridTests : TestContext
                 var cut = RenderComponent<FrameCell>(p => p
                     .Add(x => x.Frame, f)
                     .Add(x => x.IsActive, f.IsActive));
-                return int.Parse(cut.Find(".frame-number").TextContent);
+                // Trim() because .frame-number now wraps a PoolBall SVG whose
+                // internal whitespace bleeds into TextContent.
+                return int.Parse(cut.Find(".frame-number").TextContent.Trim());
             })
             .ToList();
 
