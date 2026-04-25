@@ -11,7 +11,7 @@ namespace NinetyNine.Services;
 /// and a handful of games in various states so the UX can be prototyped
 /// against realistic data.
 /// </summary>
-public sealed class DataSeeder(
+public sealed partial class DataSeeder(
     IPlayerRepository playerRepository,
     IVenueRepository venueRepository,
     IGameRepository gameRepository,
@@ -135,7 +135,14 @@ public sealed class DataSeeder(
         // 4. Community reconcile
         var communityChange = await ReconcileSeededCommunityAsync(ct);
 
-        // 5. Expiration sweep
+        // 5. Mock roster reconcile (26 amateurs + 7 pros, see DataSeeder.MockRoster.cs).
+        //    Runs *after* the original test players + community so the
+        //    original seed flow is untouched on a fresh DB.
+        var mockPlayersAdded = await ReconcileMockPlayerRosterAsync(ct);
+        var (mockCommunitiesCreated, mockCommunityMembersAdded) =
+            await ReconcileMockCommunitiesAsync(ct);
+
+        // 6. Expiration sweep
         var expired = await SweepExpiredPendingAsync(ct);
 
         // ── Seed guard: if players already exist, log reconcile
@@ -151,6 +158,9 @@ public sealed class DataSeeder(
             if (communityChange.CommunityCreated) parts.Add("created Pocket Sports community");
             if (communityChange.MembersAdded > 0) parts.Add($"added {communityChange.MembersAdded} community member(s)");
             if (communityChange.VenuesAffiliated > 0) parts.Add($"affiliated {communityChange.VenuesAffiliated} venue(s)");
+            if (mockPlayersAdded > 0) parts.Add($"added {mockPlayersAdded} mock player(s)");
+            if (mockCommunitiesCreated > 0) parts.Add($"created {mockCommunitiesCreated} mock community/ies");
+            if (mockCommunityMembersAdded > 0) parts.Add($"added {mockCommunityMembersAdded} mock-community member(s)");
             var totalExpired = expired.FriendRequests + expired.Invitations + expired.JoinRequests + expired.Transfers;
             if (totalExpired > 0) parts.Add($"expired {totalExpired} stale pending item(s)");
             if (parts.Count > 0)
@@ -166,10 +176,12 @@ public sealed class DataSeeder(
         // ── Players ──────────────────────────────────────────────────────────
         // Two players on the original score cards share the first name "Carey"
         // (the primary user and a second Carey). DisplayName must be unique so
-        // the second Carey is seeded as "carey_b".
-        var carey = CreateTestPlayer("carey", "Carey", "Cilyok");
-        var george = CreateTestPlayer("george", "George", null);
-        var careyB = CreateTestPlayer("carey_b", "Carey", null);
+        // the second Carey is seeded as "carey_b". Fargo ratings are placeholder
+        // estimates — these are real people whose FargoRate numbers we don't
+        // actually have, so the values land in plausible league-amateur brackets.
+        var carey = CreateTestPlayer("carey", "Carey", "Cilyok", fargoRating: 550);
+        var george = CreateTestPlayer("george", "George", null, fargoRating: 625);
+        var careyB = CreateTestPlayer("carey_b", "Carey", null, fargoRating: 480);
 
         await playerRepository.CreateAsync(carey, ct);
         await playerRepository.CreateAsync(george, ct);
@@ -487,7 +499,8 @@ public sealed class DataSeeder(
     // migration can no longer run. Non-seeded players at SchemaVersion < 2
     // would need a mongosh-level fix if they ever exist (dev-only scenario).
 
-    private Player CreateTestPlayer(string displayName, string firstName, string? lastName)
+    private Player CreateTestPlayer(
+        string displayName, string firstName, string? lastName, int? fargoRating = null)
     {
         var player = new Player
         {
@@ -497,6 +510,7 @@ public sealed class DataSeeder(
             EmailVerified = true,
             FirstName = firstName,
             LastName = lastName,
+            FargoRating = fargoRating,
             Visibility = new ProfileVisibility
             {
                 EmailAudience = Audience.Private,

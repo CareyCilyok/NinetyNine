@@ -79,6 +79,26 @@ public class Player
     public ProfileVisibility Visibility { get; set; } = new();
     public AvatarRef? Avatar { get; set; }
 
+    /// <summary>
+    /// Player's <a href="https://fargorate.com/">FargoRate</a> skill rating
+    /// (typical range 200–850). Null when unrated. Stored verbatim — the
+    /// app does not compute or update Fargo (FargoRate is the system of
+    /// record); the value is captured so the UI can display it on the
+    /// profile, leaderboards, and match preview screens, and so the dev
+    /// data seeder can generate game histories whose scores realistically
+    /// match the player's claimed skill bracket.
+    /// <para>
+    /// Why Fargo and not APA SL: Fargo is absolute and venue-portable —
+    /// "550 in Huntsville" means the same thing as "550 in Houston" — and
+    /// is the rating cited by serious players sizing each other up. APA SL
+    /// is league-internal and handicapped (opaque formula); useful for APA
+    /// match handicapping, useless as a portable skill measure. The seed
+    /// data comments include a loose APA→Fargo crosswalk for users from
+    /// the Huntsville league scene who recognize SL numbers.
+    /// </para>
+    /// </summary>
+    public int? FargoRating { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // ── Soft delete / retirement (Sprint 7 S7.2) ───────────────────
