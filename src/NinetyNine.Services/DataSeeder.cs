@@ -22,6 +22,7 @@ public sealed partial class DataSeeder(
     ICommunityInvitationRepository communityInvitationRepository,
     ICommunityJoinRequestRepository communityJoinRequestRepository,
     IOwnershipTransferRepository ownershipTransferRepository,
+    IMatchRepository matchRepository,
     ILogger<DataSeeder> logger,
     IPasswordHasher<Player> passwordHasher) : IDataSeeder
 {
@@ -147,7 +148,13 @@ public sealed partial class DataSeeder(
         //    fires for newly-added templates.
         var mockGamesAdded = await ReconcileMockGameHistoriesAsync(ct);
 
-        // 7. Expiration sweep
+        // 7. Mock match histories — see DataSeeder.MockMatches.cs.
+        //    Builds 2-/3-/4-player concurrent matches between similarly-
+        //    rated players. Idempotent — gated on whether any pro
+        //    already has a match record.
+        var (mockMatchesAdded, mockMatchGamesAdded) = await ReconcileMockMatchesAsync(ct);
+
+        // 8. Expiration sweep
         var expired = await SweepExpiredPendingAsync(ct);
 
         // ── Seed guard: if players already exist, log reconcile
@@ -167,6 +174,7 @@ public sealed partial class DataSeeder(
             if (mockCommunitiesCreated > 0) parts.Add($"created {mockCommunitiesCreated} mock community/ies");
             if (mockCommunityMembersAdded > 0) parts.Add($"added {mockCommunityMembersAdded} mock-community member(s)");
             if (mockGamesAdded > 0) parts.Add($"seeded {mockGamesAdded} mock game(s)");
+            if (mockMatchesAdded > 0) parts.Add($"seeded {mockMatchesAdded} mock match(es) ({mockMatchGamesAdded} match game(s))");
             var totalExpired = expired.FriendRequests + expired.Invitations + expired.JoinRequests + expired.Transfers;
             if (totalExpired > 0) parts.Add($"expired {totalExpired} stale pending item(s)");
             if (parts.Count > 0)
