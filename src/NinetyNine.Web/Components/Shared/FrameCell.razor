@@ -222,13 +222,19 @@
         }
     }
 
-    /// <summary>Effective ball count: in-flight set size for active+edit, frame's persisted BallCount otherwise.</summary>
+    /// <summary>
+    /// Effective BallCount points for display. The 9-ball is worth 2 points
+    /// and every other ball is worth 1, so we sum from the in-flight set
+    /// rather than counting it. Completed frames already store the points
+    /// value in Frame.BallCount.
+    /// </summary>
     private int EffectiveBallCount
     {
         get
         {
             if (Frame.IsCompleted) return Frame.BallCount;
-            if (IsActive && Mode == ScoreCardMode.Edit) return BallsPocketed?.Count ?? 0;
+            if (IsActive && Mode == ScoreCardMode.Edit)
+                return BallsPocketed is null ? 0 : BallsPocketed.Sum(b => b == 9 ? 2 : 1);
             return 0;
         }
     }
@@ -270,14 +276,17 @@
         }
     }
 
-    /// <summary>Per-frame total under the v2 rule (1 break + 9 balls = 10 max).</summary>
+    /// <summary>
+    /// Per-frame perfect score is 11 (1 break bonus + 10 ball points,
+    /// where the 9-ball doubles).
+    /// </summary>
     private bool IsPerfectFrameDisplay
     {
         get
         {
-            if (Frame.IsCompleted) return Frame.BreakBonus + Frame.BallCount == 10;
+            if (Frame.IsCompleted) return Frame.BreakBonus + Frame.BallCount == 11;
             if (IsActive && Mode == ScoreCardMode.Edit)
-                return (BreakBonus ? 1 : 0) + EffectiveBallCount == 10;
+                return (BreakBonus ? 1 : 0) + EffectiveBallCount == 11;
             return false;
         }
     }

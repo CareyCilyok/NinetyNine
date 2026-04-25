@@ -191,18 +191,17 @@ public sealed class DataSeeder(
         var chips = venuesByName["Chips & Salsa Sports Bar & Grill"];
 
         // ── Completed games (realistic scatter across real venues) ─────
-        // Each int[9] is the frame score per frame (0–10 under the v2 rule:
-        // 1 break bonus + 9 balls × 1 point each). The seeder splits each
-        // into BreakBonus + BallCount by giving break bonus when the frame
-        // score is ≥ 3 (roughly matches the break-bonus awarded rate).
+        // Each int[9] is the frame score per frame (0–11). The seeder splits
+        // each into BreakBonus + BallCount by giving break bonus when the
+        // frame score is ≥ 3 (roughly matches the break-bonus awarded rate).
         var completedGames = new (Player player, Venue venue, int[] scores, int daysAgo)[]
         {
-            (carey,  bumpers, [6, 9, 4, 10, 7, 5, 8, 10, 6],  3),
-            (carey,  home,    [5, 7, 10, 3, 9, 6, 8, 4, 10],  7),
-            (george, steves,  [4, 8, 6, 7, 5, 9, 3, 10, 7],   3),
+            (carey,  bumpers, [6, 9, 4, 11, 7, 5, 8, 10, 6],  3),
+            (carey,  home,    [5, 7, 11, 3, 9, 6, 8, 4, 10],  7),
+            (george, steves,  [4, 8, 6, 7, 5, 9, 3, 11, 7],   3),
             (george, chips,   [7, 5, 10, 4, 6, 8, 5, 7, 9],  12),
             (careyB, bumpers, [3, 6, 8, 5, 7, 4, 9, 6, 5],    3),
-            (careyB, home,    [8, 10, 6, 9, 7, 5, 10, 8, 4], 18),
+            (careyB, home,    [8, 10, 6, 9, 7, 5, 11, 8, 4], 18),
         };
 
         foreach (var (player, venue, scores, daysAgo) in completedGames)
@@ -560,19 +559,18 @@ public sealed class DataSeeder(
     }
 
     /// <summary>
-    /// Splits a total frame score into a plausible (BreakBonus, BallCount) pair
-    /// under the v2 ruleset (max 10 per frame: 1 break bonus + 9 balls).
-    /// Awards the break bonus when score ≥ 3 and fits within the BallCount cap of 9.
+    /// Splits a total frame score into a plausible (BreakBonus, BallCount) pair.
+    /// Awards the break bonus when score ≥ 3 and fits within the BallCount cap of 10.
     /// </summary>
     private static (int BreakBonus, int BallCount) SplitFrameScore(int total)
     {
-        if (total is < 0 or > 10)
+        if (total is < 0 or > 11)
             throw new ArgumentOutOfRangeException(nameof(total));
 
         // Break bonus goes to 1 when the player pocketed anything off the break.
         // For the seeder we grant it whenever the total is at least 3 points,
-        // subject to the v2 BallCount ≤ 9 ceiling.
-        if (total >= 3 && total <= 10)
+        // subject to the BallCount ≤ 10 ceiling.
+        if (total >= 3 && total <= 11)
             return (1, total - 1);
 
         return (0, total);

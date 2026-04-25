@@ -43,7 +43,7 @@
                     <strong class="@(_game.IsPerfectGame ? "nn-play-page__perfect-score" : "")">
                         @_game.TotalScore
                     </strong>
-                    <span class="nn-play-page__complete-max">/ 90</span>
+                    <span class="nn-play-page__complete-max">/ 99</span>
                 </p>
                 @if (_game.IsPerfectGame)
                 {
@@ -118,7 +118,7 @@
                 </span>
                 <span class="nn-play-page__footer-sep" aria-hidden="true">&middot;</span>
                 <span class="nn-play-page__score-so-far" aria-live="polite" aria-atomic="true">
-                    Score so far: <strong class="nn-play-page__score-value">@_game.TotalScore</strong> / 90
+                    Score so far: <strong class="nn-play-page__score-value">@_game.TotalScore</strong> / 99
                 </span>
             </div>
             <a href="/games" class="nn-play-page__exit-link">Exit to history</a>
@@ -209,8 +209,17 @@
     // ── Computed values ──────────────────────────────────────────────────────
 
     /// <summary>
-    /// Running total displayed on the active cell: sum of completed frames'
-    /// FrameScore + (in-flight break bonus + balls). Recomputed on every
+    /// Convert a set of pocketed ball numbers to the BallCount points value
+    /// the model expects: the 9-ball is worth 2 points, every other ball is
+    /// worth 1. Pocketing all 9 balls scores 8 + 2 = 10, which is the model's
+    /// per-frame BallCount ceiling.
+    /// </summary>
+    private static int BallPoints(IReadOnlySet<int>? balls) =>
+        balls is null ? 0 : balls.Sum(b => b == 9 ? 2 : 1);
+
+    /// <summary>
+    /// Running total displayed on the active cell: completed frames' running
+    /// total + (in-flight break bonus + ball points). Recomputed on every
     /// buffer change.
     /// </summary>
     private int? _liveRunningTotal => _game is null ? null : ComputeLiveRunningTotal();
@@ -218,7 +227,7 @@
     private int ComputeLiveRunningTotal()
     {
         var completedTotal = _game!.RunningTotal; // last completed frame's RunningTotal, or 0
-        var inFlight = (_breakBonus ? 1 : 0) + _ballsPocketed.Count;
+        var inFlight = (_breakBonus ? 1 : 0) + BallPoints(_ballsPocketed);
         return completedTotal + inFlight;
     }
 
@@ -263,7 +272,8 @@
         {
             var frameNumber = _game.CurrentFrameNumber;
             var breakBonus = _breakBonus ? 1 : 0;
-            var ballCount = _ballsPocketed.Count;
+            // 9-ball is worth 2 points; all other balls 1.
+            var ballCount = BallPoints(_ballsPocketed);
 
             _game = await GameService.RecordFrameAsync(
                 GameId, frameNumber, breakBonus, ballCount, notes: null);

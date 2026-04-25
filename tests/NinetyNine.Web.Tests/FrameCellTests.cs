@@ -254,4 +254,61 @@ public class FrameCellTests : TestContext
 
         cut.FindAll(".nn-ball-picker").Should().BeEmpty();
     }
+
+    // ─── 9-ball doubles rule (v0.3.5 fix) ─────────────────────────────────────
+    // The 9-ball is worth 2 points; every other ball is worth 1. The Ball
+    // button display sums points, not raw ball count.
+
+    [Fact]
+    public void FrameCell_ActiveEdit_BallCountDisplay_Treats9BallAs2Points()
+    {
+        var frame = MakeFrame();
+        var balls = (IReadOnlySet<int>)new HashSet<int> { 1, 9 };
+
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsActive, true)
+            .Add(x => x.Mode, ScoreCardMode.Edit)
+            .Add(x => x.BallsPocketed, balls));
+
+        var ballValue = cut.Find(".frame-cell-ball .score-value");
+        ballValue.TextContent.Trim().Should().Be("3",
+            "1 (ball 1) + 2 (9-ball doubles) = 3");
+    }
+
+    [Fact]
+    public void FrameCell_ActiveEdit_BallCountDisplay_AllBalls_TotalsTen()
+    {
+        // All 9 balls pocketed: 8 × 1 + 1 × 2 = 10 (the model BallCount ceiling).
+        var frame = MakeFrame();
+        var balls = (IReadOnlySet<int>)new HashSet<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsActive, true)
+            .Add(x => x.Mode, ScoreCardMode.Edit)
+            .Add(x => x.BallsPocketed, balls));
+
+        cut.Find(".frame-cell-ball .score-value").TextContent.Trim()
+            .Should().Be("10", "all 9 balls including the 9-ball doubles to 10 points");
+    }
+
+    [Fact]
+    public void FrameCell_ActiveEdit_PerfectFrameClass_AppliesAtElevenPoints()
+    {
+        // Perfect frame is 11 (1 break + 10 ball points where 9-ball doubles).
+        var frame = MakeFrame();
+        var balls = (IReadOnlySet<int>)new HashSet<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsActive, true)
+            .Add(x => x.Mode, ScoreCardMode.Edit)
+            .Add(x => x.BreakBonus, true)
+            .Add(x => x.BallsPocketed, balls));
+
+        cut.Find("[role='gridcell']").ClassList
+            .Should().Contain("frame-cell-perfect",
+                "1 break bonus + 10 ball points = 11 = a perfect frame");
+    }
 }

@@ -69,7 +69,7 @@
                 <span class="nn-details-page__score-value @(_game.IsPerfectGame ? "nn-details-page__score-value--perfect" : "")">
                     @_game.TotalScore
                 </span>
-                <span class="nn-details-page__score-max">/ 90</span>
+                <span class="nn-details-page__score-max">/ 99</span>
                 @if (_game.IsPerfectGame)
                 {
                     <div class="nn-details-page__perfect-badge" aria-label="Perfect game">
@@ -90,7 +90,7 @@
             <div class="nn-details-page__stats-grid">
                 <div class="nn-details-page__stat-card">
                     <div class="nn-details-page__stat-value">
-                        @_game.TotalScore<span class="nn-details-page__stat-denominator">/90</span>
+                        @_game.TotalScore<span class="nn-details-page__stat-denominator">/99</span>
                     </div>
                     <div class="nn-details-page__stat-label">Total Score</div>
                 </div>
