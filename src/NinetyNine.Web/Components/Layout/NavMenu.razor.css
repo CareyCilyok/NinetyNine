@@ -129,6 +129,44 @@
     flex-shrink: 0;
 }
 
+/* "Under construction" pill — features that are usable but rough.
+   Amber/gold tint distinguishes it from the teal numeric badge so a row
+   like Notifications can carry both signals without visual confusion.
+   The pill is informational only; the link itself remains clickable. */
+.nn-nav__wip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    padding: 1px 6px;
+    height: 1.125rem;
+    font-size: 0.5625rem;       /* 9px */
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--nn-accent-gold);
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.12);
+    border: 1px solid rgba(var(--nn-accent-gold-rgb), 0.45);
+    border-radius: var(--nn-radius-sm);
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+/* When a row carries both pills (Notifications), the WIP pill keeps its
+   right-aligned slot via margin-left:auto, and the numeric badge sits
+   immediately to its right with a small gap. */
+.nn-nav__wip + .nn-nav__badge {
+    margin-left: var(--nn-space-2);
+}
+
+/* Active row: lift the WIP color to full gold so it still reads against
+   the teal-tinted active background. */
+.nn-nav__link.active .nn-nav__wip,
+.nn-nav__link[aria-current="page"] .nn-nav__wip {
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.18);
+    border-color: var(--nn-accent-gold);
+}
+
 /* -------------------------------------------------------------------
    aria-current — NavLink also sets aria-current="page" on the active
    anchor; make sure we don't style that any differently than .active.

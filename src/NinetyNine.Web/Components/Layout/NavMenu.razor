@@ -1,7 +1,7 @@
 @*
     NavMenu — sidebar primary navigation.
     -----------------------------------------------------------------
-    Renders the six top-level destinations as Blazor NavLink rows
+    Renders the top-level destinations as Blazor NavLink rows
     (icon + label). Home uses NavLinkMatch.All so it's only active on
     exactly "/"; the rest use NavLinkMatch.Prefix so nested routes
     (e.g. /games/new under /games) still highlight correctly.
@@ -10,6 +10,11 @@
     Active styling (teal text, muted teal background, 3px left border)
     is applied via the scoped .razor.css file using Blazor's built-in
     `.active` class that NavLink adds automatically.
+
+    Items still under active development carry a small amber WIP pill
+    (.nn-nav__wip) so users know the feature may be usable but rough.
+    The pill is informational only — links remain enabled. Drop the
+    pill from a row once the feature is considered stable.
 
     OnNavigate is an optional parent callback — MainLayout uses it to
     close the mobile drawer after a link is activated.
@@ -39,6 +44,8 @@
                  role="presentation"
                  class="nn-nav__icon" />
             <span class="nn-nav__label">Friends</span>
+            <span class="nn-nav__wip" title="Under construction — may have rough edges"
+                  aria-label="under construction — may have rough edges">WIP</span>
             @if (PendingFriendRequestCount > 0)
             {
                 <span class="nn-nav__badge"
@@ -72,6 +79,8 @@
                  role="presentation"
                  class="nn-nav__icon" />
             <span class="nn-nav__label">History</span>
+            <span class="nn-nav__wip" title="Under construction — may have rough edges"
+                  aria-label="under construction — may have rough edges">WIP</span>
         </NavLink>
     </li>
 
@@ -85,6 +94,8 @@
                  role="presentation"
                  class="nn-nav__icon" />
             <span class="nn-nav__label">Stats</span>
+            <span class="nn-nav__wip" title="Under construction — may have rough edges"
+                  aria-label="under construction — may have rough edges">WIP</span>
         </NavLink>
     </li>
 
@@ -98,6 +109,8 @@
                  role="presentation"
                  class="nn-nav__icon" />
             <span class="nn-nav__label">Venues</span>
+            <span class="nn-nav__wip" title="Under construction — may have rough edges"
+                  aria-label="under construction — may have rough edges">WIP</span>
         </NavLink>
     </li>
 
@@ -111,6 +124,8 @@
                  role="presentation"
                  class="nn-nav__icon" />
             <span class="nn-nav__label">Communities</span>
+            <span class="nn-nav__wip" title="Under construction — may have rough edges"
+                  aria-label="under construction — may have rough edges">WIP</span>
         </NavLink>
     </li>
 
@@ -124,6 +139,8 @@
                  role="presentation"
                  class="nn-nav__icon" />
             <span class="nn-nav__label">Notifications</span>
+            <span class="nn-nav__wip" title="Under construction — may have rough edges"
+                  aria-label="under construction — may have rough edges">WIP</span>
             <span class="nn-nav__badge"
                   data-notification-badge
                   aria-live="polite"
@@ -144,6 +161,8 @@
                  role="presentation"
                  class="nn-nav__icon" />
             <span class="nn-nav__label">Profile</span>
+            <span class="nn-nav__wip" title="Under construction — may have rough edges"
+                  aria-label="under construction — may have rough edges">WIP</span>
         </NavLink>
     </li>
 
