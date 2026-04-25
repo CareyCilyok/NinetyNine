@@ -39,12 +39,12 @@ public class Match
     /// the field is positioned so a default-valued enum parse on legacy
     /// documents reads as Sequential without migration.
     /// </summary>
-    public MatchType Type { get; set; } = MatchType.Sequential;
+    public MatchRotation Rotation { get; set; } = MatchRotation.Sequential;
 
     /// <summary>
     /// Structural format: Single (N=1), RaceTo (first to N wins),
     /// BestOf (first to ⌈N/2⌉ wins). Ignored for
-    /// <see cref="MatchType.Concurrent"/> — concurrent matches always
+    /// <see cref="MatchRotation.Concurrent"/> — concurrent matches always
     /// run for nine frames per player.
     /// </summary>
     public MatchFormat Format { get; set; } = MatchFormat.Single;
@@ -53,7 +53,7 @@ public class Match
     /// For <see cref="MatchFormat.RaceTo"/>, the number of wins
     /// required. For <see cref="MatchFormat.BestOf"/>, the total
     /// possible game count (N). Always 1 for <see cref="MatchFormat.Single"/>.
-    /// Ignored for <see cref="MatchType.Concurrent"/>.
+    /// Ignored for <see cref="MatchRotation.Concurrent"/>.
     /// </summary>
     public int Target { get; set; } = 1;
 
@@ -66,7 +66,7 @@ public class Match
     public List<Guid> PlayerIds { get; set; } = [];
 
     /// <summary>
-    /// For <see cref="MatchType.Concurrent"/>, the seat index (into
+    /// For <see cref="MatchRotation.Concurrent"/>, the seat index (into
     /// <see cref="PlayerIds"/>) that is currently up to shoot. Rotates
     /// 0 → 1 → … → N-1 → 0 on each <c>FinishInning</c>; when it wraps
     /// back to 0 the match advances to the next frame number on each
@@ -115,7 +115,7 @@ public class Match
     public Guid? WinnerPlayerId { get; set; }
 }
 
-public enum MatchType
+public enum MatchRotation
 {
     /// <summary>One Game at a time, head-to-head only (2 players).
     /// Pre-v0.5.0 behaviour and the default for new matches.</summary>

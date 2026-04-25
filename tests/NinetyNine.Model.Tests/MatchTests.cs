@@ -5,7 +5,7 @@ namespace NinetyNine.Model.Tests;
 /// <summary>
 /// Tests for the <see cref="Match"/> entity. Covers default values for
 /// both the pre-v0.5.0 head-to-head fields and the new v0.5.0
-/// <see cref="MatchType"/>/<see cref="Match.CurrentPlayerSeat"/> fields,
+/// <see cref="MatchRotation"/>/<see cref="Match.CurrentPlayerSeat"/> fields,
 /// plus the enum encodings that drive Sequential/Concurrent branching.
 /// </summary>
 public class MatchTests
@@ -16,8 +16,8 @@ public class MatchTests
         var match = new Match();
 
         match.MatchId.Should().NotBeEmpty("MatchId auto-generated");
-        match.Type.Should().Be(MatchType.Sequential,
-            "default Type must be Sequential so legacy v0.4.x docs and " +
+        match.Rotation.Should().Be(MatchRotation.Sequential,
+            "default Rotation must be Sequential so legacy v0.4.x docs and " +
             "new-match form callers without an explicit choice keep " +
             "head-to-head behaviour");
         match.Format.Should().Be(MatchFormat.Single);
@@ -35,14 +35,14 @@ public class MatchTests
     }
 
     [Fact]
-    public void MatchType_Enum_HasExpectedValues()
+    public void MatchRotation_Enum_HasExpectedValues()
     {
         // Sequential MUST be 0 — legacy Match docs persisted before
         // v0.5.0 have no `type` field; a default-valued enum parse on
         // those documents must read as Sequential to preserve behaviour.
-        MatchType.Sequential.Should().Be((MatchType)0,
+        MatchRotation.Sequential.Should().Be((MatchRotation)0,
             "Sequential is the legacy/default rotation; must be 0");
-        MatchType.Concurrent.Should().Be((MatchType)1);
+        MatchRotation.Concurrent.Should().Be((MatchRotation)1);
     }
 
     [Fact]
@@ -72,14 +72,14 @@ public class MatchTests
 
         var match = new Match
         {
-            Type = MatchType.Concurrent,
+            Rotation = MatchRotation.Concurrent,
             PlayerIds = [p1, p2, p3, p4],
             CurrentPlayerSeat = 2,
             VenueId = Guid.NewGuid(),
             Status = MatchStatus.InProgress,
         };
 
-        match.Type.Should().Be(MatchType.Concurrent);
+        match.Rotation.Should().Be(MatchRotation.Concurrent);
         match.PlayerIds.Should().HaveCount(4);
         match.CurrentPlayerSeat.Should().Be(2);
         match.PlayerIds[match.CurrentPlayerSeat].Should().Be(p3,

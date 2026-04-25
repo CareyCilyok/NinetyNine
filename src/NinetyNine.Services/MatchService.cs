@@ -183,6 +183,174 @@ public sealed class MatchService(
         int skip = 0, int limit = 20, CancellationToken ct = default)
         => matches.ListForPlayerAsync(playerId, status, skip, limit, ct);
 
+    // ── Concurrent (multi-player, alternating-innings) matches ───────────────
+
+    public const int ConcurrentMinPlayers = 2;
+    public const int ConcurrentMaxPlayers = 4;
+
+    public async Task<ServiceResult<Match>> CreateConcurrentMatchAsync(
+        Guid creatorPlayerId,
+        IReadOnlyList<ConcurrentMatchPlayerSetup> players,
+        Guid venueId,
+        TableSize tableSize,
+        BreakMethod breakMethod,
+        int? tableNumber = null,
+        string? stakes = null,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(players);
+
+        if (players.Count < ConcurrentMinPlayers || players.Count > ConcurrentMaxPlayers)
+            return ServiceResult<Match>.Fail(
+                "InvalidPlayerCount",
+                $"Concurrent matches require {ConcurrentMinPlayers}–{ConcurrentMaxPlayers} players.");
+
+        var distinctPlayerIds = players.Select(p => p.PlayerId).Distinct().Count();
+        if (distinctPlayerIds != players.Count)
+            return ServiceResult<Match>.Fail(
+                "DuplicatePlayer", "A concurrent match cannot have the same player in more than one seat.");
+
+        if (!players.Any(p => p.PlayerId == creatorPlayerId))
+            return ServiceResult<Match>.Fail(
+                "CreatorNotInMatch", "The match creator must be one of the participating players.");
+
+        var match = new Match
+        {
+            Rotation = MatchRotation.Concurrent,
+            // Concurrent matches have a fixed shape (9 frames per player); the
+            // Format/Target fields don't drive a win count for them but we
+            // record sensible defaults so the persisted document is sane.
+            Format = MatchFormat.Single,
+            Target = 1,
+            PlayerIds = players.Select(p => p.PlayerId).ToList(),
+            CurrentPlayerSeat = 0,
+            BreakMethod = breakMethod,
+            TableNumber = tableNumber,
+            Stakes = string.IsNullOrWhiteSpace(stakes) ? null : stakes.Trim(),
+            VenueId = venueId,
+            Status = MatchStatus.InProgress,
+        };
+
+        // Start a complete 9-frame Game for every player up front. All games
+        // begin in the InProgress state with frame 1 active; rotation gating
+        // happens at the match level via CurrentPlayerSeat.
+        foreach (var setup in players)
+        {
+            var game = await gameService.StartNewGameAsync(
+                setup.PlayerId, venueId, tableSize, setup.IsEfrenVariant, ct);
+            match.GameIds.Add(game.GameId);
+        }
+
+        await matches.CreateAsync(match, ct);
+
+        logger.LogInformation(
+            "Concurrent match {MatchId} created: {PlayerCount} players, venue {VenueId}, {GameCount} games",
+            match.MatchId, players.Count, venueId, match.GameIds.Count);
+
+        return ServiceResult<Match>.Ok(match);
+    }
+
+    public async Task<ServiceResult<Match>> FinishInningAsync(
+        Guid matchId, CancellationToken ct = default)
+    {
+        var match = await matches.GetByIdAsync(matchId, ct);
+        if (match is null)
+            return ServiceResult<Match>.Fail("MatchNotFound", "Match not found.");
+
+        if (match.Rotation != MatchRotation.Concurrent)
+            return ServiceResult<Match>.Fail(
+                "WrongMatchRotation",
+                "FinishInning is only valid for Concurrent matches; Sequential matches finalize on game completion.");
+
+        if (match.Status != MatchStatus.InProgress)
+            return ServiceResult<Match>.Fail(
+                "MatchNotInProgress", "This match is not in progress.");
+
+        // Reload all constituent games to evaluate completion + tie-breakers.
+        var allGames = new List<Game>(match.GameIds.Count);
+        foreach (var gameId in match.GameIds)
+        {
+            var game = await games.GetByIdAsync(gameId, ct);
+            if (game is null)
+                return ServiceResult<Match>.Fail(
+                    "GameNotFound", $"Constituent game {gameId} not found.");
+            allGames.Add(game);
+        }
+
+        // If every player's Game is complete the match is over — compute the
+        // winner. Every-game-complete is the only end-of-match signal for
+        // Concurrent matches; CurrentPlayerSeat doesn't gate completion
+        // because the seat may not land on 0 when the last frame finishes.
+        if (allGames.All(g => g.GameState == GameState.Completed))
+        {
+            var winnerId = SelectConcurrentWinner(allGames);
+            match.Status = MatchStatus.Completed;
+            match.WinnerPlayerId = winnerId;
+            match.CompletedAt = DateTime.UtcNow;
+            await matches.UpdateAsync(match, ct);
+
+            logger.LogInformation(
+                "Concurrent match {MatchId} completed: winner {WinnerId} (final scores: {Scores})",
+                matchId, winnerId,
+                string.Join(", ", allGames.Select(g => $"{g.PlayerId}={g.TotalScore}")));
+
+            return ServiceResult<Match>.Ok(match);
+        }
+
+        // Otherwise rotate to the next seat that still has frames left to play.
+        // Skipping fully-completed seats keeps the rotation honest when one
+        // player finishes their nine frames before the others (their Game is
+        // Completed but the match continues).
+        var seatCount = match.PlayerIds.Count;
+        for (int step = 1; step <= seatCount; step++)
+        {
+            var candidateSeat = (match.CurrentPlayerSeat + step) % seatCount;
+            var candidatePlayerId = match.PlayerIds[candidateSeat];
+            var candidateGame = allGames.FirstOrDefault(g => g.PlayerId == candidatePlayerId);
+            if (candidateGame is not null && candidateGame.GameState != GameState.Completed)
+            {
+                match.CurrentPlayerSeat = candidateSeat;
+                await matches.UpdateAsync(match, ct);
+
+                logger.LogDebug(
+                    "Concurrent match {MatchId}: inning advanced to seat {Seat} (player {PlayerId}, frame {Frame})",
+                    matchId, candidateSeat, candidatePlayerId, candidateGame.CurrentFrameNumber);
+
+                return ServiceResult<Match>.Ok(match);
+            }
+        }
+
+        // Defensive: if no seat has remaining frames but not every game is
+        // Completed, the data is inconsistent. Fail loudly rather than spin.
+        return ServiceResult<Match>.Fail(
+            "RotationStalled",
+            "No seat has remaining frames, but the match is not yet complete. " +
+            "This indicates a corrupted Match/Game state.");
+    }
+
+    /// <summary>
+    /// Selects the winner of a completed concurrent match.
+    /// Primary: highest <see cref="Game.TotalScore"/>.
+    /// Tie-break 1: most <see cref="Game.PerfectFrames"/> (frames scoring 11).
+    /// Tie-break 2: earliest <see cref="Game.CompletedAt"/> — the player who
+    /// finished their nine frames first wins among otherwise-tied scores.
+    /// </summary>
+    internal static Guid SelectConcurrentWinner(IReadOnlyList<Game> games)
+    {
+        if (games.Count == 0)
+            throw new InvalidOperationException("Cannot select a winner from an empty game list.");
+
+        // DateTime.MaxValue puts any null CompletedAt at the back of the
+        // tie-break order (a Completed game without CompletedAt is malformed,
+        // but we don't want to crash on it).
+        return games
+            .OrderByDescending(g => g.TotalScore)
+            .ThenByDescending(g => g.PerfectFrames)
+            .ThenBy(g => g.CompletedAt ?? DateTime.MaxValue)
+            .First()
+            .PlayerId;
+    }
+
     /// <summary>
     /// Computes how many game wins are needed to win the match.
     /// Single: 1. RaceTo: Target. BestOf: ⌈Target/2⌉ (first to majority).

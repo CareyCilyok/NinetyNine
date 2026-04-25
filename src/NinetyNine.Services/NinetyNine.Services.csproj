@@ -20,4 +20,8 @@
     <ProjectReference Include="..\NinetyNine.Repository\NinetyNine.Repository.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="NinetyNine.Services.Tests" />
+  </ItemGroup>
+
 </Project>
