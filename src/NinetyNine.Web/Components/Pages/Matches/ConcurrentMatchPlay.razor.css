@@ -1,0 +1,256 @@
+/* =====================================================================
+   ConcurrentMatchPlay.razor.css  (Blazor scoped)
+   ---------------------------------------------------------------------
+   Layout for the multi-player alternating-innings match shell:
+
+       ┌────────────────────────────────────────────┐
+       │ Header — title, seating count               │
+       ├────────────────────────────────────────────┤
+       │ Active section                              │
+       │   ▸ TurnCalloutCard                          │
+       │   ▸ ScoreCardGrid (Edit mode for active)     │
+       ├────────────────────────────────────────────┤
+       │ Up Next                                     │
+       │   ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+       │   │ Seat 2  │ │ Seat 3  │ │ Seat 4  │       │
+       │   │ Score   │ │ Score   │ │ Score   │       │
+       │   │ Frame   │ │ Frame   │ │ Frame   │       │
+       │   └─────────┘ └─────────┘ └─────────┘       │
+       └────────────────────────────────────────────┘
+
+   All colors come from the global --nn-* token namespace.
+   ===================================================================== */
+
+.nn-concurrent-match {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-5);
+    width: 100%;
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: var(--nn-space-5) var(--nn-space-4);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.nn-concurrent-match__header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-1);
+}
+
+.nn-concurrent-match__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin: 0;
+}
+
+.nn-concurrent-match__seating {
+    color: var(--nn-text-secondary);
+    margin: 0;
+    font-size: 0.9375rem;
+}
+
+/* ── Active section ──────────────────────────────────────────────────── */
+.nn-concurrent-match__active {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-4);
+}
+
+/* ── Up Next stack ───────────────────────────────────────────────────── */
+.nn-concurrent-match__up-next {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+}
+
+.nn-concurrent-match__up-next-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin: 0;
+    font-family: var(--nn-font-sans);
+    letter-spacing: 0.01em;
+}
+
+.nn-concurrent-match__up-next-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: var(--nn-space-3);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: up-next-card;
+}
+
+.nn-concurrent-match__up-next-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-3) var(--nn-space-4);
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+    box-shadow: var(--nn-shadow-sm);
+    transition: border-color var(--nn-transition-fast),
+                box-shadow var(--nn-transition-fast);
+}
+
+/* Efren ring on a waiting card — same gold inset vocabulary as
+   FrameCell.frame-cell-efren so the visual carries between views. */
+.nn-concurrent-match__up-next-card--efren {
+    box-shadow: var(--nn-shadow-sm),
+                inset 0 0 0 2px rgba(var(--nn-accent-gold-rgb), 0.45);
+}
+
+/* Completed seat: teal ring + reduced contrast, since they have no
+   more turns to take. */
+.nn-concurrent-match__up-next-card--completed {
+    border-color: var(--nn-accent-teal-muted);
+    opacity: 0.85;
+}
+
+.nn-concurrent-match__up-next-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.nn-concurrent-match__up-next-seat {
+    font-family: var(--nn-font-sans);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--nn-text-tertiary);
+}
+
+.nn-concurrent-match__up-next-name {
+    font-family: var(--nn-font-sans);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nn-concurrent-match__up-next-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--nn-space-2);
+    padding-top: var(--nn-space-2);
+    border-top: 1px solid var(--nn-border-subtle);
+}
+
+.nn-concurrent-match__up-next-stat:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.nn-concurrent-match__up-next-stat-label {
+    font-family: var(--nn-font-sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--nn-text-tertiary);
+}
+
+.nn-concurrent-match__up-next-stat-value {
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+}
+
+/* ── Match-complete state ────────────────────────────────────────────── */
+.nn-concurrent-match__complete {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-4);
+    padding: var(--nn-space-6);
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+    text-align: center;
+}
+
+.nn-concurrent-match__complete-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin: 0;
+}
+
+.nn-concurrent-match__winner {
+    color: var(--nn-text-secondary);
+    font-size: 1.125rem;
+    margin: 0;
+}
+
+.nn-concurrent-match__winner strong {
+    color: var(--nn-accent-gold);
+}
+
+.nn-concurrent-match__final-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-2);
+}
+
+.nn-concurrent-match__final-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: var(--nn-space-2) var(--nn-space-3);
+    background-color: var(--nn-bg-primary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-sm);
+}
+
+.nn-concurrent-match__final-row:first-child {
+    border-color: var(--nn-accent-gold);
+    box-shadow: inset 0 0 0 1px var(--nn-accent-gold);
+}
+
+.nn-concurrent-match__final-name {
+    font-weight: 600;
+    color: var(--nn-text-primary);
+}
+
+.nn-concurrent-match__final-score {
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+}
+
+.nn-concurrent-match__final-row:first-child .nn-concurrent-match__final-score {
+    color: var(--nn-accent-gold);
+}
+
+.nn-concurrent-match__actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--nn-space-3);
+    flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+    .nn-concurrent-match {
+        padding: var(--nn-space-3) var(--nn-space-2);
+    }
+
+    .nn-concurrent-match__up-next-list {
+        grid-template-columns: 1fr;
+    }
+}

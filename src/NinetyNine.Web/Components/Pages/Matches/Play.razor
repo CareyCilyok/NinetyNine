@@ -13,6 +13,11 @@
         {
             <p>Loading&hellip;</p>
         }
+        else if (_detail.Match.Rotation == MatchRotation.Concurrent)
+        {
+            @* ── Concurrent (alternating-innings) match scoring ─────── *@
+            <ConcurrentMatchPlay MatchId="@MatchId" />
+        }
         else if (_detail.Match.Status == MatchStatus.Completed)
         {
             @* ── Match complete ───────────────────────────────────── *@

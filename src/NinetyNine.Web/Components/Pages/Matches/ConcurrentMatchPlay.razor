@@ -1,0 +1,344 @@
+@rendermode InteractiveServer
+@inject IGameService GameService
+@inject IMatchService MatchService
+@inject IPlayerRepository PlayerRepository
+@inject IVenueService VenueService
+@inject NavigationManager Navigation
+@inject ILogger<ConcurrentMatchPlay> Logger
+
+@* ─────────────────────────────────────────────────────────────────────────
+   ConcurrentMatchPlay — interactive scoring shell for v0.5.x concurrent
+   matches. Renders the active seat's full ScoreCardGrid + TurnCalloutCard
+   (mirroring Games/Play.razor's in-flight buffer pattern), plus an
+   "Up Next" stack of compact cards for the waiting seats.
+
+   The component is invoked by Matches/Play.razor when
+   Match.Rotation == Concurrent. Sequential matches stay on the existing
+   per-game redirect flow.
+   ───────────────────────────────────────────────────────────────────── *@
+
+<div class="nn-concurrent-match">
+    @if (_loading)
+    {
+        <p aria-live="polite" aria-busy="true">Loading match&hellip;</p>
+    }
+    else if (_match is null)
+    {
+        <div class="alert alert-warning" role="alert">
+            Match not found or no longer accessible.
+        </div>
+    }
+    else if (_match.Status == MatchStatus.Completed)
+    {
+        @* ── Match complete ─────────────────────────────────────────── *@
+        <div class="nn-concurrent-match__complete" role="status" aria-live="polite">
+            <h1 class="nn-concurrent-match__complete-title">Match complete</h1>
+            <p class="nn-concurrent-match__winner">
+                Winner: <strong>@WinnerName</strong>
+            </p>
+            <ul class="nn-concurrent-match__final-list">
+                @foreach (var entry in FinalLeaderboard())
+                {
+                    <li class="nn-concurrent-match__final-row">
+                        <span class="nn-concurrent-match__final-name">@entry.Name</span>
+                        <span class="nn-concurrent-match__final-score">@entry.Total</span>
+                    </li>
+                }
+            </ul>
+            <div class="nn-concurrent-match__actions">
+                <a href="/matches/@MatchId" class="btn btn-primary">View match details</a>
+                <a href="/players/me" class="btn btn-ghost">Back to profile</a>
+            </div>
+        </div>
+    }
+    else if (_activeGame is null || _activePlayer is null)
+    {
+        <div class="alert alert-danger" role="alert">
+            The match is in progress but the active seat could not be resolved.
+            This indicates a corrupted Match/Game state.
+        </div>
+    }
+    else
+    {
+        @* ── Header: seating + current frame ────────────────────────── *@
+        <header class="nn-concurrent-match__header">
+            <h1 class="nn-concurrent-match__title">Group match in progress</h1>
+            <p class="nn-concurrent-match__seating">
+                @_match.PlayerIds.Count players · alternating innings
+            </p>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@_errorMessage</div>
+        }
+
+        @* ── Active section: TurnCalloutCard + ScoreCardGrid ────────── *@
+        <section class="nn-concurrent-match__active" aria-label="Active player's score card">
+            <TurnCalloutCard FrameNumber="@_activeGame.CurrentFrameNumber"
+                             Eyebrow="@ActiveEyebrow"
+                             OnFinishFrame="HandleFinishInningAsync"
+                             OnScratchOnBreak="HandleScratchOnBreakAsync" />
+
+            <ScoreCardGrid Game="_activeGame"
+                           Mode="ScoreCardMode.Edit"
+                           ActiveBreakBonus="_breakBonus"
+                           ActiveBallsPocketed="_ballsPocketed"
+                           ActivePickerOpen="_pickerOpen"
+                           ActiveLiveRunningTotal="_liveRunningTotal"
+                           OnBreakToggle="HandleBreakToggle"
+                           OnBallToggle="HandleBallToggle"
+                           OnBallsClear="HandleBallsClear"
+                           OnBreakAndRun="HandleBreakAndRun"
+                           OnPickerOpen="HandlePickerOpen"
+                           OnPickerClose="HandlePickerClose" />
+        </section>
+
+        @* ── Up Next: compact cards for waiting seats ────────────────── *@
+        @if (_match.PlayerIds.Count > 1)
+        {
+            <section class="nn-concurrent-match__up-next" aria-label="Players waiting to shoot">
+                <h2 class="nn-concurrent-match__up-next-title">Up next</h2>
+                <ol class="nn-concurrent-match__up-next-list">
+                    @foreach (var entry in UpNextEntries())
+                    {
+                        var classes = "nn-concurrent-match__up-next-card";
+                        if (entry.IsEfren) classes += " nn-concurrent-match__up-next-card--efren";
+                        if (entry.IsCompleted) classes += " nn-concurrent-match__up-next-card--completed";
+
+                        <li class="@classes">
+                            <div class="nn-concurrent-match__up-next-meta">
+                                <span class="nn-concurrent-match__up-next-seat">
+                                    Seat @(entry.SeatNumber)
+                                </span>
+                                <span class="nn-concurrent-match__up-next-name">@entry.Name</span>
+                            </div>
+                            <div class="nn-concurrent-match__up-next-stat">
+                                <span class="nn-concurrent-match__up-next-stat-label">Score</span>
+                                <span class="nn-concurrent-match__up-next-stat-value">
+                                    @entry.TotalScore
+                                </span>
+                            </div>
+                            <div class="nn-concurrent-match__up-next-stat">
+                                <span class="nn-concurrent-match__up-next-stat-label">Frame</span>
+                                <span class="nn-concurrent-match__up-next-stat-value">
+                                    @(entry.IsCompleted ? "—" : $"{entry.CurrentFrame}/9")
+                                </span>
+                            </div>
+                        </li>
+                    }
+                </ol>
+            </section>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Guid MatchId { get; set; }
+
+    private Match? _match;
+    private List<Game> _games = [];
+    private Dictionary<Guid, string> _playerNames = new();
+    private Game? _activeGame;
+    private Player? _activePlayer;
+    private bool _loading = true;
+    private string _errorMessage = "";
+
+    // ── In-flight buffer for the active seat's current frame ─────────────
+    private bool _breakBonus;
+    private HashSet<int> _ballsPocketed = new();
+    private bool _pickerOpen;
+
+    // ── Initial load + refresh ───────────────────────────────────────────
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        var detail = await MatchService.GetMatchDetailAsync(MatchId);
+        if (detail is null)
+        {
+            _match = null;
+            return;
+        }
+        _match = detail.Match;
+        _games = detail.Games.ToList();
+
+        _playerNames.Clear();
+        foreach (var pid in _match.PlayerIds)
+        {
+            var player = await PlayerRepository.GetByIdAsync(pid);
+            if (player is not null)
+                _playerNames[pid] = player.DisplayName;
+        }
+
+        // Resolve the seat-0…N-1 active player and their Game.
+        if (_match.Status == MatchStatus.InProgress
+            && _match.CurrentPlayerSeat >= 0
+            && _match.CurrentPlayerSeat < _match.PlayerIds.Count)
+        {
+            var activeId = _match.PlayerIds[_match.CurrentPlayerSeat];
+            _activeGame = _games.FirstOrDefault(g => g.PlayerId == activeId);
+            _activePlayer = await PlayerRepository.GetByIdAsync(activeId);
+        }
+        else
+        {
+            _activeGame = null;
+            _activePlayer = null;
+        }
+    }
+
+    // ── Computed presentation values ─────────────────────────────────────
+
+    private string ActiveEyebrow
+    {
+        get
+        {
+            var name = _activePlayer?.DisplayName ?? "Player";
+            return _activeGame?.IsEfrenVariant == true
+                ? $"Efren · {name}"
+                : $"{name}'s turn";
+        }
+    }
+
+    private string WinnerName =>
+        _match?.WinnerPlayerId is Guid id
+            ? _playerNames.GetValueOrDefault(id, "—")
+            : "—";
+
+    private record UpNextEntry(
+        int SeatNumber, string Name, int TotalScore,
+        int CurrentFrame, bool IsCompleted, bool IsEfren);
+
+    private IEnumerable<UpNextEntry> UpNextEntries()
+    {
+        if (_match is null) yield break;
+
+        // Render the waiting seats in rotation order, starting with the seat
+        // immediately after the active one. Players whose Game is already
+        // Completed appear last.
+        var seatCount = _match.PlayerIds.Count;
+        for (int step = 1; step < seatCount; step++)
+        {
+            var seat = (_match.CurrentPlayerSeat + step) % seatCount;
+            var pid = _match.PlayerIds[seat];
+            var game = _games.FirstOrDefault(g => g.PlayerId == pid);
+            if (game is null) continue;
+
+            yield return new UpNextEntry(
+                SeatNumber: seat + 1,
+                Name: _playerNames.GetValueOrDefault(pid, "Player"),
+                TotalScore: game.TotalScore,
+                CurrentFrame: game.CurrentFrameNumber,
+                IsCompleted: game.GameState == GameState.Completed,
+                IsEfren: game.IsEfrenVariant);
+        }
+    }
+
+    private record LeaderboardEntry(string Name, int Total);
+
+    private IEnumerable<LeaderboardEntry> FinalLeaderboard() =>
+        _games
+            .OrderByDescending(g => g.TotalScore)
+            .ThenByDescending(g => g.PerfectFrames)
+            .ThenBy(g => g.CompletedAt ?? DateTime.MaxValue)
+            .Select(g => new LeaderboardEntry(
+                _playerNames.GetValueOrDefault(g.PlayerId, "—"),
+                g.TotalScore));
+
+    // ── In-flight buffer handlers (mirror Games/Play.razor) ──────────────
+
+    private static int BallPoints(IReadOnlySet<int>? balls) =>
+        balls is null ? 0 : balls.Sum(b => b == 9 ? 2 : 1);
+
+    private int? _liveRunningTotal => _activeGame is null
+        ? null
+        : _activeGame.RunningTotal
+          + (_breakBonus ? 1 : 0)
+          + BallPoints(_ballsPocketed);
+
+    private void HandleBreakToggle() => _breakBonus = !_breakBonus;
+
+    private void HandleBallToggle(int n)
+    {
+        if (!_ballsPocketed.Add(n))
+            _ballsPocketed.Remove(n);
+    }
+
+    private void HandleBallsClear() => _ballsPocketed.Clear();
+
+    private void HandleBreakAndRun()
+    {
+        _breakBonus = true;
+        _ballsPocketed = new HashSet<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        _pickerOpen = false;
+    }
+
+    private void HandlePickerOpen()  => _pickerOpen = true;
+    private void HandlePickerClose() => _pickerOpen = false;
+
+    /// <summary>
+    /// Scratch-on-break shortcut: clear the buffer and finish the inning
+    /// immediately as a 0/0/0 frame. Same semantics as the single-player
+    /// Games/Play.razor handler — Efren mode in particular relies on this
+    /// because a scratch on the break ends the frame at zero with no
+    /// recovery.
+    /// </summary>
+    private async Task HandleScratchOnBreakAsync()
+    {
+        ResetBuffer();
+        await HandleFinishInningAsync();
+    }
+
+    private async Task HandleFinishInningAsync()
+    {
+        if (_activeGame is null) return;
+
+        _errorMessage = "";
+
+        try
+        {
+            // 1) Persist the active player's frame using the in-flight buffer.
+            var breakBonus = _breakBonus ? 1 : 0;
+            var ballPoints = BallPoints(_ballsPocketed);
+            await GameService.RecordFrameAsync(
+                _activeGame.GameId, _activeGame.CurrentFrameNumber,
+                breakBonus, ballPoints, notes: null);
+
+            // 2) Rotate to the next seat (or finalize if every game is now
+            //    complete). FinishInningAsync skips seats whose game has
+            //    already finished.
+            var rotated = await MatchService.FinishInningAsync(MatchId);
+            if (!rotated.Success)
+            {
+                _errorMessage = rotated.ErrorMessage ?? "Could not advance to the next inning.";
+                Logger.LogWarning(
+                    "FinishInningAsync failed for match {MatchId}: {Code} {Message}",
+                    MatchId, rotated.ErrorCode, rotated.ErrorMessage);
+                return;
+            }
+
+            // 3) Reset the buffer for the next active seat and refresh state.
+            ResetBuffer();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Failed to record the inning. Please try again.";
+            Logger.LogWarning(ex,
+                "Failed to record an inning for match {MatchId}, game {GameId}.",
+                MatchId, _activeGame?.GameId);
+        }
+    }
+
+    private void ResetBuffer()
+    {
+        _breakBonus = false;
+        _ballsPocketed = new();
+        _pickerOpen = false;
+    }
+}
