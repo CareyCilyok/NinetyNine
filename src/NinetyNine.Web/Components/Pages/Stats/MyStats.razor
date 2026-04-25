@@ -100,7 +100,7 @@
                          width="24"
                          height="24" />
                     <span class="nn-mystats__card-value nn-mystats__card-value--mono">
-                        @_stats.BestScore<span class="nn-mystats__card-denom">/99</span>
+                        @_stats.BestScore<span class="nn-mystats__card-denom">/90</span>
                     </span>
                     <span class="nn-mystats__card-label">Best Score</span>
                 </div>
@@ -172,7 +172,7 @@
                                             @(_venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "\u2014")
                                         </td>
                                         <td class="nn-mystats__cell-score text-end font-monospace">
-                                            <strong>@game.TotalScore</strong><span class="nn-mystats__score-denom">/99</span>
+                                            <strong>@game.TotalScore</strong><span class="nn-mystats__score-denom">/90</span>
                                             @if (game.IsPerfectGame)
                                             {
                                                 <span class="nn-mystats__perfect-badge ms-1">99!</span>
@@ -203,7 +203,7 @@
                                         @game.WhenPlayed.ToLocalTime().ToString("MMM d, yyyy")
                                     </time>
                                     <span class="nn-mystats__game-card-score font-monospace">
-                                        @game.TotalScore<span class="nn-mystats__score-denom">/99</span>
+                                        @game.TotalScore<span class="nn-mystats__score-denom">/90</span>
                                         @if (game.IsPerfectGame)
                                         {
                                             <span class="nn-mystats__perfect-badge ms-1">99!</span>
@@ -269,7 +269,7 @@
                                         <td class="nn-mystats__cell-score text-end font-monospace">
                                             @if (game.IsCompleted || game.TotalScore > 0)
                                             {
-                                                <strong>@game.TotalScore</strong><span class="nn-mystats__score-denom">/99</span>
+                                                <strong>@game.TotalScore</strong><span class="nn-mystats__score-denom">/90</span>
                                             }
                                             else
                                             {
@@ -319,7 +319,7 @@
                                 <div class="nn-mystats__game-card-score font-monospace">
                                     @if (game.IsCompleted || game.TotalScore > 0)
                                     {
-                                        @game.TotalScore<span class="nn-mystats__score-denom">/99</span>
+                                        @game.TotalScore<span class="nn-mystats__score-denom">/90</span>
                                     }
                                 </div>
                             </a>

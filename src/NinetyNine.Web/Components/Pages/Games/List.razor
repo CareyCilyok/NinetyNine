@@ -84,7 +84,7 @@
                                 @TableSizeLabel(game.TableSize)
                             </td>
                             <td class="nn-list-page__cell-score font-monospace">
-                                @game.TotalScore / 99
+                                @game.TotalScore / 90
                                 @if (game.IsPerfectGame)
                                 {
                                     <span class="nn-list-page__perfect-badge ms-1"
@@ -130,7 +130,7 @@
                     <div class="nn-list-page__card-meta">
                         <span>@TableSizeLabel(game.TableSize)</span>
                         <span class="font-monospace nn-list-page__card-score">
-                            @game.TotalScore / 99
+                            @game.TotalScore / 90
                         </span>
                     </div>
                 </a>
@@ -243,6 +243,6 @@
     {
         var venueName = _venueNames.TryGetValue(game.VenueId, out var vn) ? vn : "unknown venue";
         var when = RelativeTime(game.WhenPlayed);
-        return $"{StatusLabel(game.GameState)} game at {venueName}, {when}, score {game.TotalScore} out of 99";
+        return $"{StatusLabel(game.GameState)} game at {venueName}, {when}, score {game.TotalScore} out of 90";
     }
 }

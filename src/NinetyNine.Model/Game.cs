@@ -21,7 +21,11 @@ public enum TableSize
 
 /// <summary>
 /// Aggregate root for a single-player NinetyNine game.
-/// A game consists of exactly 9 frames; maximum total score is 99.
+/// A game consists of exactly 9 frames. Under the v2 ruleset (effective
+/// v0.3.0), maximum total score is 90 (9 frames × 10 points each, where
+/// each frame caps at 1 break bonus + 9 balls). Legacy games recorded
+/// under the v1 rule (max 99) remain in storage; their TotalScore values
+/// stand as-recorded and are not re-validated.
 /// All game behavior methods enforce invariants and throw on violations.
 /// </summary>
 public class Game
@@ -66,11 +70,11 @@ public class Game
         .OrderByDescending(f => f.FrameScore)
         .FirstOrDefault();
 
-    /// <summary>Count of completed frames with the maximum score of 11.</summary>
+    /// <summary>Count of completed frames with the v2 maximum score of 10.</summary>
     public int PerfectFrames => Frames.Count(f => f.IsPerfectFrame);
 
-    /// <summary>True when the game is completed with a total score of 99.</summary>
-    public bool IsPerfectGame => IsCompleted && TotalScore == 99;
+    /// <summary>True when the game is completed with the v2 maximum total of 90.</summary>
+    public bool IsPerfectGame => IsCompleted && TotalScore == 90;
 
     // ── Behavior ─────────────────────────────────────────────────────────────
 
@@ -148,7 +152,7 @@ public class Game
     /// transitions the game to <see cref="GameState.Completed"/>.
     /// </summary>
     /// <param name="breakBonus">0 or 1.</param>
-    /// <param name="ballCount">0–10.</param>
+    /// <param name="ballCount">0–9 under the v2 rule.</param>
     /// <param name="notes">Optional per-frame notes.</param>
     /// <exception cref="InvalidOperationException">Thrown when the game is not in progress or scores are invalid.</exception>
     public void CompleteCurrentFrame(int breakBonus, int ballCount, string? notes = null)

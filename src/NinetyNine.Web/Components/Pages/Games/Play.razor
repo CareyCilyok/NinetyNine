@@ -43,7 +43,7 @@
                     <strong class="@(_game.IsPerfectGame ? "nn-play-page__perfect-score" : "")">
                         @_game.TotalScore
                     </strong>
-                    <span class="nn-play-page__complete-max">/ 99</span>
+                    <span class="nn-play-page__complete-max">/ 90</span>
                 </p>
                 @if (_game.IsPerfectGame)
                 {
@@ -105,7 +105,7 @@
                 </span>
                 <span class="nn-play-page__footer-sep" aria-hidden="true">&middot;</span>
                 <span class="nn-play-page__score-so-far" aria-live="polite" aria-atomic="true">
-                    Score so far: <strong class="nn-play-page__score-value">@_game.TotalScore</strong> / 99
+                    Score so far: <strong class="nn-play-page__score-value">@_game.TotalScore</strong> / 90
                 </span>
             </div>
             <a href="/games" class="nn-play-page__exit-link">Exit to history</a>

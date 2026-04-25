@@ -2,8 +2,12 @@ namespace NinetyNine.Model;
 
 /// <summary>
 /// Represents a single frame (rack) within a NinetyNine game.
-/// A game consists of exactly 9 frames. Maximum frame score is 11 points
-/// (1 break bonus + 10 ball count).
+/// A game consists of exactly 9 frames. Under the v2 ruleset (effective
+/// v0.3.0), maximum frame score is 10 points (1 break bonus + 9 balls
+/// pocketed at 1 point each). Legacy frames recorded under the v1 rule
+/// (max 11) remain in storage unchanged; this validator does not retro-
+/// actively mark them invalid for read paths, but no new frame can be
+/// recorded with BallCount &gt; 9.
 /// </summary>
 public class Frame
 {
@@ -20,9 +24,8 @@ public class Frame
     public int BreakBonus { get; set; }
 
     /// <summary>
-    /// Total object balls pocketed during and legally after the break.
-    /// The 9-ball counts as 2 points; all other balls count as 1.
-    /// Range: 0–10.
+    /// Object balls legally pocketed in this frame, scoring 1 point each.
+    /// Range: 0–9 under the v2 rule (max-10-per-frame ceiling).
     /// </summary>
     public int BallCount { get; set; }
 
@@ -36,28 +39,28 @@ public class Frame
 
     // ── Computed properties (BsonIgnored in BSON class map) ──────────────────
 
-    /// <summary>BreakBonus + BallCount. Maximum 11.</summary>
+    /// <summary>BreakBonus + BallCount. Maximum 10 under the v2 rule.</summary>
     public int FrameScore => BreakBonus + BallCount;
 
-    /// <summary>True when FrameScore does not exceed 11.</summary>
-    public bool IsValidScore => FrameScore <= 11;
+    /// <summary>True when FrameScore does not exceed 10.</summary>
+    public bool IsValidScore => FrameScore <= 10;
 
-    /// <summary>True when the player achieved the maximum score of 11 for this frame.</summary>
-    public bool IsPerfectFrame => FrameScore == 11;
+    /// <summary>True when the player achieved the maximum score of 10 for this frame.</summary>
+    public bool IsPerfectFrame => FrameScore == 10;
 
     // ── Behavior ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Validates all invariants for this frame.
+    /// Validates all invariants for this frame under the v2 ruleset.
     /// </summary>
     /// <returns><c>true</c> if all invariants hold; otherwise <c>false</c>.</returns>
     public bool ValidateFrame()
     {
         if (BreakBonus is not (0 or 1))
             return false;
-        if (BallCount < 0 || BallCount > 10)
+        if (BallCount < 0 || BallCount > 9)
             return false;
-        if (FrameScore > 11)
+        if (FrameScore > 10)
             return false;
         if (FrameNumber < 1 || FrameNumber > 9)
             return false;

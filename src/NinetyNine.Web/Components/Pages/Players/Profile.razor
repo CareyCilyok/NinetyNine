@@ -255,7 +255,7 @@
                                 </span>
 
                                 <span class="nn-profile-page__game-score font-monospace">
-                                    @game.TotalScore<span class="nn-profile-page__game-score-max">/99</span>
+                                    @game.TotalScore<span class="nn-profile-page__game-score-max">/90</span>
                                     @if (game.IsPerfectGame)
                                     {
                                         <span class="nn-profile-page__perfect-badge ms-1"
@@ -520,6 +520,6 @@
     private static string GameRowAriaLabel(Game game, string venueLabel)
     {
         return $"{StatusLabel(game.GameState)} game at {venueLabel} on "
-             + $"{game.WhenPlayed.ToLocalTime():MMM d, yyyy}, score {game.TotalScore} out of 99";
+             + $"{game.WhenPlayed.ToLocalTime():MMM d, yyyy}, score {game.TotalScore} out of 90";
     }
 }

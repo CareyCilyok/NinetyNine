@@ -20,8 +20,9 @@ public class GameTests
         => game.CompleteCurrentFrame(breakBonus, ballCount, notes);
 
     /// <summary>Completes all 9 frames. The final frame auto-finalizes the game.</summary>
-    private static void CompleteAllFrames(Game game, int breakBonus = 1, int ballCount = 10)
+    private static void CompleteAllFrames(Game game, int breakBonus = 1, int ballCount = 9)
     {
+        // Default args reflect the v2 perfect-frame ceiling: 1 break + 9 balls = 10.
         for (int i = 1; i <= 9; i++)
             game.CompleteCurrentFrame(breakBonus, ballCount);
     }
@@ -168,10 +169,11 @@ public class GameTests
     // ── IsPerfectGame ─────────────────────────────────────────────────────────
 
     [Fact]
-    public void IsPerfectGame_True_WhenCompletedWithScore99()
+    public void IsPerfectGame_True_WhenCompletedWithScore90()
     {
+        // v2 perfect game: 9 frames × (1 break + 9 balls) = 90.
         var game = CreateInitializedGame();
-        CompleteAllFrames(game, breakBonus: 1, ballCount: 10);
+        CompleteAllFrames(game, breakBonus: 1, ballCount: 9);
         game.IsPerfectGame.Should().BeTrue();
     }
 
@@ -183,7 +185,7 @@ public class GameTests
     }
 
     [Fact]
-    public void IsPerfectGame_False_WhenCompletedButScoreLessThan99()
+    public void IsPerfectGame_False_WhenCompletedButScoreLessThan90()
     {
         var game = CreateInitializedGame();
         CompleteAllFrames(game, breakBonus: 0, ballCount: 5); // 9 × 5 = 45
@@ -193,10 +195,10 @@ public class GameTests
     // ── PerfectFrames ─────────────────────────────────────────────────────────
 
     [Fact]
-    public void PerfectFrames_CountsFramesWithElevenPoints()
+    public void PerfectFrames_CountsFramesWithTenPoints()
     {
         var game = CreateInitializedGame();
-        CompleteFrameAndAdvance(game, 1, 10); // perfect: 11
+        CompleteFrameAndAdvance(game, 1, 9);  // perfect under v2: 10
         game.CompleteCurrentFrame(0, 5);      // not perfect: 5
         game.PerfectFrames.Should().Be(1);
     }
@@ -216,11 +218,11 @@ public class GameTests
     {
         var game = CreateInitializedGame();
         CompleteFrameAndAdvance(game, 0, 3);  // 3
-        CompleteFrameAndAdvance(game, 1, 10); // 11
+        CompleteFrameAndAdvance(game, 1, 9);  // 10 (v2 perfect frame)
         game.CompleteCurrentFrame(0, 7);      // 7
 
         game.BestFrame.Should().NotBeNull();
-        game.BestFrame!.FrameScore.Should().Be(11);
+        game.BestFrame!.FrameScore.Should().Be(10);
     }
 
     [Fact]
