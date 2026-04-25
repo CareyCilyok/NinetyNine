@@ -26,6 +26,12 @@ services:
 
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      # Seed mode: "Development" populates the full mock dataset (33 mock
+      # players, 243 generated games, 20 concurrent matches, 5 themed
+      # communities, the 3 original test players); "Production" seeds only
+      # the public real-world venues. Default Development for local deploys;
+      # `./deploy.sh up --production` exports SEED_MODE=Production.
+      Seed__Mode: ${SEED_MODE:-Development}
       # Uses the local mongo container; the hostname "mongo" resolves via the
       # compose default bridge network.
       MongoDb__ConnectionString: "mongodb://root:devpassword@mongo:27017/?authSource=admin"

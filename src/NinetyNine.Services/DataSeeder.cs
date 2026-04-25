@@ -117,9 +117,24 @@ public sealed partial class DataSeeder(
     /// </summary>
     private const int CurrentPlayerSchemaVersion = 3;
 
-    public async Task SeedAsync(CancellationToken ct = default)
+    public async Task SeedAsync(SeedMode mode, CancellationToken ct = default)
     {
-        // ── Reconcile passes (run every startup, before seed guard) ──
+        // Production mode: venues only. Stop after the venue reconcile so
+        // no mock players, mock games, mock matches, or dev test users
+        // end up in a production database.
+        if (mode == SeedMode.Production)
+        {
+            var addedVenuesProd = await ReconcileSeededVenuesAsync(ct, includeDevOnly: false);
+            if (addedVenuesProd > 0)
+                logger.LogInformation(
+                    "Production seed: added {Count} public venue(s).", addedVenuesProd);
+            else
+                logger.LogInformation("Production seed: no venue changes.");
+            return;
+        }
+
+        // ── Development mode: full mock seed. ────────────────────────
+        // Reconcile passes (run every startup, before seed guard).
 
         // 1. Player reconcile: converge every seeded test player to the
         //    current template. SchemaVersion comparison for cheap change
@@ -127,8 +142,8 @@ public sealed partial class DataSeeder(
         //    and HealProfileVisibilityAsync passes.
         var playersReconciled = await ReconcileSeededPlayersAsync(ct);
 
-        // 2. Venue reconcile
-        var addedVenues = await ReconcileSeededVenuesAsync(ct);
+        // 2. Venue reconcile (development: include the private home table)
+        var addedVenues = await ReconcileSeededVenuesAsync(ct, includeDevOnly: true);
 
         // 3. Friendship reconcile
         var addedFriendships = await ReconcileSeededFriendshipsAsync(ct);
@@ -426,8 +441,14 @@ public sealed partial class DataSeeder(
     /// even if their address or phone differs from the canonical definition
     /// (so user edits in the UI are preserved). Returns the number of
     /// venues added.
+    /// <para>
+    /// When <paramref name="includeDevOnly"/> is <c>false</c> (production
+    /// mode), private/dev-only venues like the home table are skipped —
+    /// only real public venues are seeded.
+    /// </para>
     /// </summary>
-    private async Task<int> ReconcileSeededVenuesAsync(CancellationToken ct)
+    private async Task<int> ReconcileSeededVenuesAsync(
+        CancellationToken ct, bool includeDevOnly = true)
     {
         var existingNames = (await venueRepository.GetAllAsync(includePrivate: true, ct))
             .Select(v => v.Name)
@@ -436,6 +457,11 @@ public sealed partial class DataSeeder(
         int added = 0;
         foreach (var (name, address, phone, isPrivate) in SeededVenueDefinitions)
         {
+            // Skip private/dev-only venues in production mode. The home
+            // table is a personal demo artifact, not a real venue users
+            // would search for in a production deployment.
+            if (!includeDevOnly && isPrivate) continue;
+
             if (existingNames.Contains(name)) continue;
 
             var venue = new Venue

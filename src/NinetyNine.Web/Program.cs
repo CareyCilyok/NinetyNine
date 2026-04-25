@@ -125,23 +125,37 @@ if (builder.Environment.IsDevelopment())
 
 var app = builder.Build();
 
-// ── Mock-mode startup: seed test data ────────────────────────────────────────
-var mockAuthEnabled = app.Environment.IsDevelopment()
-    && builder.Configuration.GetValue<bool>("Auth:Mock:Enabled");
-if (mockAuthEnabled)
+// ── Startup seeding ─────────────────────────────────────────────────────────
+// Seed:Mode controls what gets written:
+//   "Production"  — real venues only (default for prod deployments).
+//   "Development" — full mock dataset (default in appsettings.Development.json).
+// The Auth:Mock:Enabled flag is independent — it gates the mock auth endpoints,
+// not the seeder. They were coupled before v0.7.0; now they're separate
+// concerns. Setting Seed:Mode=None (or any unknown value) is treated as None
+// and the seeder is skipped entirely.
+var seedModeRaw = builder.Configuration["Seed:Mode"] ?? "Production";
+if (Enum.TryParse<SeedMode>(seedModeRaw, ignoreCase: true, out var seedMode))
 {
     using var scope = app.Services.CreateScope();
     var seeder = scope.ServiceProvider.GetRequiredService<IDataSeeder>();
     try
     {
-        await seeder.SeedAsync();
+        await seeder.SeedAsync(seedMode);
     }
     catch (Exception ex)
     {
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogWarning(ex,
-            "Data seeder failed (continuing). Is MongoDB reachable at the dev connection string?");
+            "Data seeder failed in {Mode} mode (continuing). Is MongoDB reachable at the configured connection string?",
+            seedMode);
     }
+}
+else
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation(
+        "Seed:Mode = '{Mode}' is not Production/Development — seeder skipped.",
+        seedModeRaw);
 }
 
 // ── Security headers ──────────────────────────────────────────────────────────
@@ -174,6 +188,11 @@ app.MapHealthChecks("/healthz");
 
 // ── Auth endpoints ────────────────────────────────────────────────────────────
 AuthEndpoints.Map(app);
+// Mock auth is independent of seed mode — gating it requires both
+// IsDevelopment() AND the explicit Auth:Mock:Enabled flag in
+// appsettings.Development.json. Production deployments never expose these.
+var mockAuthEnabled = app.Environment.IsDevelopment()
+    && builder.Configuration.GetValue<bool>("Auth:Mock:Enabled");
 if (mockAuthEnabled)
 {
     MockAuthEndpoints.Map(app);

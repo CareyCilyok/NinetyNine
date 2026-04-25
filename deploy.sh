@@ -15,8 +15,17 @@
 #   shell [service] Open a shell in a service container (default: web)
 #   help            Print this message
 #
+# Flags (apply to: up, rebuild):
+#   --production    Seed production data only (real venues; no mock players /
+#                   games / matches / communities). Default is Development —
+#                   the full mock dataset is loaded. Equivalent to setting
+#                   SEED_MODE=Production in the environment before invocation.
+#
 # Environment:
 #   .env is auto-created from .env.example on first run if it does not exist.
+#   SEED_MODE       Override the seed mode without using --production.
+#                   Values: Development (default), Production, or any other
+#                   value to disable seeding.
 
 set -euo pipefail
 
@@ -54,6 +63,33 @@ _check_compose
 
 # ── Compose command shorthand ─────────────────────────────────────────────────
 COMPOSE="docker compose -f docker-compose.dev.yml"
+
+# ── Seed-mode flag parser ─────────────────────────────────────────────────────
+# Walks the remaining $@ args and sets SEED_MODE accordingly. Default
+# Development; --production sets Production. Exports the variable so the
+# downstream `docker compose` invocation picks it up via the
+# `Seed__Mode: ${SEED_MODE:-Development}` substitution in docker-compose.dev.yml.
+# Unknown args are left in $@ for the caller (currently no other flags exist
+# on `up` / `rebuild`, but this keeps the parser future-proof).
+_parse_seed_flags() {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --production)
+                export SEED_MODE=Production
+                shift
+                ;;
+            --development)
+                export SEED_MODE=Development
+                shift
+                ;;
+            *)
+                # Unknown — stop parsing; let the caller handle it (or
+                # ignore if they don't take args).
+                break
+                ;;
+        esac
+    done
+}
 
 # ── Ensure .env exists ────────────────────────────────────────────────────────
 _ensure_env() {
@@ -225,8 +261,10 @@ _check_web_reachable() {
 
 cmd_up() {
     _ensure_env
+    _parse_seed_flags "$@"
 
     # ── Stage 1: build (synchronous, streams buildkit output to the user) ──
+    _info "Seed mode: ${SEED_MODE:-Development}$([ "${SEED_MODE:-Development}" = "Production" ] && echo "  (real venues only, no mock data)" || echo "  (full mock dataset)")"
     _info "Building web image (if needed)..."
     if ! $COMPOSE build; then
         _error "docker compose build failed. See output above."
@@ -300,6 +338,8 @@ cmd_down() {
 
 cmd_rebuild() {
     _ensure_env
+    _parse_seed_flags "$@"
+    _info "Seed mode: ${SEED_MODE:-Development}$([ "${SEED_MODE:-Development}" = "Production" ] && echo "  (real venues only, no mock data)" || echo "  (full mock dataset)")"
     _info "Rebuilding web image (no cache)..."
     if ! $COMPOSE build --no-cache web; then
         _error "docker compose build failed."
@@ -389,15 +429,20 @@ cmd_help() {
     ./deploy.sh [command] [args...]
 
   Commands:
-    up              Build and start all services (default if no command given)
+    up [flags]      Build and start all services (default if no command given)
     down            Stop all services; volumes are preserved
-    rebuild         Force-rebuild the web image from scratch, then start
+    rebuild [flags] Force-rebuild the web image from scratch, then start
     logs [service]  Follow logs; defaults to 'web' if no service given
     seed            Run the data seed inside the running web container
     clean           Stop services and remove volumes (prompts for confirmation)
     ps              Show current service status
     shell [service] Open /bin/sh in a container; defaults to 'web'
     help            Show this help
+
+  Flags (apply to: up, rebuild):
+    --production    Seed production data only (real venues, no mock players /
+                    games / matches / communities).
+    --development   Seed the full mock dataset (default).
 
   Service names:
     web             Blazor web application  (http://localhost:8080)
@@ -408,6 +453,12 @@ cmd_help() {
     .env is created automatically from .env.example.
     Edit .env to add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET for OAuth.
 
+  Seed mode:
+    Default is Development — full mock dataset (33 mock players, 243 games,
+    20 matches, 5 themed communities, plus the original 3 dev test players
+    carey/george/carey_b). Use --production to seed only the real public
+    venues; useful for verifying the app works without the mock crutch.
+
 EOF
 }
 
@@ -416,9 +467,9 @@ CMD="${1:-up}"
 shift || true   # shift away the command; remaining $@ are sub-arguments
 
 case "$CMD" in
-    up)      cmd_up      ;;
+    up)      cmd_up      "$@" ;;
     down)    cmd_down    ;;
-    rebuild) cmd_rebuild ;;
+    rebuild) cmd_rebuild "$@" ;;
     logs)    cmd_logs    "$@" ;;
     seed)    cmd_seed    ;;
     clean)   cmd_clean   ;;
