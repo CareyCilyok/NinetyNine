@@ -105,6 +105,43 @@
     transform: translateY(-1px);
 }
 
+/* Scratch break — secondary efficiency action that sits opposite Finish.
+   Text-link styling so the visual hierarchy still reads "Finish is the
+   primary path"; this button is a shortcut, not the default. */
+.nn-turn-callout__scratch {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: 0;
+    color: var(--nn-text-secondary);
+    font-family: var(--nn-font-sans);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: var(--nn-space-2) var(--nn-space-3);
+    border-radius: var(--nn-radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+    min-height: var(--nn-touch-target);
+    transition: color var(--nn-transition-fast),
+                background-color var(--nn-transition-fast),
+                text-decoration-color var(--nn-transition-fast);
+}
+
+.nn-turn-callout__scratch:hover {
+    color: var(--nn-text-primary);
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.08);
+    text-decoration-color: currentColor;
+}
+
+.nn-turn-callout__scratch:focus-visible {
+    outline: 2px solid var(--nn-accent-gold);
+    outline-offset: 2px;
+}
+
 /* -------------------------------------------------------------------
    RESPONSIVE — drop the ball pair below the headline on narrow widths
    so the Finish button stays full-width and reachable.

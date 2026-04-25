@@ -214,4 +214,75 @@ public class TurnCalloutCardTests : TestContext
         cut.Find(".nn-turn-callout__balls").GetAttribute("aria-hidden")
             .Should().Be("true");
     }
+
+    // ─── Scratch-on-break shortcut (v0.4.0) ───────────────────────────────────
+
+    [Fact]
+    public void TurnCallout_RendersScratchButton()
+    {
+        var cut = RenderComponent<TurnCalloutCard>(p => p
+            .Add(x => x.FrameNumber, 1));
+
+        cut.Find(".nn-turn-callout__scratch").Should().NotBeNull(
+            "Scratch-on-break shortcut must render alongside the Finish button");
+    }
+
+    [Fact]
+    public void TurnCallout_ScratchButton_AriaLabelIncludesFrameNumber()
+    {
+        var cut = RenderComponent<TurnCalloutCard>(p => p
+            .Add(x => x.FrameNumber, 4));
+
+        cut.Find(".nn-turn-callout__scratch").GetAttribute("aria-label")
+            .Should().Contain("frame 4",
+                "screen reader must hear which frame is being scratched");
+    }
+
+    [Fact]
+    public void TurnCallout_ClickingScratch_FiresOnScratchOnBreak()
+    {
+        bool fired = false;
+
+        var cut = RenderComponent<TurnCalloutCard>(p => p
+            .Add(x => x.FrameNumber, 1)
+            .Add(x => x.OnScratchOnBreak, EventCallback.Factory.Create(this, () => fired = true)));
+
+        cut.Find(".nn-turn-callout__scratch").Click();
+
+        fired.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TurnCallout_ClickingScratch_DoesNot_FireOnFinishFrame()
+    {
+        // The two are distinct events; the parent decides what to do with
+        // each. Wiring them together would erase intent.
+        bool finishFired = false;
+        bool scratchFired = false;
+
+        var cut = RenderComponent<TurnCalloutCard>(p => p
+            .Add(x => x.FrameNumber, 1)
+            .Add(x => x.OnFinishFrame, EventCallback.Factory.Create(this, () => finishFired = true))
+            .Add(x => x.OnScratchOnBreak, EventCallback.Factory.Create(this, () => scratchFired = true)));
+
+        cut.Find(".nn-turn-callout__scratch").Click();
+
+        scratchFired.Should().BeTrue();
+        finishFired.Should().BeFalse(
+            "Scratch and Finish are separate events — the parent composes them");
+    }
+
+    [Fact]
+    public void TurnCallout_ScratchButton_NotDisabledByCanFinishFalse()
+    {
+        // CanFinish gates the Finish button only. Scratch is always usable
+        // because its purpose is "record an empty frame" — needing to gate
+        // it would defeat the point.
+        var cut = RenderComponent<TurnCalloutCard>(p => p
+            .Add(x => x.FrameNumber, 1)
+            .Add(x => x.CanFinish, false));
+
+        cut.Find(".nn-turn-callout__scratch").HasAttribute("disabled")
+            .Should().BeFalse();
+    }
 }

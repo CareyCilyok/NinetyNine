@@ -5,11 +5,11 @@
     Per the v2 design handoff (Screen 1, item 2): full-width card, subtle
     gold gradient, gold-tinted border. Left side = eyebrow + headline +
     helper text. Right side = the inning ball alongside the 9-ball plus
-    the primary button.
+    the action buttons (Scratch break + Finish frame N).
 
     The card is purely presentational: it doesn't know about IGameService,
     state buffers, or score validation. Click handling is delegated to the
-    parent page via OnFinishFrame.
+    parent page via the OnFinishFrame and OnScratchOnBreak events.
 
     Parameters
         FrameNumber          : 1-9
@@ -18,6 +18,11 @@
                                one ball or the break checkbox; null on
                                first paint = enabled by default)
         OnFinishFrame        : invoked when the user taps Finish frame N
+        OnScratchOnBreak     : invoked when the user taps "Scratch break" —
+                               an efficiency shortcut that records a 0/0/0
+                               frame and advances in one tap (essential
+                               under Efren-mode rules where a scratch on
+                               break ends the frame at zero with no recovery)
         Eyebrow              : eyebrow text override (default "YOUR TURN")
         HelperText           : sub-headline override (default explains the
                                in-cell Break/Ball controls)
@@ -46,6 +51,13 @@
         </div>
 
         <button type="button"
+                class="nn-turn-callout__scratch"
+                aria-label="@($"Scratch on break — record frame {FrameNumber} as zero and advance")"
+                @onclick="HandleScratchOnBreak">
+            Scratch break
+        </button>
+
+        <button type="button"
                 class="btn btn-primary nn-turn-callout__finish"
                 disabled="@(CanFinish == false)"
                 aria-label="@($"Finish frame {FrameNumber}")"
@@ -68,6 +80,8 @@
 
     [Parameter] public EventCallback OnFinishFrame { get; set; }
 
+    [Parameter] public EventCallback OnScratchOnBreak { get; set; }
+
     [Parameter] public string Eyebrow { get; set; } = "Your turn";
 
     [Parameter] public string? HelperText { get; set; } =
@@ -80,6 +94,14 @@
         if (OnFinishFrame.HasDelegate)
         {
             await OnFinishFrame.InvokeAsync();
+        }
+    }
+
+    private async Task HandleScratchOnBreak()
+    {
+        if (OnScratchOnBreak.HasDelegate)
+        {
+            await OnScratchOnBreak.InvokeAsync();
         }
     }
 }

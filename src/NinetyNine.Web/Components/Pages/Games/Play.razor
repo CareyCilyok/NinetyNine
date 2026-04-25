@@ -90,11 +90,11 @@
             </div>
         }
 
-        @* Turn callout card — eyebrow, "Frame N of 9", helper text, ball pair, Finish-frame button.
-           CanFinish is intentionally unbound (defaults to null = enabled). A scratch break with
-           no balls pocketed is a legitimate 0-point frame the player must be able to advance. *@
+        @* Turn callout card — eyebrow, "Frame N of 9", helper text, ball pair, Scratch-break shortcut,
+           Finish-frame button. CanFinish is intentionally unbound (defaults to null = enabled). *@
         <TurnCalloutCard FrameNumber="@_game.CurrentFrameNumber"
-                         OnFinishFrame="HandleFinishFrame" />
+                         OnFinishFrame="HandleFinishFrame"
+                         OnScratchOnBreak="HandleScratchOnBreak" />
 
         @* Score card — desktop grid + mobile picker, all driven by the in-flight buffer *@
         <section class="nn-play-page__main" aria-label="Score card">
@@ -268,6 +268,20 @@
 
     private void HandlePickerOpen() => _pickerOpen = true;
     private void HandlePickerClose() => _pickerOpen = false;
+
+    /// <summary>
+    /// Scratch-on-break shortcut: wipe whatever's in the in-flight buffer
+    /// (the user may have toggled inputs before realizing they need to
+    /// record a scratch instead) and call Finish-frame to record a 0/0/0
+    /// frame and advance. Essential for Efren-mode play where a scratch
+    /// on break ends the frame at zero with no recovery.
+    /// </summary>
+    private async Task HandleScratchOnBreak()
+    {
+        if (_game is null) return;
+        ResetBuffer();
+        await HandleFinishFrame();
+    }
 
     // ── Finish frame: persist the in-flight buffer, reset, advance ───────────
 
