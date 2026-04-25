@@ -1,0 +1,85 @@
+@*
+    TurnCalloutCard — top-of-page gold-tinted callout that announces the
+    current frame and provides the primary "Finish frame N →" action.
+
+    Per the v2 design handoff (Screen 1, item 2): full-width card, subtle
+    gold gradient, gold-tinted border. Left side = eyebrow + headline +
+    helper text. Right side = the inning ball alongside the 9-ball plus
+    the primary button.
+
+    The card is purely presentational: it doesn't know about IGameService,
+    state buffers, or score validation. Click handling is delegated to the
+    parent page via OnFinishFrame.
+
+    Parameters
+        FrameNumber          : 1-9
+        CanFinish            : enables / disables the Finish button (parent
+                               sets false until the user has tapped at least
+                               one ball or the break checkbox; null on
+                               first paint = enabled by default)
+        OnFinishFrame        : invoked when the user taps Finish frame N
+        Eyebrow              : eyebrow text override (default "YOUR TURN")
+        HelperText           : sub-headline override (default explains the
+                               in-cell Break/Ball controls)
+*@
+
+<section class="nn-turn-callout"
+         role="region"
+         aria-label="@($"Frame {FrameNumber} turn callout")">
+
+    <div class="nn-turn-callout__copy">
+        <span class="nn-turn-callout__eyebrow">@Eyebrow</span>
+        <h2 class="nn-turn-callout__headline">Frame @FrameNumber of 9</h2>
+        @if (!string.IsNullOrWhiteSpace(HelperText))
+        {
+            <p class="nn-turn-callout__helper">@HelperText</p>
+        }
+    </div>
+
+    <div class="nn-turn-callout__action">
+        <div class="nn-turn-callout__balls" aria-hidden="true">
+            <PoolBall Number="@FrameNumber" Size="54" />
+            @if (FrameNumber != 9)
+            {
+                <PoolBall Number="9" Size="54" />
+            }
+        </div>
+
+        <button type="button"
+                class="btn btn-primary nn-turn-callout__finish"
+                disabled="@(CanFinish == false)"
+                aria-label="@($"Finish frame {FrameNumber}")"
+                @onclick="HandleFinishFrame">
+            Finish frame @FrameNumber
+            <span class="nn-turn-callout__arrow" aria-hidden="true">→</span>
+        </button>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public int FrameNumber { get; set; }
+
+    /// <summary>
+    /// Null = enabled (first paint, before parent has captured any input).
+    /// False = disabled (parent has determined no score recorded yet).
+    /// True = enabled.
+    /// </summary>
+    [Parameter] public bool? CanFinish { get; set; }
+
+    [Parameter] public EventCallback OnFinishFrame { get; set; }
+
+    [Parameter] public string Eyebrow { get; set; } = "Your turn";
+
+    [Parameter] public string? HelperText { get; set; } =
+        "Tap Break if you pocketed on the break. Tap Ball to check off which balls you sank.";
+
+    private async Task HandleFinishFrame()
+    {
+        if (CanFinish == false) return;
+
+        if (OnFinishFrame.HasDelegate)
+        {
+            await OnFinishFrame.InvokeAsync();
+        }
+    }
+}
