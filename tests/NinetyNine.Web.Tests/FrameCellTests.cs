@@ -140,44 +140,118 @@ public class FrameCellTests : TestContext
     }
 
     [Fact]
-    public void FrameCell_EditMode_ActiveFrame_ShowsScoreButton()
+    public void FrameCell_EditMode_ActiveFrame_HasInteractiveBreakAndBallControls()
     {
+        // v0.3.3: in-cell Break and Ball buttons replace the wrap-cell Score button.
         var frame = MakeFrame();
         var cut = RenderComponent<FrameCell>(p => p
             .Add(x => x.Frame, frame)
             .Add(x => x.IsActive, true)
             .Add(x => x.Mode, ScoreCardMode.Edit));
 
-        cut.Find("button").Should().NotBeNull("active frame in Edit mode should have a Score button");
+        var breakBtn = cut.Find(".frame-cell-break");
+        var ballBtn = cut.Find(".frame-cell-ball");
+
+        breakBtn.HasAttribute("disabled").Should().BeFalse(
+            "active frame in Edit mode exposes the Break button as interactive");
+        ballBtn.HasAttribute("disabled").Should().BeFalse(
+            "active frame in Edit mode exposes the Ball button as interactive");
     }
 
     [Fact]
-    public void FrameCell_ViewMode_NoScoreButton()
+    public void FrameCell_ViewMode_BreakAndBallControls_AreDisabled()
     {
+        // View mode renders the Break/Ball buttons but they must not be interactive.
         var frame = MakeFrame();
         var cut = RenderComponent<FrameCell>(p => p
             .Add(x => x.Frame, frame)
             .Add(x => x.IsActive, true)
             .Add(x => x.Mode, ScoreCardMode.View));
 
-        cut.FindAll("button").Should().BeEmpty("View mode should not show a Score button");
+        cut.Find(".frame-cell-break").HasAttribute("disabled")
+            .Should().BeTrue("View mode disables the Break button");
+        cut.Find(".frame-cell-ball").HasAttribute("disabled")
+            .Should().BeTrue("View mode disables the Ball button");
     }
 
     [Fact]
-    public void FrameCell_OnFrameActivated_Fires_WhenScoreButtonClicked()
+    public void FrameCell_OnBreakToggle_Fires_WhenBreakButtonClicked()
     {
-        Frame? activatedFrame = null;
+        bool toggled = false;
         var frame = MakeFrame();
 
         var cut = RenderComponent<FrameCell>(p => p
             .Add(x => x.Frame, frame)
             .Add(x => x.IsActive, true)
             .Add(x => x.Mode, ScoreCardMode.Edit)
-            .Add(x => x.OnFrameActivated, EventCallback.Factory.Create<Frame>(
-                this, f => activatedFrame = f)));
+            .Add(x => x.OnBreakToggle, EventCallback.Factory.Create(this, () => toggled = true)));
 
-        cut.Find("button").Click();
-        activatedFrame.Should().NotBeNull();
-        activatedFrame!.FrameNumber.Should().Be(frame.FrameNumber);
+        cut.Find(".frame-cell-break").Click();
+
+        toggled.Should().BeTrue("OnBreakToggle must fire when the Break button is tapped");
+    }
+
+    [Fact]
+    public void FrameCell_OnPickerOpen_Fires_WhenBallButtonClicked_AndPickerClosed()
+    {
+        bool opened = false;
+        var frame = MakeFrame();
+
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsActive, true)
+            .Add(x => x.Mode, ScoreCardMode.Edit)
+            .Add(x => x.IsPickerOpen, false)
+            .Add(x => x.OnPickerOpen, EventCallback.Factory.Create(this, () => opened = true)));
+
+        cut.Find(".frame-cell-ball").Click();
+
+        opened.Should().BeTrue("clicking Ball when picker is closed must fire OnPickerOpen");
+    }
+
+    [Fact]
+    public void FrameCell_OnPickerClose_Fires_WhenBallButtonClicked_AndPickerOpen()
+    {
+        // Toggle behavior: clicking Ball while the picker is open closes it.
+        bool closed = false;
+        var frame = MakeFrame();
+
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsActive, true)
+            .Add(x => x.Mode, ScoreCardMode.Edit)
+            .Add(x => x.IsPickerOpen, true)
+            .Add(x => x.OnPickerClose, EventCallback.Factory.Create(this, () => closed = true)));
+
+        cut.Find(".frame-cell-ball").Click();
+
+        closed.Should().BeTrue("clicking Ball when picker is open must fire OnPickerClose");
+    }
+
+    [Fact]
+    public void FrameCell_PickerOpen_RendersBallPicker()
+    {
+        var frame = MakeFrame();
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsActive, true)
+            .Add(x => x.Mode, ScoreCardMode.Edit)
+            .Add(x => x.IsPickerOpen, true));
+
+        cut.FindAll(".nn-ball-picker").Should().HaveCount(1,
+            "active+edit cell with IsPickerOpen=true must render the BallPicker child");
+    }
+
+    [Fact]
+    public void FrameCell_PickerClosed_DoesNot_RenderBallPicker()
+    {
+        var frame = MakeFrame();
+        var cut = RenderComponent<FrameCell>(p => p
+            .Add(x => x.Frame, frame)
+            .Add(x => x.IsActive, true)
+            .Add(x => x.Mode, ScoreCardMode.Edit)
+            .Add(x => x.IsPickerOpen, false));
+
+        cut.FindAll(".nn-ball-picker").Should().BeEmpty();
     }
 }

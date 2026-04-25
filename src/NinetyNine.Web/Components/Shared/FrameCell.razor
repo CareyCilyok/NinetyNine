@@ -1,139 +1,124 @@
 @*
-    FrameCell — a single column of the P&B score card grid (v2 visual refresh).
+    FrameCell — a single column of the v2 P&B score card grid.
 
-    Replaces the v1 circled-number badge with a numbered <PoolBall /> SVG and
-    drives state classes from FrameStatus, retiring the inline if/else chain
-    that lived in CellCssClass. FrameCell has no access to the parent Game,
-    so the Status switch uses a 3-value classification (Active / Completed /
-    Pending). The four-value form including Future lives in ScoreCardGrid,
-    which has Game.CurrentFrameNumber on hand.
+    v2 (effective v0.3.3) replaces the v1 "click cell → open modal" flow
+    with in-cell Break and Ball controls plus an inline BallPicker popover.
+    The cell itself is no longer a single <button>; it's a <div role="gridcell">
+    that hosts two sub-buttons (Break, Ball) and the picker. OnFrameActivated
+    is gone — the new flow uses the parent-owned in-flight buffer plus the
+    Finish-frame button on TurnCalloutCard to land scores.
 
-    Public parameter API is unchanged from the v1 cell:
+    Public parameter API (CHANGED from v0.2.x; see v0.3.3 commit notes):
         Frame              — the frame to render
         IsActive           — caller-supplied "is this the live frame" hint
-                             (production sources set IsActive = Frame.IsActive,
-                             tests sometimes diverge to exercise edge states)
         Mode               — View | Edit
-        OnFrameActivated   — fired when the active+edit cell is clicked
+        BreakBonus         — in-flight break bonus state (active cell only)
+        BallsPocketed      — in-flight ball selection (active cell only)
+        IsPickerOpen       — is THIS cell's BallPicker shown
+        LiveRunningTotal   — parent-computed running total to display
+                              (null ⇒ fall back to Frame.RunningTotal /
+                              em-dash based on completion state)
+        OnBreakToggle      — fired when the Break button is tapped
+        OnBallToggle       — fired with ball number when a picker ball
+                              is tapped
+        OnBallsClear       — fired when picker's Clear is tapped
+        OnPickerOpen       — fired when Ball button opens the picker
+        OnPickerClose      — fired when picker's Done is tapped or
+                              Ball button toggles closed
 
-    Two-signal state rule (never communicate state by color alone):
-        Active    : gold border + glow shadow + translateY(-2px) + bright ball
-        Completed : teal border + bright ball
-        Pending   : dashed default-gray border + dimmed ball + opacity 0.6
-
-    The button-vs-div wrapper still depends on Edit mode (only an active+edit
-    cell is interactive); the visual-state class is now independent of mode,
-    so an active cell in View mode also reads as "current".
+    Two-signal state rule:
+        Active    : gold border + glow shadow + lift + bright PoolBall
+        Completed : teal border + bright PoolBall
+        Pending   : dashed default-gray border + dimmed PoolBall + 0.6 opacity
 *@
 
-@if (IsInteractive)
-{
-    <button type="button"
-            class="@CellCssClass"
-            role="gridcell"
-            aria-label="@AriaLabel"
-            aria-current="true"
-            @onclick="OnEnterScore">
-        <div class="frame-cell-header">
-            <span class="frame-number" aria-hidden="true"><PoolBall Number="@Frame.FrameNumber" Size="22" Dim="@IsBallDim" /></span>
-        </div>
+<div class="@CellCssClass"
+     role="gridcell"
+     aria-label="@AriaLabel"
+     aria-current="@AriaCurrent">
 
-        <div class="frame-cell-row frame-cell-break-bonus">
-            <span class="frame-cell-label" aria-hidden="true">Break</span>
-            @if (Frame.IsCompleted)
-            {
-                <span class="score-value">@Frame.BreakBonus</span>
-            }
-            else
-            {
-                <span class="score-value score-placeholder">@EmDash</span>
-            }
-        </div>
-
-        <div class="frame-cell-row frame-cell-ball-count">
-            <span class="frame-cell-label" aria-hidden="true">Ball</span>
-            @if (Frame.IsCompleted)
-            {
-                <span class="score-value">@Frame.BallCount</span>
-            }
-            else
-            {
-                <span class="score-value score-placeholder">@EmDash</span>
-            }
-        </div>
-
-        <div class="frame-cell-row frame-cell-running-total">
-            @if (Frame.IsCompleted)
-            {
-                <span class="score-value running-total">@Frame.RunningTotal</span>
-            }
-            else
-            {
-                <span class="score-value score-placeholder running-total">@EmDash</span>
-            }
-        </div>
-    </button>
-}
-else
-{
-    <div class="@CellCssClass"
-         role="gridcell"
-         aria-label="@AriaLabel"
-         aria-current="@AriaCurrent">
-        <div class="frame-cell-header">
-            <span class="frame-number" aria-hidden="true"><PoolBall Number="@Frame.FrameNumber" Size="22" Dim="@IsBallDim" /></span>
-        </div>
-
-        <div class="frame-cell-row frame-cell-break-bonus">
-            <span class="frame-cell-label" aria-hidden="true">Break</span>
-            @if (Frame.IsCompleted)
-            {
-                <span class="score-value">@Frame.BreakBonus</span>
-            }
-            else
-            {
-                <span class="score-value score-placeholder">@EmDash</span>
-            }
-        </div>
-
-        <div class="frame-cell-row frame-cell-ball-count">
-            <span class="frame-cell-label" aria-hidden="true">Ball</span>
-            @if (Frame.IsCompleted)
-            {
-                <span class="score-value">@Frame.BallCount</span>
-            }
-            else
-            {
-                <span class="score-value score-placeholder">@EmDash</span>
-            }
-        </div>
-
-        <div class="frame-cell-row frame-cell-running-total">
-            @if (Frame.IsCompleted)
-            {
-                <span class="score-value running-total">@Frame.RunningTotal</span>
-            }
-            else
-            {
-                <span class="score-value score-placeholder running-total">@EmDash</span>
-            }
-        </div>
+    <div class="frame-cell-header">
+        <span class="frame-number" aria-hidden="true"><PoolBall Number="@Frame.FrameNumber" Size="22" Dim="@IsBallDim" /></span>
     </div>
-}
+
+    <div class="frame-cell-controls">
+        <button type="button"
+                class="@BreakButtonClass"
+                disabled="@ControlsDisabled"
+                aria-pressed="@AriaBreakPressed"
+                aria-label="Break bonus"
+                @onclick="HandleBreakToggle">
+            <span class="frame-cell-label" aria-hidden="true">Break</span>
+            <span class="frame-cell-row frame-cell-break-bonus">
+                <span class="@BreakCheckboxClass" aria-hidden="true">
+                    @if (EffectiveBreakBonusBool)
+                    {
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                             stroke="currentColor" stroke-width="2.2"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2.5 6L5 8.5L9.5 3.5" />
+                        </svg>
+                    }
+                </span>
+                @* Hidden text node so .score-value queries still see a value
+                   for completed frames (preserves the test contract). *@
+                <span class="score-value @(BreakValueIsPlaceholder ? "score-placeholder" : "")"
+                      style="display: none;">@BreakValueText</span>
+            </span>
+        </button>
+
+        <button type="button"
+                class="@BallButtonClass"
+                disabled="@ControlsDisabled"
+                aria-haspopup="dialog"
+                aria-expanded="@(IsPickerOpen ? "true" : "false")"
+                aria-label="Ball count picker"
+                @onclick="HandleBallButtonClick">
+            <span class="frame-cell-label" aria-hidden="true">Ball</span>
+            <span class="frame-cell-row frame-cell-ball-count">
+                <span class="@BallValueClass">@BallValueText</span>
+            </span>
+        </button>
+    </div>
+
+    <div class="frame-cell-row frame-cell-running-total">
+        <span class="@RunningTotalClass">@RunningTotalText</span>
+    </div>
+
+    @if (IsPickerOpen && !ControlsDisabled)
+    {
+        <BallPicker Selected="@(BallsPocketed ?? EmptyBallSet)"
+                    OnToggle="HandleBallToggle"
+                    OnClear="HandleBallsClear"
+                    OnDone="HandlePickerClose" />
+    }
+</div>
 
 @code {
-    [Parameter] public Frame Frame { get; set; } = default!;
+    [Parameter, EditorRequired] public Frame Frame { get; set; } = default!;
     [Parameter] public bool IsActive { get; set; }
     [Parameter] public ScoreCardMode Mode { get; set; } = ScoreCardMode.View;
-    [Parameter] public EventCallback<Frame> OnFrameActivated { get; set; }
+
+    // ── In-flight buffer (active cell only) ──────────────────────────────────
+
+    [Parameter] public bool BreakBonus { get; set; }
+    [Parameter] public IReadOnlySet<int>? BallsPocketed { get; set; }
+    [Parameter] public bool IsPickerOpen { get; set; }
+    [Parameter] public int? LiveRunningTotal { get; set; }
+
+    // ── Events ───────────────────────────────────────────────────────────────
+
+    [Parameter] public EventCallback OnBreakToggle { get; set; }
+    [Parameter] public EventCallback<int> OnBallToggle { get; set; }
+    [Parameter] public EventCallback OnBallsClear { get; set; }
+    [Parameter] public EventCallback OnPickerOpen { get; set; }
+    [Parameter] public EventCallback OnPickerClose { get; set; }
 
     private const string EmDash = "—";
+    private static readonly IReadOnlySet<int> EmptyBallSet = new HashSet<int>();
 
-    /// <summary>
-    /// Visual classification for this cell. Resolution mirrors the
-    /// FrameStatusExtensions.GetStatus rule, but uses the IsActive parameter
-    /// (not Frame.IsActive) so callers can override activeness at the edge.
-    /// </summary>
+    // ── Status derivation (3-value, since FrameCell still has no Game ref) ──
+
     private FrameStatus Status
     {
         get
@@ -144,16 +129,10 @@ else
         }
     }
 
-    private bool IsInteractive => IsActive && Mode == ScoreCardMode.Edit;
-
     private bool IsBallDim => Status == FrameStatus.Pending;
 
-    /// <summary>
-    /// True when the completed frame hits the v2 per-frame max of 10 points
-    /// (1 break bonus + 9 balls). Used to gold-accent the running total.
-    /// </summary>
-    private bool IsPerfectFrame =>
-        Frame.IsCompleted && Frame.BreakBonus + Frame.BallCount == 10;
+    /// <summary>Controls are interactive only when the cell is the live frame in Edit mode.</summary>
+    private bool ControlsDisabled => !(IsActive && Mode == ScoreCardMode.Edit) || Frame.IsCompleted;
 
     private string CellCssClass
     {
@@ -165,15 +144,10 @@ else
                 FrameStatus.Completed => "frame-cell frame-cell-completed",
                 _                     => "frame-cell frame-cell-pending"
             };
-            return IsPerfectFrame ? $"{baseClass} frame-cell-perfect" : baseClass;
+            return IsPerfectFrameDisplay ? $"{baseClass} frame-cell-perfect" : baseClass;
         }
     }
 
-    /// <summary>
-    /// Mirror aria-current onto the non-interactive active cell so assistive
-    /// tech in View mode still reads "current" — the button branch sets the
-    /// attribute directly.
-    /// </summary>
     private string? AriaCurrent =>
         Status == FrameStatus.Active ? "true" : null;
 
@@ -188,7 +162,7 @@ else
             }
             if (IsActive && Mode == ScoreCardMode.Edit)
             {
-                return $"Frame {Frame.FrameNumber}, currently active. Press Enter to record score.";
+                return $"Frame {Frame.FrameNumber}, currently active. Use Break and Ball buttons to record score.";
             }
             if (IsActive)
             {
@@ -198,11 +172,181 @@ else
         }
     }
 
-    private async Task OnEnterScore()
+    // ── Display values ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Effective break-bonus boolean. Reads the in-flight parameter for the active+edit cell;
+    /// otherwise reads the persisted Frame.BreakBonus (1 ⇒ true).
+    /// </summary>
+    private bool EffectiveBreakBonusBool
     {
-        if (IsInteractive)
+        get
         {
-            await OnFrameActivated.InvokeAsync(Frame);
+            if (Frame.IsCompleted) return Frame.BreakBonus == 1;
+            if (IsActive && Mode == ScoreCardMode.Edit) return BreakBonus;
+            return false;
         }
+    }
+
+    private string AriaBreakPressed => EffectiveBreakBonusBool ? "true" : "false";
+
+    private bool BreakValueIsPlaceholder => !Frame.IsCompleted && !(IsActive && Mode == ScoreCardMode.Edit);
+
+    private string BreakValueText
+    {
+        get
+        {
+            if (Frame.IsCompleted) return Frame.BreakBonus.ToString();
+            if (IsActive && Mode == ScoreCardMode.Edit) return BreakBonus ? "1" : "0";
+            return EmDash;
+        }
+    }
+
+    private string BreakButtonClass
+    {
+        get
+        {
+            var cls = "frame-cell-control frame-cell-break";
+            if (EffectiveBreakBonusBool) cls += " frame-cell-control--on";
+            return cls;
+        }
+    }
+
+    private string BreakCheckboxClass
+    {
+        get
+        {
+            var cls = "frame-cell-checkbox";
+            if (EffectiveBreakBonusBool) cls += " frame-cell-checkbox--checked";
+            return cls;
+        }
+    }
+
+    /// <summary>Effective ball count: in-flight set size for active+edit, frame's persisted BallCount otherwise.</summary>
+    private int EffectiveBallCount
+    {
+        get
+        {
+            if (Frame.IsCompleted) return Frame.BallCount;
+            if (IsActive && Mode == ScoreCardMode.Edit) return BallsPocketed?.Count ?? 0;
+            return 0;
+        }
+    }
+
+    private bool BallValueIsPlaceholder => !Frame.IsCompleted && !(IsActive && Mode == ScoreCardMode.Edit);
+
+    private string BallValueText
+    {
+        get
+        {
+            if (Frame.IsCompleted) return Frame.BallCount.ToString();
+            if (IsActive && Mode == ScoreCardMode.Edit)
+                return EffectiveBallCount == 0 ? EmDash : EffectiveBallCount.ToString();
+            return EmDash;
+        }
+    }
+
+    private string BallValueClass
+    {
+        get
+        {
+            var cls = "score-value";
+            if (BallValueIsPlaceholder || (IsActive && Mode == ScoreCardMode.Edit && EffectiveBallCount == 0))
+                cls += " score-placeholder";
+            else if (EffectiveBallCount > 0 && !Frame.IsCompleted)
+                cls += " frame-cell-ball-count--active";
+            return cls;
+        }
+    }
+
+    private string BallButtonClass
+    {
+        get
+        {
+            var cls = "frame-cell-control frame-cell-ball";
+            if (IsPickerOpen) cls += " frame-cell-control--open";
+            else if (EffectiveBallCount > 0 && !Frame.IsCompleted) cls += " frame-cell-control--on";
+            return cls;
+        }
+    }
+
+    /// <summary>Per-frame total under the v2 rule (1 break + 9 balls = 10 max).</summary>
+    private bool IsPerfectFrameDisplay
+    {
+        get
+        {
+            if (Frame.IsCompleted) return Frame.BreakBonus + Frame.BallCount == 10;
+            if (IsActive && Mode == ScoreCardMode.Edit)
+                return (BreakBonus ? 1 : 0) + EffectiveBallCount == 10;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Running-total text. Honors LiveRunningTotal when supplied; otherwise falls
+    /// back to Frame.RunningTotal for completed cells, em-dash otherwise.
+    /// </summary>
+    private string RunningTotalText
+    {
+        get
+        {
+            if (LiveRunningTotal is int live) return live.ToString();
+            if (Frame.IsCompleted) return Frame.RunningTotal.ToString();
+            return EmDash;
+        }
+    }
+
+    private string RunningTotalClass
+    {
+        get
+        {
+            var cls = "score-value running-total";
+            if (LiveRunningTotal is null && !Frame.IsCompleted) cls += " score-placeholder";
+            return cls;
+        }
+    }
+
+    // ── Event handlers ───────────────────────────────────────────────────────
+
+    private async Task HandleBreakToggle()
+    {
+        if (ControlsDisabled) return;
+        if (OnBreakToggle.HasDelegate)
+            await OnBreakToggle.InvokeAsync();
+    }
+
+    private async Task HandleBallButtonClick()
+    {
+        if (ControlsDisabled) return;
+        if (IsPickerOpen)
+        {
+            if (OnPickerClose.HasDelegate)
+                await OnPickerClose.InvokeAsync();
+        }
+        else
+        {
+            if (OnPickerOpen.HasDelegate)
+                await OnPickerOpen.InvokeAsync();
+        }
+    }
+
+    private async Task HandleBallToggle(int ballNumber)
+    {
+        if (ControlsDisabled) return;
+        if (OnBallToggle.HasDelegate)
+            await OnBallToggle.InvokeAsync(ballNumber);
+    }
+
+    private async Task HandleBallsClear()
+    {
+        if (ControlsDisabled) return;
+        if (OnBallsClear.HasDelegate)
+            await OnBallsClear.InvokeAsync();
+    }
+
+    private async Task HandlePickerClose()
+    {
+        if (OnPickerClose.HasDelegate)
+            await OnPickerClose.InvokeAsync();
     }
 }

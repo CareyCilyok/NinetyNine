@@ -131,31 +131,37 @@ public class Redesigned_ScoreCardGridTests : TestContext
     // ═══════════════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void Redesigned_Grid_ViewMode_ActiveFrame_HasNoScoreButton()
+    public void Redesigned_Grid_ViewMode_ActiveFrame_HasNonInteractiveControls()
     {
+        // v0.3.3: in-cell Break/Ball buttons exist but are disabled in View mode.
         var game = MakeGame(completedCount: 0); // frame 1 is active
         var cut = RenderComponent<ScoreCardGrid>(p => p
             .Add(x => x.Game, game)
             .Add(x => x.Mode, ScoreCardMode.View));
 
-        // In the desktop grid area (.sc-grid), the FrameCell for frame 1 must not have a button
-        var gridSection = cut.Find(".sc-grid");
-        gridSection.QuerySelectorAll("button").Should().BeEmpty(
-            "View mode must not expose score buttons inside the desktop grid cells");
+        var grid = cut.Find(".sc-grid");
+        var controls = grid.QuerySelectorAll(".frame-cell-break, .frame-cell-ball");
+        controls.Length.Should().BeGreaterThan(0,
+            "v2 in-cell controls always render");
+        controls.All(c => c.HasAttribute("disabled")).Should().BeTrue(
+            "View mode must disable every in-cell Break and Ball control");
     }
 
     [Fact]
-    public void Redesigned_Grid_EditMode_ActiveFrame_HasScoreButton()
+    public void Redesigned_Grid_EditMode_ActiveFrame_HasInteractiveControls()
     {
+        // Active frame's in-cell Break and Ball buttons are interactive in Edit mode.
         var game = MakeGame(completedCount: 0); // frame 1 is active
         var cut = RenderComponent<ScoreCardGrid>(p => p
             .Add(x => x.Game, game)
             .Add(x => x.Mode, ScoreCardMode.Edit));
 
-        // The desktop grid's active FrameCell should have a button
-        var gridSection = cut.Find(".sc-grid");
-        gridSection.QuerySelectorAll("button").Should().NotBeEmpty(
-            "Edit mode active frame must expose a score button inside the desktop grid");
+        var activeCell = cut.Find(".sc-grid .frame-cell-active");
+        var breakBtn = activeCell.QuerySelector(".frame-cell-break")!;
+        var ballBtn = activeCell.QuerySelector(".frame-cell-ball")!;
+
+        breakBtn.HasAttribute("disabled").Should().BeFalse();
+        ballBtn.HasAttribute("disabled").Should().BeFalse();
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

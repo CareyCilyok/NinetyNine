@@ -1,28 +1,35 @@
 @*
-    ScoreCardGrid — the full 9-frame P&B score card (v2 visual refresh).
+    ScoreCardGrid — the full 9-frame P&B score card (v2 with in-cell controls).
 
     Desktop (>= 768px):
-        9-column CSS grid. Each column is a <FrameCell> rendering a
-        vertically-stacked (Break Bonus / Ball Count / Running Total) card
-        with a numbered <PoolBall /> as its frame-number badge.
+        9-column CSS grid. Each column is a v2 <FrameCell /> with
+        in-cell Break checkbox, Ball button, and inline BallPicker.
+        The active cell receives the in-flight buffer from the parent.
 
     Mobile (< 768px):
-        Large "frame-detail" card at the top shows the currently focused
-        frame's three stats with a 44px <PoolBall /> as the leading icon,
-        followed by a horizontally-scrolling strip of nine compact chips
-        (scroll-snap, no JS interop) that act as a picker. Each chip uses
-        a 20px <PoolBall /> over its running-total readout.
+        Detail card showing the focused frame's stats (read-only —
+        the in-cell controls live on the desktop grid; the mobile
+        flow is read-oriented for now), plus a horizontally-
+        scrolling picker strip of nine compact PoolBall chips.
 
-    Below both layouts: a summary strip showing total score, completed
-    count, average per frame, and the active frame number — with Phosphor
-    icons. The Total tile gets a conditional teal glow when score >= 90
-    (sc-summary-total--threshold).
+    Below both layouts: a 4-pill summary strip with conditional teal
+    glow on the Total tile when score >= 90.
 
-    Parent API (STABLE — do not rename or remove):
-        Game             : the game to render (null shows empty placeholder)
-        Mode             : View | Edit
-        OnFrameSubmit    : fired when a frame is submitted via the dialog
-        FrameSubmitArgs  : nested record consumed by parent pages
+    Parent API (CHANGED in v0.3.3):
+        Game                : the game to render
+        Mode                : View | Edit
+        ActiveBreakBonus    : in-flight break bonus for the active cell
+        ActiveBallsPocketed : in-flight ball selection for the active cell
+        ActivePickerOpen    : is the active cell's BallPicker shown
+        ActiveLiveRunningTotal : parent-computed running total to display
+        OnBreakToggle       : fired by the active cell's Break button
+        OnBallToggle        : fired with ball number from the picker
+        OnBallsClear        : fired by the picker's Clear button
+        OnPickerOpen        : fired when the active cell opens its picker
+        OnPickerClose       : fired when the picker closes
+        OnFrameSubmit       : RETAINED but unwired (legacy from v0.2.x;
+                              Play.razor still binds this. Removed in
+                              v0.3.4 alongside FrameInputDialog deletion.)
 *@
 
 <div class="sc-wrapper" aria-label="Score card for current game">
@@ -32,10 +39,20 @@
         @foreach (var frame in EnsureFrames())
         {
             var f = frame;
+            var isActiveCell = f.IsActive;
+
             <FrameCell Frame="f"
-                       IsActive="f.IsActive"
+                       IsActive="@isActiveCell"
                        Mode="Mode"
-                       OnFrameActivated="ActivateFrame" />
+                       BreakBonus="@(isActiveCell && ActiveBreakBonus)"
+                       BallsPocketed="@(isActiveCell ? ActiveBallsPocketed : null)"
+                       IsPickerOpen="@(isActiveCell && ActivePickerOpen)"
+                       LiveRunningTotal="@(isActiveCell ? ActiveLiveRunningTotal : null)"
+                       OnBreakToggle="@(isActiveCell ? OnBreakToggle : EventCallback.Empty)"
+                       OnBallToggle="@(isActiveCell ? OnBallToggle : EventCallback<int>.Empty)"
+                       OnBallsClear="@(isActiveCell ? OnBallsClear : EventCallback.Empty)"
+                       OnPickerOpen="@(isActiveCell ? OnPickerOpen : EventCallback.Empty)"
+                       OnPickerClose="@(isActiveCell ? OnPickerClose : EventCallback.Empty)" />
         }
     </div>
 
@@ -49,7 +66,6 @@
         @if (mobileFrame is not null)
         {
             var mobileStatus = StatusFor(mobileFrame);
-            var canRecordMobile = mobileFrame.IsActive && Mode == ScoreCardMode.Edit;
             var mobileStateClass = mobileStatus switch
             {
                 FrameStatus.Active    => "sc-mobile-detail sc-mobile-detail-active",
@@ -90,16 +106,6 @@
                         </span>
                     </div>
                 </div>
-
-                @if (canRecordMobile)
-                {
-                    <button type="button"
-                            class="btn btn-primary sc-mobile-action"
-                            @onclick="() => ActivateFrame(mobileFrame)"
-                            aria-label="Enter score for frame @mobileFrame.FrameNumber">
-                        Record Frame @mobileFrame.FrameNumber
-                    </button>
-                }
             </div>
         }
 
@@ -183,36 +189,39 @@
     }
 </div>
 
-@* Frame input dialog — rendered outside the grid so the modal overlays cleanly *@
-<FrameInputDialog IsVisible="_dialogVisible"
-                  FrameNumber="_dialogFrameNumber"
-                  OnSubmit="HandleFrameSubmit"
-                  OnCancel="CloseDialog" />
-
 @code {
     [Parameter] public Game? Game { get; set; }
     [Parameter] public ScoreCardMode Mode { get; set; } = ScoreCardMode.View;
+
+    // ── In-flight buffer (passed through to the active FrameCell) ────────────
+
+    [Parameter] public bool ActiveBreakBonus { get; set; }
+    [Parameter] public IReadOnlySet<int>? ActiveBallsPocketed { get; set; }
+    [Parameter] public bool ActivePickerOpen { get; set; }
+    [Parameter] public int? ActiveLiveRunningTotal { get; set; }
+
+    // ── Events (forwarded to the active cell only) ───────────────────────────
+
+    [Parameter] public EventCallback OnBreakToggle { get; set; }
+    [Parameter] public EventCallback<int> OnBallToggle { get; set; }
+    [Parameter] public EventCallback OnBallsClear { get; set; }
+    [Parameter] public EventCallback OnPickerOpen { get; set; }
+    [Parameter] public EventCallback OnPickerClose { get; set; }
+
+    /// <summary>
+    /// Legacy v0.2.x event. Retained as an unwired parameter so Play.razor
+    /// still compiles while it transitions to the v0.3.x flow in v0.3.4.
+    /// Deleted in v0.3.4 alongside FrameInputDialog.
+    /// </summary>
     [Parameter] public EventCallback<FrameSubmitArgs> OnFrameSubmit { get; set; }
 
     private const string EmDash = "—";
-
-    /// <summary>
-    /// Score threshold above which the Total summary tile picks up the
-    /// teal "approaching perfect" glow. Per the v2 mockup; aligns with the
-    /// max-10-per-frame × 9 frames = 90 point ceiling.
-    /// </summary>
     private const int TotalThresholdForGlow = 90;
 
-    private bool _dialogVisible;
-    private int _dialogFrameNumber;
-    private Frame? _pendingFrame;
     private int _mobileActiveFrame = 1;
 
     protected override void OnParametersSet()
     {
-        // Keep the mobile picker focused on the currently-active frame whenever
-        // the Game parameter advances. If the game has no active frame (view
-        // mode of a completed game), leave the user's last selection alone.
         var activeFrame = Game?.CurrentFrame;
         if (activeFrame is not null)
         {
@@ -230,8 +239,6 @@
 
         if (!Game.Frames.Any())
         {
-            // Placeholder 9 frames for an uninitialized game — kept stable so the
-            // grid always renders exactly 9 columns.
             return Enumerable.Range(1, 9)
                 .Select(n => new Frame { FrameNumber = n, GameId = Game.GameId })
                 .ToList();
@@ -240,60 +247,14 @@
         return Game.Frames;
     }
 
-    /// <summary>
-    /// Classify a frame using the four-value FrameStatus form — ScoreCardGrid
-    /// has Game.CurrentFrameNumber on hand, so it can differentiate the
-    /// next-up Pending frame from further-out Future ones.
-    /// </summary>
     private FrameStatus StatusFor(Frame frame) => frame.GetStatus(Game?.CurrentFrameNumber);
 
-    /// <summary>
-    /// Total tile gains a teal glow modifier when the running score crosses
-    /// the threshold. Driven by a CSS class so the second-signal rule still
-    /// holds on light theme (where shadows render differently).
-    /// </summary>
     private string SummaryTotalClass =>
         Game is not null && Game.TotalScore >= TotalThresholdForGlow
             ? "sc-summary-item sc-summary-total sc-summary-total--threshold"
             : "sc-summary-item sc-summary-total";
 
-    private void SelectMobileFrame(int frameNumber)
-    {
-        _mobileActiveFrame = frameNumber;
-    }
-
-    private async Task ActivateFrame(Frame frame)
-    {
-        if (Mode != ScoreCardMode.Edit) return;
-        if (!frame.IsActive) return;
-
-        _pendingFrame = frame;
-        _dialogFrameNumber = frame.FrameNumber;
-        _dialogVisible = true;
-        await Task.CompletedTask;
-    }
-
-    private async Task HandleFrameSubmit(FrameInputDialog.FrameScoreInput input)
-    {
-        _dialogVisible = false;
-
-        if (_pendingFrame is null || Game is null) return;
-
-        await OnFrameSubmit.InvokeAsync(new FrameSubmitArgs(
-            Game.GameId,
-            _pendingFrame.FrameNumber,
-            input.BreakBonus,
-            input.BallCount,
-            input.Notes));
-
-        _pendingFrame = null;
-    }
-
-    private void CloseDialog()
-    {
-        _dialogVisible = false;
-        _pendingFrame = null;
-    }
+    private void SelectMobileFrame(int frameNumber) => _mobileActiveFrame = frameNumber;
 
     private string AverageFrameDisplay =>
         Game is null || Game.CompletedFrames == 0
@@ -321,17 +282,16 @@
     private static string PickerAriaLabel(Frame frame)
     {
         if (frame.IsCompleted)
-        {
             return $"Frame {frame.FrameNumber}, completed, running total {frame.RunningTotal}";
-        }
         if (frame.IsActive)
-        {
             return $"Frame {frame.FrameNumber}, currently active";
-        }
         return $"Frame {frame.FrameNumber}, not yet played";
     }
 
-    /// <summary>Arguments passed to the parent when a frame is submitted.</summary>
+    /// <summary>
+    /// Legacy submit args — retained so Play.razor's existing
+    /// HandleFrameSubmit signature still compiles. Removed in v0.3.4.
+    /// </summary>
     public sealed record FrameSubmitArgs(
         Guid GameId,
         int FrameNumber,

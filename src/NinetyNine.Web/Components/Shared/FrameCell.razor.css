@@ -1,25 +1,22 @@
 /* =====================================================================
-   FrameCell.razor.css  (Blazor scoped) — v2 visual refresh
+   FrameCell.razor.css  (Blazor scoped) — v2 with in-cell controls
    ---------------------------------------------------------------------
-   A single column of the ScoreCardGrid:
+   Layout per the v2 design handoff:
 
        ┌─────────────┐
        │   ( ball )  │   PoolBall SVG (22px)
        ├─────────────┤
-       │ Break   —   │
-       │ Ball    —   │
-       │             │
+       │ ┌───┬───┐   │
+       │ │BRK│BAL│   │   side-by-side Break + Ball control buttons
+       │ │ ☑ │ 3 │   │
+       │ └───┴───┘   │
        │     —       │   running total — large, no label
        └─────────────┘
 
-   Three visual states, each signalled by TWO cues (never color alone):
+   Two-signal state rule (never color alone):
      • pending    : 1.5px dashed border + dimmed PoolBall + opacity 0.6
      • active     : 1.5px solid gold + glow shadow + lift + bright PoolBall
      • completed  : 1.5px solid teal + bright PoolBall
-
-   All colors come from the global --nn-* token namespace. The PoolBall
-   itself uses physical-object pigments rather than theme tokens (see
-   PoolBall.razor.css for the why).
    ===================================================================== */
 
 .frame-cell {
@@ -41,7 +38,7 @@
     font-family: var(--nn-font-mono);
     font-variant-numeric: tabular-nums;
 
-    /* Layering & motion. */
+    /* Position context for the BallPicker popover. */
     position: relative;
     text-align: center;
     box-shadow: var(--nn-shadow-sm);
@@ -51,32 +48,15 @@
                 background-color var(--nn-transition-fast);
 }
 
-/* When the cell is a <button>, reset UA styling and stretch full-width. */
-button.frame-cell {
-    appearance: none;
-    -webkit-appearance: none;
-    font: inherit;
-    cursor: pointer;
-    width: 100%;
-    user-select: none;
-}
-
-button.frame-cell:focus-visible {
-    outline: 3px solid var(--nn-accent-gold);
-    outline-offset: 3px;
-}
-
 /* -------------------------------------------------------------------
-   HEADER — PoolBall badge replaces the v1 circled-number span.
-   The .frame-number wrapper kept for selector continuity (existing
-   tests query by class, treat its TextContent as the frame number).
+   HEADER — PoolBall badge.
    ------------------------------------------------------------------- */
 
 .frame-cell-header {
     display: flex;
     justify-content: center;
     align-items: center;
-    line-height: 0;       /* keep the SVG flush — no descender padding */
+    line-height: 0;
 }
 
 .frame-number {
@@ -87,36 +67,107 @@ button.frame-cell:focus-visible {
 }
 
 /* -------------------------------------------------------------------
-   ROWS — Break / Ball / Running Total
-   Break and Ball stack vertically with their labels on top of values.
-   Running Total drops the label per v2 mockup; the row keeps its class
-   so the parent count assertion (3 rows) still holds.
+   CONTROLS — Break + Ball buttons in a 1fr/1fr grid.
    ------------------------------------------------------------------- */
 
-.frame-cell-row {
+.frame-cell-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+/* The Break/Ball buttons share a control style. Resets browser button styling
+   and provides the v2 panel-style look. */
+.frame-cell-control {
+    appearance: none;
+    -webkit-appearance: none;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 2px;
-    padding: 0 var(--nn-space-1);
-    line-height: 1.1;
+    gap: 3px;
+    padding: 5px 4px;
+    background-color: var(--nn-bg-tertiary);
+    border: 1.5px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-sm);
+    color: var(--nn-text-primary);
+    font: inherit;
+    cursor: pointer;
+    transition: background-color var(--nn-transition-fast),
+                border-color var(--nn-transition-fast),
+                color var(--nn-transition-fast);
+    min-height: var(--nn-touch-target);
 }
 
+.frame-cell-control:hover:not(:disabled):not(.frame-cell-control--on):not(.frame-cell-control--open) {
+    border-color: var(--nn-border-default);
+    background-color: var(--nn-bg-secondary);
+}
+
+.frame-cell-control:focus-visible {
+    outline: 2px solid var(--nn-accent-gold);
+    outline-offset: 2px;
+}
+
+.frame-cell-control:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.frame-cell-control--on,
+.frame-cell-control--open {
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.12);
+    border-color: var(--nn-accent-teal);
+}
+
+/* Labels are 9px uppercase per v2 mockup. */
 .frame-cell-label {
     font-family: var(--nn-font-sans);
-    font-size: 0.5625rem;     /* 9px per v2 mockup */
+    font-size: 0.5625rem;     /* 9px */
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--nn-text-tertiary);
+    line-height: 1;
 }
+
+/* The wrapper span with .frame-cell-row class is preserved for tests that
+   count three rows (Break, Ball, Total). It carries no visual styling here. */
+.frame-cell-control .frame-cell-row {
+    display: contents;
+}
+
+/* -------------------------------------------------------------------
+   BREAK CHECKBOX — 20×20 rounded square next to the BREAK label.
+   ------------------------------------------------------------------- */
+
+.frame-cell-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: 1.5px solid var(--nn-border-strong);
+    background-color: transparent;
+    color: var(--nn-text-on-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--nn-transition-fast),
+                border-color var(--nn-transition-fast);
+}
+
+.frame-cell-checkbox--checked {
+    background-color: var(--nn-accent-teal);
+    border-color: var(--nn-accent-teal);
+}
+
+/* -------------------------------------------------------------------
+   BALL VALUE — large number showing pocketed count.
+   ------------------------------------------------------------------- */
 
 .score-value {
     font-family: var(--nn-font-mono);
     font-variant-numeric: tabular-nums;
     font-weight: 700;
-    font-size: 1.125rem;      /* 18px per v2 mockup */
+    font-size: 1.125rem;       /* 18px per v2 mockup */
     color: var(--nn-text-primary);
     line-height: 1;
 }
@@ -126,16 +177,27 @@ button.frame-cell:focus-visible {
     font-weight: 400;
 }
 
-/* Running total — large numerals, no label, hairline divider above. */
+/* In-flight ball count > 0: tint teal so it reads as "in the buffer" to the user. */
+.frame-cell-ball-count--active {
+    color: var(--nn-accent-teal);
+}
+
+/* -------------------------------------------------------------------
+   RUNNING TOTAL — bottom row, large numeral, no label.
+   ------------------------------------------------------------------- */
+
 .frame-cell-running-total {
     margin-top: auto;
     padding-top: var(--nn-space-2);
     border-top: 1px solid var(--nn-border-subtle);
     min-height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .frame-cell-running-total .score-value {
-    font-size: 1.875rem;      /* 30px per v2 mockup */
+    font-size: 1.875rem;       /* 30px per v2 mockup */
     font-weight: 800;
     letter-spacing: -0.03em;
 }
@@ -145,8 +207,13 @@ button.frame-cell:focus-visible {
     font-weight: 500;
 }
 
+/* Perfect frame: gold the running total. */
+.frame-cell-perfect .frame-cell-running-total .score-value {
+    color: var(--nn-accent-gold);
+}
+
 /* -------------------------------------------------------------------
-   STATE — PENDING (default border + dashed + dimmed)
+   STATE — pending (default + dashed + dimmed)
    ------------------------------------------------------------------- */
 
 .frame-cell-pending {
@@ -155,22 +222,15 @@ button.frame-cell:focus-visible {
 }
 
 /* -------------------------------------------------------------------
-   STATE — COMPLETED (teal ring)
+   STATE — completed (teal ring)
    ------------------------------------------------------------------- */
 
 .frame-cell-completed {
     border-color: var(--nn-accent-teal);
 }
 
-/* Perfect frame: per-frame total of 10 (1 break + 9 balls) — gold the
-   running total to celebrate it. The cell border still reads as
-   "completed teal" so the second signal (border style) stays consistent. */
-.frame-cell-perfect .frame-cell-running-total .score-value {
-    color: var(--nn-accent-gold);
-}
-
 /* -------------------------------------------------------------------
-   STATE — ACTIVE (gold border + muted gold fill + glow + lift)
+   STATE — active (gold border + gold-muted fill + glow + lift)
    ------------------------------------------------------------------- */
 
 .frame-cell-active {
@@ -190,17 +250,16 @@ button.frame-cell:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
     .frame-cell,
-    .frame-cell-active {
+    .frame-cell-active,
+    .frame-cell-control,
+    .frame-cell-checkbox {
         transform: none !important;
         transition: none !important;
     }
 }
 
 /* -------------------------------------------------------------------
-   RESPONSIVE — mobile (<768px)
-   The 9-column grid is hidden by the parent on mobile, so this rule
-   only fires for tablets in portrait or other in-between widths where
-   the grid still renders. Reduce the per-cell vertical density.
+   RESPONSIVE — tighter density on narrow widths.
    ------------------------------------------------------------------- */
 
 @media (max-width: 767.98px) {
@@ -210,6 +269,6 @@ button.frame-cell:focus-visible {
     }
 
     .frame-cell-running-total .score-value {
-        font-size: 1.5rem;       /* 24px on tighter widths */
+        font-size: 1.5rem;
     }
 }
