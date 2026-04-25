@@ -1,0 +1,260 @@
+/* =====================================================================
+   Matches/NewMatch.razor.css — scoped styles for the Start Match page.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   Pattern mirrors Games/New.razor.css for visual consistency.
+   ===================================================================== */
+
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.nn-new-match-page {
+    display: flex;
+    justify-content: center;
+    padding: var(--nn-space-6) var(--nn-space-4);
+    min-height: calc(100vh - var(--nn-navbar-height));
+}
+
+.nn-new-match-page__inner {
+    width: 100%;
+    max-width: 36rem;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.nn-new-match-page__header {
+    margin-bottom: var(--nn-space-6);
+}
+
+.nn-new-match-page__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-new-match-page__subtitle {
+    color: var(--nn-text-secondary);
+    margin-bottom: 0;
+}
+
+/* ── Break-method radio group ─ segmented picker ─────────────────────── */
+.nn-new-match-page__radio-group {
+    display: inline-flex;
+    gap: var(--nn-space-2);
+    padding: 0.25rem;
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    box-shadow: var(--nn-shadow-sm);
+    flex-wrap: wrap;
+    max-width: 100%;
+}
+
+.nn-new-match-page__radio-option {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-2);
+
+    padding: var(--nn-space-2) var(--nn-space-3);
+    min-height: var(--nn-touch-target);
+
+    color: var(--nn-text-primary);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.2;
+
+    border: 1px solid transparent;
+    border-radius: calc(var(--nn-radius-md) - 0.125rem);
+    cursor: pointer;
+    user-select: none;
+
+    transition:
+        background-color var(--nn-transition-fast),
+        border-color var(--nn-transition-fast);
+}
+
+.nn-new-match-page__radio-option:hover {
+    background-color: var(--nn-bg-tertiary);
+}
+
+.nn-new-match-page__radio-option:focus-within {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    z-index: 1;
+}
+
+/* ── Concurrent-match roster ─ seat list with per-row Efren toggle ─── */
+.nn-new-match-page__roster {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+    margin-bottom: var(--nn-space-4);
+    padding: var(--nn-space-4);
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    box-shadow: var(--nn-shadow-sm);
+}
+
+.nn-new-match-page__roster legend {
+    padding: 0 var(--nn-space-2);
+    font-weight: 600;
+    color: var(--nn-text-primary);
+}
+
+.nn-new-match-page__roster-hint {
+    color: var(--nn-text-secondary);
+    margin-bottom: 0;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.nn-new-match-page__roster-row {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-2);
+    background-color: var(--nn-bg-primary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-sm);
+}
+
+.nn-new-match-page__roster-row--you {
+    background-color: var(--nn-bg-tertiary);
+    border-color: var(--nn-border-default);
+}
+
+.nn-new-match-page__roster-seat {
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--nn-text-tertiary);
+    min-width: 1.5rem;
+}
+
+.nn-new-match-page__roster-name {
+    flex: 1 1 auto;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+}
+
+.nn-new-match-page__roster-select {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.nn-new-match-page__efren-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-1) var(--nn-space-3);
+    border-radius: var(--nn-radius-sm);
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-subtle);
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+    min-height: var(--nn-touch-target);
+}
+
+.nn-new-match-page__efren-toggle:has(input:checked) {
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.12);
+    border-color: var(--nn-accent-gold);
+    color: var(--nn-accent-gold);
+    box-shadow: inset 0 0 0 1px var(--nn-accent-gold);
+}
+
+.nn-new-match-page__efren-toggle:focus-within {
+    outline: 2px solid var(--nn-accent-gold);
+    outline-offset: 2px;
+}
+
+.nn-new-match-page__roster-actions {
+    display: flex;
+    gap: var(--nn-space-2);
+    margin-top: var(--nn-space-1);
+}
+
+@media (max-width: 480px) {
+    .nn-new-match-page__roster-row {
+        flex-wrap: wrap;
+    }
+
+    .nn-new-match-page__roster-select {
+        order: 3;
+        width: 100%;
+        flex-basis: 100%;
+    }
+}
+
+/* ── Action row ──────────────────────────────────────────────────────── */
+.nn-new-match-page__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--nn-space-3);
+    margin-top: var(--nn-space-5);
+}
+
+.nn-new-match-page__actions .btn {
+    min-height: var(--nn-touch-target);
+}
+
+.nn-new-match-page__actions .btn:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    box-shadow: var(--nn-shadow-glow-teal);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.nn-empty-state {
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    padding: var(--nn-space-7) var(--nn-space-5);
+    text-align: center;
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-empty-state p {
+    color: var(--nn-text-secondary);
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-empty-state .btn {
+    min-height: var(--nn-touch-target);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .nn-new-match-page {
+        padding: var(--nn-space-4) var(--nn-space-3);
+    }
+
+    .nn-new-match-page__title {
+        font-size: 1.5rem;
+    }
+
+    .nn-new-match-page__actions {
+        flex-direction: column;
+    }
+
+    .nn-new-match-page__actions .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .nn-new-match-page__radio-group {
+        width: 100%;
+        flex-direction: column;
+        gap: var(--nn-space-1);
+    }
+
+    .nn-new-match-page__radio-option {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nn-new-match-page__radio-option {
+        transition: none;
+    }
+}
