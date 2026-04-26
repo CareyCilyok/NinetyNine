@@ -121,6 +121,34 @@ The application implements the official Ninety-Nine pool game rules:
 - **Debug Tools**: Avalonia.Diagnostics only included in Debug builds
 - **Platform Support**: Configured for Windows, Linux (X11), and macOS
 
+## Development discipline — data model is the ground truth
+
+The `NinetyNine.Model` layer (`src/NinetyNine.Model/`) is the schema of record for the application. JSON Schema files in `src/NinetyNine.Services/SeedData/*.schema.json` mirror the Model for the dev mock dataset.
+
+### Mock-data rule
+
+When generating mock data for unit, component, or integration tests, the data MUST satisfy:
+
+1. **The Model's runtime invariants** — `Frame.IsValidScore` (BreakBonus 0–1, BallCount 0–10, total ≤ 11), `Game.ValidateGame()` (exactly 9 frames, monotone running totals, ≤1 active frame), `MatchService.SelectConcurrentWinner` ordering, etc.
+2. **The applicable JSON Schema** — `src/NinetyNine.Services/SeedData/mock-*.schema.json` for the seeded dataset; new mock data files should ship with a sibling `.schema.json` and a corresponding validation test.
+
+`MockDataSchemaValidationTests` enforces both for the seeded snapshots — drift fails CI. Any new mock data file should follow the same pattern (data file + schema file + validation test).
+
+### Model / schema impact-review rule
+
+Editing the Model layer or any JSON Schema file is a touchpoint that triggers an impact review across:
+
+- **The opposing artifact** — Model field added/changed → JSON Schema updated; schema field added/changed → Model updated.
+- **`MockDataExporter`** — does it still produce valid records? If a new field is required, add it to the exporter mirror in `src/NinetyNine.Services/SeedData/MockDataExporter.cs`.
+- **The mock-`*`.json snapshots** — regenerate via `REGEN_MOCK_SNAPSHOT=1 dotnet test --filter "FullyQualifiedName~MockDataSnapshotRegen"` and commit the diff.
+- **Repositories** — `src/NinetyNine.Repository/Repositories/*` that read/write the entity. Check the BSON class map in `src/NinetyNine.Repository/BsonConfiguration.cs` (auto-mapped, but verify nullable/computed fields and `SetIgnoreExtraElements` settings for deserializing legacy docs).
+- **Services** — anything in `src/NinetyNine.Services/` that consumes the entity (game scoring, statistics aggregation, profile gating, match arbitration).
+- **UI** — pages and components in `src/NinetyNine.Web/Components/` that render or accept the entity.
+- **Tests** — anything that constructs the entity (especially `tests/NinetyNine.Model.Tests/ModelEntityTests.cs` for default-value coverage).
+- **Memory files** — `~/.claude/projects/-fast-source-repos-NinetyNine/memory/` if the change affects a documented pattern.
+
+The discipline is: **don't change the model in isolation**. The downstream surface is broad enough that a missed touchpoint usually causes a silent integration failure, not a build break.
+
 ## Friends & Communities (complete — v0.1.2)
 
 Completed in Sprints 0–5 (tagged v0.1.2). Adds mutual friendships, player-owned communities, venue↔community affiliation, 4-tier profile audience model, admin roles, ownership transfer, leaderboard filters, in-app notifications, player blocking, and an activity log.

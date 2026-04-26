@@ -15,6 +15,9 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.15" />
     <PackageReference Include="Testcontainers.MongoDb" Version="4.4.0" />
+    <!-- Validates the seeded mock-*.json data against mock-*.schema.json
+         (JSON Schema draft 2020-12). Drift between the two fails CI. -->
+    <PackageReference Include="JsonSchema.Net" Version="7.2.3" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
