@@ -188,23 +188,30 @@ MONGO_CS="$(_prompt_secret 'MONGO_CONNECTION_STRING' \
     'Atlas connection string. Format: mongodb+srv://user:pass@host/NinetyNine?retryWrites=true&w=majority')"
 
 # ── Push secrets ─────────────────────────────────────────────────────────────
+# NOTE: Do NOT use `gh secret set ... --body -`. Counterintuitively, gh CLI
+# (verified on v2.91.0) treats `--body -` as the literal value "-" rather than
+# "read from stdin", silently corrupting the secret. The correct patterns are:
+#   - `printf '%s' "$x" | gh secret set NAME --repo R`  (no --body, stdin reads)
+#   - `gh secret set NAME --repo R --body "$x"`         (explicit value)
+# The first form keeps the secret out of the process arg list and shell history.
+
 _info "Setting AZURE_VM_HOST..."
-printf '%s' "$VM_IP" | gh secret set AZURE_VM_HOST --repo "$REPO" --body -
+printf '%s' "$VM_IP" | gh secret set AZURE_VM_HOST --repo "$REPO"
 
 _info "Setting AZURE_VM_USER..."
-printf '%s' "$VM_USER" | gh secret set AZURE_VM_USER --repo "$REPO" --body -
+printf '%s' "$VM_USER" | gh secret set AZURE_VM_USER --repo "$REPO"
 
 _info "Setting AZURE_VM_SSH_KEY..."
 gh secret set AZURE_VM_SSH_KEY --repo "$REPO" < "$SSH_PRIVATE_KEY_PATH"
 
 _info "Setting MONGO_CONNECTION_STRING..."
-printf '%s' "$MONGO_CS" | gh secret set MONGO_CONNECTION_STRING --repo "$REPO" --body -
+printf '%s' "$MONGO_CS" | gh secret set MONGO_CONNECTION_STRING --repo "$REPO"
 
 _info "Setting GOOGLE_CLIENT_ID (deferred placeholder — Google OAuth not yet wired in app)..."
-printf '%s' "$GOOGLE_OAUTH_PLACEHOLDER" | gh secret set GOOGLE_CLIENT_ID --repo "$REPO" --body -
+printf '%s' "$GOOGLE_OAUTH_PLACEHOLDER" | gh secret set GOOGLE_CLIENT_ID --repo "$REPO"
 
 _info "Setting GOOGLE_CLIENT_SECRET (deferred placeholder — Google OAuth not yet wired in app)..."
-printf '%s' "$GOOGLE_OAUTH_PLACEHOLDER" | gh secret set GOOGLE_CLIENT_SECRET --repo "$REPO" --body -
+printf '%s' "$GOOGLE_OAUTH_PLACEHOLDER" | gh secret set GOOGLE_CLIENT_SECRET --repo "$REPO"
 
 # Clear from environment ASAP. Variable is still in script memory until exit.
 unset MONGO_CS
