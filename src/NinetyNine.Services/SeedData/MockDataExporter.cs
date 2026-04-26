@@ -63,6 +63,7 @@ public static class MockDataExporter
                     Slug: c.Slug,
                     Description: c.Description,
                     Visibility: "public",
+                    ParentCommunityName: c.ParentCommunityName,
                     MemberDisplayNames: c.MemberDisplayNames.ToArray()))
                 .ToArray());
 
@@ -244,7 +245,8 @@ internal sealed record MockCommunityTemplate(
     string Name,
     string Slug,
     string Description,
-    string[] MemberDisplayNames);
+    string[] MemberDisplayNames,
+    string? ParentCommunityName = "Global");
 
 internal sealed record MockMatchTemplate(
     string[] PlayerDisplayNames,

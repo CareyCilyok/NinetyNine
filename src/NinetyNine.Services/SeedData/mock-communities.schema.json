@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "mock-communities.schema.json",
   "title": "Mock Communities",
-  "description": "Themed mock communities tying the new player roster together. First entry in each memberDisplayNames list is the owner. All seeded communities are public.",
+  "description": "Themed mock communities tying the new player roster together. First entry in each memberDisplayNames list is the owner. All seeded communities are public. Communities are organized hierarchically — every community in this snapshot is a child of the canonical 'Global' root community (which is seeded separately by DataSeeder, not part of this snapshot). parentCommunityName references another community by name; null = root.",
   "type": "object",
   "required": ["communities"],
   "additionalProperties": false,
@@ -36,6 +36,10 @@
         "visibility": {
           "type": "string",
           "enum": ["public", "private"]
+        },
+        "parentCommunityName": {
+          "type": ["string", "null"],
+          "description": "Name of the parent community in the hierarchy. Resolved against other communities at seed time. The canonical root is 'Global' (seeded by DataSeeder, not in this snapshot). null = root community."
         },
         "memberDisplayNames": {
           "type": "array",

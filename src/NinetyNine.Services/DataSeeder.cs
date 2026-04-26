@@ -134,49 +134,99 @@ public sealed partial class DataSeeder(
         }
 
         // ── Development mode: full mock seed. ────────────────────────
-        // Reconcile passes (run every startup, before seed guard).
+        // Pre-creation reconciles (no dependency on canonical test players
+        // or the Global community — safe to run before either exists).
 
-        // 1. Player reconcile: converge every seeded test player to the
-        //    current template. SchemaVersion comparison for cheap change
-        //    detection. Subsumes the former HealExistingTestPlayersAsync
-        //    and HealProfileVisibilityAsync passes.
         var playersReconciled = await ReconcileSeededPlayersAsync(ct);
-
-        // 2. Venue reconcile (development: include the private home table)
         var addedVenues = await ReconcileSeededVenuesAsync(ct, includeDevOnly: true);
-
-        // 3. Friendship reconcile
-        var addedFriendships = await ReconcileSeededFriendshipsAsync(ct);
-
-        // 4. Community reconcile
-        var communityChange = await ReconcileSeededCommunityAsync(ct);
-
-        // 5. Mock roster reconcile (26 amateurs + 7 pros, see DataSeeder.MockRoster.cs).
-        //    Runs *after* the original test players + community so the
-        //    original seed flow is untouched on a fresh DB.
         var mockPlayersAdded = await ReconcileMockPlayerRosterAsync(ct);
-        var (mockCommunitiesCreated, mockCommunityMembersAdded) =
-            await ReconcileMockCommunitiesAsync(ct);
-
-        // 6. Mock game histories — see DataSeeder.MockHistory.cs.
-        //    Skips any mock player who already has games, so this only
-        //    fires for newly-added templates.
         var mockGamesAdded = await ReconcileMockGameHistoriesAsync(ct);
-
-        // 7. Mock match histories — see DataSeeder.MockMatches.cs.
-        //    Builds 2-/3-/4-player concurrent matches between similarly-
-        //    rated players. Idempotent — gated on whether any pro
-        //    already has a match record.
         var (mockMatchesAdded, mockMatchGamesAdded) = await ReconcileMockMatchesAsync(ct);
 
-        // 8. Expiration sweep
+        // ── Canonical 3 test players: create on first run only. ──────
+        var carey = await playerRepository.GetByDisplayNameAsync(
+            IDataSeeder.TestPlayerDisplayNames[0], ct);
+        bool firstRun = carey is null;
+
+        if (firstRun)
+        {
+            logger.LogInformation("Seeding test data (development mock mode)…");
+
+            // Two players on the original score cards share the first name
+            // "Carey" (the primary user and a second Carey). DisplayName must
+            // be unique so the second Carey is seeded as "carey_b". Fargo
+            // ratings are placeholder estimates — these are real people whose
+            // FargoRate numbers we don't actually have, so the values land in
+            // plausible league-amateur brackets.
+            carey = CreateTestPlayer("carey", "Carey", "Cilyok", fargoRating: 550);
+            var george = CreateTestPlayer("george", "George", null, fargoRating: 625);
+            var careyB = CreateTestPlayer("carey_b", "Carey", null, fargoRating: 480);
+
+            await playerRepository.CreateAsync(carey, ct);
+            await playerRepository.CreateAsync(george, ct);
+            await playerRepository.CreateAsync(careyB, ct);
+
+            // ── Hand-crafted demo games for the canonical 3. Each int[9] is
+            //    the frame score per frame (0–11). SplitFrameScore awards
+            //    break bonus when the frame score is ≥ 3.
+            var venuesByName = (await venueRepository.GetAllAsync(includePrivate: true, ct))
+                .ToDictionary(v => v.Name, StringComparer.OrdinalIgnoreCase);
+            var home = venuesByName["Carey's Home Table"];
+            var bumpers = venuesByName["Bumpers Billiards of Huntsville"];
+            var steves = venuesByName["Steve's Cue and Grill"];
+            var chips = venuesByName["Chips & Salsa Sports Bar & Grill"];
+
+            var completedGames = new (Player player, Venue venue, int[] scores, int daysAgo)[]
+            {
+                (carey,  bumpers, [6, 9, 4, 11, 7, 5, 8, 10, 6],  3),
+                (carey,  home,    [5, 7, 11, 3, 9, 6, 8, 4, 10],  7),
+                (george, steves,  [4, 8, 6, 7, 5, 9, 3, 11, 7],   3),
+                (george, chips,   [7, 5, 10, 4, 6, 8, 5, 7, 9],  12),
+                (careyB, bumpers, [3, 6, 8, 5, 7, 4, 9, 6, 5],    3),
+                (careyB, home,    [8, 10, 6, 9, 7, 5, 11, 8, 4], 18),
+            };
+            foreach (var (player, venue, scores, daysAgo) in completedGames)
+            {
+                var game = BuildCompletedGame(player, venue, scores, daysAgo);
+                await gameRepository.CreateAsync(game, ct);
+            }
+
+            // One in-progress game for Carey (frames 1–3 complete).
+            var inProgress = BuildInProgressGame(
+                carey, bumpers, completedScores: [7, 4, 9], hoursAgo: 1);
+            await gameRepository.CreateAsync(inProgress, ct);
+        }
+
+        // From here on, carey is guaranteed non-null. Run all reconciles
+        // that depend on either the canonical test players or Global.
+
+        var addedFriendships = await ReconcileSeededFriendshipsAsync(ct);
+
+        // Ensure the Global root community exists, owned by carey. All
+        // other seeded communities are reconciled under it.
+        var globalId = await EnsureGlobalCommunityAsync(carey!, ct);
+
+        var communityChange = await ReconcileSeededCommunityAsync(ct, globalId);
+        var (mockCommunitiesCreated, mockCommunityMembersAdded) =
+            await ReconcileMockCommunitiesAsync(ct, globalId);
+
+        // Backfill any orphan community whose ParentCommunityId is still
+        // null (legacy upgrade path: pre-v0.8.0 docs had no parent at all).
+        var reparented = await ReparentOrphansToGlobalAsync(globalId, ct);
+
         var expired = await SweepExpiredPendingAsync(ct);
 
-        // ── Seed guard: if players already exist, log reconcile
-        //    summary and return. ─────────────────────────────────────
-        var existing = await playerRepository.GetByDisplayNameAsync(
-            IDataSeeder.TestPlayerDisplayNames[0], ct);
-        if (existing is not null)
+        // ── Log summary ──────────────────────────────────────────────
+        if (firstRun)
+        {
+            logger.LogInformation(
+                "Seed complete: 3 test players, {VenueCount} venues, 6 demo games + 1 in-progress, " +
+                "Global root + {CommunityCount} mock communities + Pocket Sports, " +
+                "{MockPlayerCount} mock players, {MockGameCount} mock games, {MockMatchCount} mock matches.",
+                SeededVenueDefinitions.Length, mockCommunitiesCreated,
+                mockPlayersAdded, mockGamesAdded, mockMatchesAdded);
+        }
+        else
         {
             var parts = new List<string>();
             if (playersReconciled > 0) parts.Add($"reconciled {playersReconciled} player(s)");
@@ -190,6 +240,7 @@ public sealed partial class DataSeeder(
             if (mockCommunityMembersAdded > 0) parts.Add($"added {mockCommunityMembersAdded} mock-community member(s)");
             if (mockGamesAdded > 0) parts.Add($"seeded {mockGamesAdded} mock game(s)");
             if (mockMatchesAdded > 0) parts.Add($"seeded {mockMatchesAdded} mock match(es) ({mockMatchGamesAdded} match game(s))");
+            if (reparented > 0) parts.Add($"reparented {reparented} orphan community/ies under Global");
             var totalExpired = expired.FriendRequests + expired.Invitations + expired.JoinRequests + expired.Transfers;
             if (totalExpired > 0) parts.Add($"expired {totalExpired} stale pending item(s)");
             if (parts.Count > 0)
@@ -197,68 +248,7 @@ public sealed partial class DataSeeder(
                     string.Join(", ", parts));
             else
                 logger.LogInformation("Seed skipped — test players already exist.");
-            return;
         }
-
-        logger.LogInformation("Seeding test data (development mock mode)…");
-
-        // ── Players ──────────────────────────────────────────────────────────
-        // Two players on the original score cards share the first name "Carey"
-        // (the primary user and a second Carey). DisplayName must be unique so
-        // the second Carey is seeded as "carey_b". Fargo ratings are placeholder
-        // estimates — these are real people whose FargoRate numbers we don't
-        // actually have, so the values land in plausible league-amateur brackets.
-        var carey = CreateTestPlayer("carey", "Carey", "Cilyok", fargoRating: 550);
-        var george = CreateTestPlayer("george", "George", null, fargoRating: 625);
-        var careyB = CreateTestPlayer("carey_b", "Carey", null, fargoRating: 480);
-
-        await playerRepository.CreateAsync(carey, ct);
-        await playerRepository.CreateAsync(george, ct);
-        await playerRepository.CreateAsync(careyB, ct);
-
-        // ── Seed pre-befriended mutual friendships between the three
-        //    test players so /friends has real data on first run.
-        //    (The reconcile pass above ran before the players existed, so
-        //    it short-circuited; call it again now that the players exist.)
-        await ReconcileSeededFriendshipsAsync(ct);
-
-        // ── Load the venues we just reconciled so seeded games can
-        //    reference them by name. ─────────────────────────────────────
-        var venuesByName = (await venueRepository.GetAllAsync(includePrivate: true, ct))
-            .ToDictionary(v => v.Name, StringComparer.OrdinalIgnoreCase);
-        var home = venuesByName["Carey's Home Table"];
-        var bumpers = venuesByName["Bumpers Billiards of Huntsville"];
-        var steves = venuesByName["Steve's Cue and Grill"];
-        var chips = venuesByName["Chips & Salsa Sports Bar & Grill"];
-
-        // ── Completed games (realistic scatter across real venues) ─────
-        // Each int[9] is the frame score per frame (0–11). The seeder splits
-        // each into BreakBonus + BallCount by giving break bonus when the
-        // frame score is ≥ 3 (roughly matches the break-bonus awarded rate).
-        var completedGames = new (Player player, Venue venue, int[] scores, int daysAgo)[]
-        {
-            (carey,  bumpers, [6, 9, 4, 11, 7, 5, 8, 10, 6],  3),
-            (carey,  home,    [5, 7, 11, 3, 9, 6, 8, 4, 10],  7),
-            (george, steves,  [4, 8, 6, 7, 5, 9, 3, 11, 7],   3),
-            (george, chips,   [7, 5, 10, 4, 6, 8, 5, 7, 9],  12),
-            (careyB, bumpers, [3, 6, 8, 5, 7, 4, 9, 6, 5],    3),
-            (careyB, home,    [8, 10, 6, 9, 7, 5, 11, 8, 4], 18),
-        };
-
-        foreach (var (player, venue, scores, daysAgo) in completedGames)
-        {
-            var game = BuildCompletedGame(player, venue, scores, daysAgo);
-            await gameRepository.CreateAsync(game, ct);
-        }
-
-        // ── One in-progress game for Carey (frames 1-3 complete) ────────────
-        var inProgress = BuildInProgressGame(
-            carey, bumpers, completedScores: [7, 4, 9], hoursAgo: 1);
-        await gameRepository.CreateAsync(inProgress, ct);
-
-        logger.LogInformation(
-            "Seed complete: 3 players, {VenueCount} venues, 6 completed games, 1 in-progress game.",
-            SeededVenueDefinitions.Length);
     }
 
     /// <summary>
@@ -323,6 +313,84 @@ public sealed partial class DataSeeder(
     private const string SeededCommunitySlug = "pocket-sports";
 
     /// <summary>
+    /// Name of the canonical root community in the v0.8.x hierarchy.
+    /// Owned by the first canonical test player (carey). Every other
+    /// seeded community is reconciled under this one.
+    /// </summary>
+    public const string GlobalCommunityName = "Global";
+    private const string GlobalCommunitySlug = "global";
+
+    /// <summary>
+    /// Ensures the "Global" root community exists, owned by the given
+    /// player (typically carey). Returns the Global community's id.
+    /// Idempotent.
+    /// </summary>
+    private async Task<Guid> EnsureGlobalCommunityAsync(Player owner, CancellationToken ct)
+    {
+        var existing = await communityRepository.GetByNameAsync(GlobalCommunityName, ct);
+        if (existing is not null) return existing.CommunityId;
+
+        var community = new Community
+        {
+            Name = GlobalCommunityName,
+            Slug = GlobalCommunitySlug,
+            Description =
+                "The root of the community hierarchy. Every other community " +
+                "in NinetyNine is a descendant of Global. Membership is implicit — " +
+                "every player on the platform is part of the Global community by " +
+                "virtue of being on the platform.",
+            Visibility = CommunityVisibility.Public,
+            OwnerPlayerId = owner.PlayerId,
+            CreatedByPlayerId = owner.PlayerId,
+            ParentCommunityId = null,        // Global is the root
+            CreatedAt = DateTime.UtcNow,
+            SchemaVersion = 3,
+        };
+
+        try
+        {
+            await communityRepository.CreateAsync(community, ct);
+            logger.LogInformation(
+                "Seeded Global root community (owner {Owner})", owner.DisplayName);
+            return community.CommunityId;
+        }
+        catch (MongoDB.Driver.MongoWriteException ex)
+            when (ex.WriteError?.Category == MongoDB.Driver.ServerErrorCategory.DuplicateKey)
+        {
+            // Raced another reconcile run; refetch.
+            var raced = await communityRepository.GetByNameAsync(GlobalCommunityName, ct);
+            if (raced is null) throw;
+            return raced.CommunityId;
+        }
+    }
+
+    /// <summary>
+    /// Backfills <see cref="Community.ParentCommunityId"/> on any community
+    /// that still has a null parent (legacy pre-v0.8.0 docs) and is not
+    /// itself Global. After this pass, the only community with a null
+    /// parent is Global itself. Idempotent — no writes once everything
+    /// is parented.
+    /// </summary>
+    private async Task<int> ReparentOrphansToGlobalAsync(
+        Guid globalId, CancellationToken ct)
+    {
+        var all = await communityRepository.ListAllAsync(ct);
+        int reparented = 0;
+        foreach (var c in all)
+        {
+            if (c.CommunityId == globalId) continue;
+            if (c.ParentCommunityId is not null) continue;
+
+            c.ParentCommunityId = globalId;
+            await communityRepository.UpdateAsync(c, ct);
+            reparented++;
+            logger.LogInformation(
+                "Reparented orphan community '{Name}' under Global", c.Name);
+        }
+        return reparented;
+    }
+
+    /// <summary>
     /// Tracks which reconcile actions ran, for the "Seed skipped" log line.
     /// </summary>
     private record struct CommunityReconcileChange(
@@ -337,7 +405,8 @@ public sealed partial class DataSeeder(
     /// Idempotent via the unique name index on communities + the
     /// (player, community) unique index on memberships.
     /// </summary>
-    private async Task<CommunityReconcileChange> ReconcileSeededCommunityAsync(CancellationToken ct)
+    private async Task<CommunityReconcileChange> ReconcileSeededCommunityAsync(
+        CancellationToken ct, Guid? parentCommunityId = null)
     {
         // Need all seeded test players to exist first — on a fresh DB
         // this pass runs before player creation, so short-circuit until
@@ -364,8 +433,9 @@ public sealed partial class DataSeeder(
                 Visibility = CommunityVisibility.Public,
                 OwnerPlayerId = ownerPlayer.PlayerId,
                 CreatedByPlayerId = ownerPlayer.PlayerId,
+                ParentCommunityId = parentCommunityId,
                 CreatedAt = DateTime.UtcNow,
-                SchemaVersion = 2,
+                SchemaVersion = 3,
             };
             try
             {

@@ -873,4 +873,91 @@ public sealed class CommunityService(
 
     private static bool IsDuplicateKey(MongoDB.Driver.MongoWriteException ex)
         => ex.WriteError?.Category == MongoDB.Driver.ServerErrorCategory.DuplicateKey;
+
+    // ── Hierarchy (v0.8.0) ──────────────────────────────────────────────
+
+    public async Task<IReadOnlyList<CommunityNode>> GetTreeAsync(CancellationToken ct = default)
+    {
+        // Single round-trip: load every community, then build the tree
+        // in-memory. The seed ships with O(10) communities; even at 10x
+        // that scale this is cheaper than recursive walks.
+        var all = await communities.ListAllAsync(ct);
+        var publicOnly = all
+            .Where(c => c.Visibility == CommunityVisibility.Public)
+            .ToList();
+
+        var byParent = publicOnly.ToLookup(c => c.ParentCommunityId);
+        var publicIds = publicOnly.Select(c => c.CommunityId).ToHashSet();
+
+        IReadOnlyList<CommunityNode> Build(Guid? parentId) =>
+            byParent[parentId]
+                .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(c => new CommunityNode(c, Build(c.CommunityId)))
+                .ToList();
+
+        // Roots: parent is null OR parent is non-public (so the child
+        // re-roots into the visible forest). Private parents never
+        // shadow visibility of their public descendants.
+        var roots = publicOnly
+            .Where(c => c.ParentCommunityId is null
+                     || !publicIds.Contains(c.ParentCommunityId.Value))
+            .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(c => new CommunityNode(c, Build(c.CommunityId)))
+            .ToList();
+
+        return roots;
+    }
+
+    public async Task<ServiceResult<Community>> SetParentAsync(
+        Guid communityId,
+        Guid? parentCommunityId,
+        Guid byPlayerId,
+        CancellationToken ct = default)
+    {
+        var community = await communities.GetByIdAsync(communityId, ct);
+        if (community is null)
+            return ServiceResult<Community>.Fail("CommunityNotFound", "Community not found.");
+
+        // Authorization: owner or admin only.
+        if (!await IsOwnerOrAdminAsync(community, byPlayerId, ct))
+            return ServiceResult<Community>.Fail(
+                "NotAuthorized",
+                "Only the community owner or an admin can change its parent.");
+
+        if (parentCommunityId is Guid newParentId)
+        {
+            if (newParentId == communityId)
+                return ServiceResult<Community>.Fail(
+                    "SelfParent", "A community cannot be its own parent.");
+
+            var newParent = await communities.GetByIdAsync(newParentId, ct);
+            if (newParent is null)
+                return ServiceResult<Community>.Fail(
+                    "ParentNotFound", "The proposed parent community does not exist.");
+
+            // Cycle check: walk up the new parent's ancestor chain. If we
+            // ever reach this community, the move would create a cycle.
+            var seen = new HashSet<Guid> { communityId };
+            var cursor = newParent;
+            while (cursor is not null)
+            {
+                if (!seen.Add(cursor.CommunityId))
+                    return ServiceResult<Community>.Fail(
+                        "CycleDetected",
+                        "The proposed parent would place this community in its own ancestor chain.");
+
+                if (cursor.ParentCommunityId is null) break;
+                cursor = await communities.GetByIdAsync(cursor.ParentCommunityId.Value, ct);
+            }
+        }
+
+        community.ParentCommunityId = parentCommunityId;
+        await communities.UpdateAsync(community, ct);
+
+        logger.LogInformation(
+            "Community {CommunityId} '{Name}' reparented to {ParentId} by {ByPlayer}",
+            community.CommunityId, community.Name, parentCommunityId, byPlayerId);
+
+        return ServiceResult<Community>.Ok(community);
+    }
 }

@@ -32,6 +32,22 @@ public interface ICommunityRepository
         int limit = 20,
         CancellationToken ct = default);
 
+    /// <summary>
+    /// Lists every community whose <see cref="Community.ParentCommunityId"/>
+    /// equals <paramref name="parentCommunityId"/>. When the parameter
+    /// is <c>null</c>, returns root communities (typically just "Global"
+    /// in the v0.8.x seed). Sorted by name.
+    /// </summary>
+    Task<IReadOnlyList<Community>> ListChildrenAsync(
+        Guid? parentCommunityId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Lists every community in the database, regardless of visibility
+    /// or parent. Used by the hierarchy view and by the cycle-detection
+    /// pass in <c>ICommunityService.SetParentAsync</c>. Sorted by name.
+    /// </summary>
+    Task<IReadOnlyList<Community>> ListAllAsync(CancellationToken ct = default);
+
     Task CreateAsync(Community community, CancellationToken ct = default);
     Task UpdateAsync(Community community, CancellationToken ct = default);
     Task DeleteAsync(Guid communityId, CancellationToken ct = default);

@@ -71,6 +71,27 @@ public sealed class CommunityRepository(
         return results.AsReadOnly();
     }
 
+    public async Task<IReadOnlyList<Community>> ListChildrenAsync(
+        Guid? parentCommunityId, CancellationToken ct = default)
+    {
+        var filter = parentCommunityId is Guid pid
+            ? Builders<Community>.Filter.Eq(c => c.ParentCommunityId, pid)
+            : Builders<Community>.Filter.Eq(c => c.ParentCommunityId, (Guid?)null);
+
+        var results = await _collection.Find(filter)
+            .SortBy(c => c.Name)
+            .ToListAsync(ct);
+        return results.AsReadOnly();
+    }
+
+    public async Task<IReadOnlyList<Community>> ListAllAsync(CancellationToken ct = default)
+    {
+        var results = await _collection.Find(FilterDefinition<Community>.Empty)
+            .SortBy(c => c.Name)
+            .ToListAsync(ct);
+        return results.AsReadOnly();
+    }
+
     public async Task CreateAsync(Community community, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(community);

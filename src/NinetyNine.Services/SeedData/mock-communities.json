@@ -5,6 +5,7 @@
       "slug": "rocket-city-pool",
       "description": "Huntsville-area APA + open league players — B/B+/C amateurs sharing the Bumpers and Steve's tables.",
       "visibility": "public",
+      "parentCommunityName": "Global",
       "memberDisplayNames": [
         "b_chris",
         "b_kaitlyn",
@@ -22,6 +23,7 @@
       "slug": "north-al-aces",
       "description": "Strong-side amateurs from Athens, Decatur, and Florence. Mostly B+ and A- players who travel for tournaments.",
       "visibility": "public",
+      "parentCommunityName": "Global",
       "memberDisplayNames": [
         "a_mike",
         "a_sarah",
@@ -38,6 +40,7 @@
       "slug": "filipino-cue-heritage",
       "description": "Honoring Efren Reyes and the Filipino school of cue artistry. Open to anyone who wants to study The Magician's game.",
       "visibility": "public",
+      "parentCommunityName": "Global",
       "memberDisplayNames": [
         "pro_efren",
         "b_priya",
@@ -51,6 +54,7 @@
       "slug": "mosconi-watch",
       "description": "Pool fans following the Mosconi Cup and the pro tour. Several pros drop in here too.",
       "visibility": "public",
+      "parentCommunityName": "Global",
       "memberDisplayNames": [
         "a_quentin",
         "ap_riley",
@@ -67,6 +71,7 @@
       "slug": "99-ball-devotees",
       "description": "Players who specifically love the P&B 9-frame Ninety-Nine format. Discussion of break strategies, Efren-mode runouts, and scoresheet trivia.",
       "visibility": "public",
+      "parentCommunityName": "Global",
       "memberDisplayNames": [
         "b_doug",
         "b_marco",

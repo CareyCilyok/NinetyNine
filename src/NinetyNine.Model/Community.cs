@@ -54,12 +54,35 @@ public class Community
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
+    /// Optional parent community. <c>null</c> means this community is a
+    /// root in the hierarchy. The seeded "Global" community is the
+    /// canonical root; every other community in the seed dataset (and
+    /// every community surfaced from <c>/communities/new</c> by default)
+    /// is a child of Global.
+    /// <para>
+    /// Cycles are forbidden — <c>ICommunityService.SetParentAsync</c>
+    /// validates that setting a new parent does not place the community
+    /// in its own ancestor chain. The repository never enforces this on
+    /// writes (callers must go through the service).
+    /// </para>
+    /// <para>
+    /// Pre-v3 documents have no <c>parentCommunityId</c> field at all;
+    /// they deserialize as null (= root) which is the correct
+    /// pre-hierarchy reading. The v0.8.0 dev seeder reconciles legacy
+    /// seeded communities (Pocket Sports + the 5 themed mock
+    /// communities) under Global on first startup after the upgrade.
+    /// </para>
+    /// </summary>
+    public Guid? ParentCommunityId { get; set; }
+
+    /// <summary>
     /// Schema evolution marker. 1 = initial Sprint 0 shape (with the
     /// `OwnerType` discriminator and `OwnerVenueId`); 2 = Sprint 3
-    /// principle update that removed both. The Sprint 3 BSON class map
-    /// ignores extra elements, so legacy docs still deserialize cleanly.
+    /// principle update that removed both; 3 = v0.8.0 hierarchy
+    /// (added <see cref="ParentCommunityId"/>). The class map ignores
+    /// extra elements, so legacy docs still deserialize cleanly.
     /// </summary>
-    public int SchemaVersion { get; set; } = 2;
+    public int SchemaVersion { get; set; } = 3;
 }
 
 /// <summary>

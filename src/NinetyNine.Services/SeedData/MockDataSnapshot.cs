@@ -68,6 +68,13 @@ public sealed record MockCommunityRecord(
     string Slug,
     string Description,
     string Visibility,
+    /// <summary>
+    /// Name of the parent community. Resolved at seed time against
+    /// other communities in the database. The canonical root is
+    /// "Global" (seeded by <c>DataSeeder.EnsureGlobalCommunityAsync</c>
+    /// — not part of this snapshot). <c>null</c> = root community.
+    /// </summary>
+    string? ParentCommunityName,
     /// <summary>First entry is the owner.</summary>
     IReadOnlyList<string> MemberDisplayNames);
 

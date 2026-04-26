@@ -237,7 +237,47 @@ public interface ICommunityService
         Guid communityId,
         Guid playerId,
         CancellationToken ct = default);
+
+    // ── Hierarchy (v0.8.0) ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the full community hierarchy as a forest of trees rooted
+    /// at every community whose <see cref="Community.ParentCommunityId"/>
+    /// is null. In the v0.8.x seed there is exactly one root: "Global".
+    /// Public-only filter applies — private communities are pruned from
+    /// the returned tree (their children re-root if otherwise visible).
+    /// </summary>
+    Task<IReadOnlyList<CommunityNode>> GetTreeAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Sets a community's parent. Validates that:
+    /// <list type="bullet">
+    ///   <item>The community exists.</item>
+    ///   <item>If <paramref name="parentCommunityId"/> is non-null, it
+    ///     points to an existing community.</item>
+    ///   <item>The new parent does not equal the community itself.</item>
+    ///   <item>Setting the parent does not introduce a cycle (the
+    ///     proposed parent's ancestor chain must not contain the
+    ///     community being parented).</item>
+    /// </list>
+    /// Pass <c>null</c> for <paramref name="parentCommunityId"/> to make
+    /// the community a root.
+    /// </summary>
+    Task<ServiceResult<Community>> SetParentAsync(
+        Guid communityId,
+        Guid? parentCommunityId,
+        Guid byPlayerId,
+        CancellationToken ct = default);
 }
+
+/// <summary>
+/// One node in the community hierarchy tree returned by
+/// <see cref="ICommunityService.GetTreeAsync"/>. <see cref="Children"/>
+/// is sorted by community name.
+/// </summary>
+public sealed record CommunityNode(
+    Community Community,
+    IReadOnlyList<CommunityNode> Children);
 
 /// <summary>
 /// Mutable-field changes passed to <see cref="ICommunityService.UpdateAsync"/>.

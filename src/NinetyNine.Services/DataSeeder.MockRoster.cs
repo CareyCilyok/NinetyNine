@@ -250,7 +250,7 @@ public sealed partial class DataSeeder
     /// created plus the number of memberships added.
     /// </summary>
     private async Task<(int CommunitiesCreated, int MembersAdded)> ReconcileMockCommunitiesAsync(
-        CancellationToken ct)
+        CancellationToken ct, Guid? parentCommunityId = null)
     {
         int created = 0;
         int membersAdded = 0;
@@ -286,8 +286,9 @@ public sealed partial class DataSeeder
                     Visibility = template.Visibility,
                     OwnerPlayerId = owner.PlayerId,
                     CreatedByPlayerId = owner.PlayerId,
+                    ParentCommunityId = parentCommunityId,
                     CreatedAt = DateTime.UtcNow,
-                    SchemaVersion = 2,
+                    SchemaVersion = 3,
                 };
                 try
                 {

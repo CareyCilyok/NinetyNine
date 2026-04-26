@@ -237,6 +237,12 @@ public static class BsonConfiguration
             cm.GetMemberMap(c => c.CreatedByPlayerId)
               .SetSerializer(new GuidSerializer(BsonType.String));
 
+            // ParentCommunityId is nullable (root communities have null).
+            // String-format serializer keeps tooling-readable ids.
+            cm.GetMemberMap(c => c.ParentCommunityId)
+              .SetSerializer(new NullableSerializer<Guid>(
+                  new GuidSerializer(BsonType.String)));
+
             // Legacy schema-v1 docs still have `ownerType: "Player"` and
             // possibly `ownerVenueId: null` — properties the C# class
             // no longer exposes. Tell the class map to ignore them so
