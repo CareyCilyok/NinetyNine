@@ -144,6 +144,11 @@ jobs:
       # by the runner user, and we never echo the contents.
       - name: Render .env file
         env:
+          # Lowercase via GHA expression — Docker daemon rejects mixed-case
+          # image references (invalid reference format), but github.repository
+          # preserves the original casing. The build-push step uses
+          # docker/metadata-action which auto-lowercases, so the actual GHCR
+          # image lives at ghcr.io/<lower-owner>/<lower-repo>; this matches.
           GHCR_REPO: ${{ github.repository }}
           IMAGE_TAG: ${{ github.sha }}
           MONGO_CONNECTION_STRING: ${{ secrets.MONGO_CONNECTION_STRING }}
@@ -151,8 +156,9 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
           umask 077
+          GHCR_REPO_LOWER="$(printf '%s' "$GHCR_REPO" | tr '[:upper:]' '[:lower:]')"
           {
-            printf 'GHCR_REPO=%s\n'               "$GHCR_REPO"
+            printf 'GHCR_REPO=%s\n'               "$GHCR_REPO_LOWER"
             printf 'IMAGE_TAG=%s\n'               "$IMAGE_TAG"
             printf 'MONGO_CONNECTION_STRING=%s\n' "$MONGO_CONNECTION_STRING"
             printf 'MONGO_DATABASE_NAME=%s\n'     'NinetyNine'
