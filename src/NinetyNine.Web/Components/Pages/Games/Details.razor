@@ -171,16 +171,21 @@
 
         var game = await GameService.GetGameAsync(GameId);
 
-        // Ownership guard: don't reveal existence via 403 text
-        if (game is null || game.PlayerId != _playerId)
+        // Game histories are competition data — visible to any
+        // authenticated viewer, not just the game's owner. The Play
+        // page (/games/{id}/play) keeps its owner-only gate because
+        // that's the scoring/editing surface; this page is read-only.
+        if (game is null)
         {
             _game = null;
             _loading = false;
             return;
         }
 
-        // In-progress games belong on the play page
-        if (game.IsInProgress)
+        // In-progress games belong on the play page — but only for the
+        // game's owner. A non-owner viewing an in-progress game stays on
+        // this details page and sees the partial scorecard read-only.
+        if (game.IsInProgress && game.PlayerId == _playerId)
         {
             Navigation.NavigateTo($"/games/{GameId}/play", forceLoad: false);
             return;
