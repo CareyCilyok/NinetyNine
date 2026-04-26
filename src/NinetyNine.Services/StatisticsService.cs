@@ -177,4 +177,104 @@ public sealed class StatisticsService(
     /// </summary>
     private static IEnumerable<Game> ApplyVariantFilter(IEnumerable<Game> games, bool efrenOnly) =>
         efrenOnly ? games.Where(g => g.IsEfrenVariant) : games;
+
+    // ── Per-discipline rating (v0.9.0) ──────────────────────────────────
+
+    /// <summary>
+    /// Maps a <see cref="Game"/> to its <see cref="GameDiscipline"/>.
+    /// v0.9.0 derives this from the legacy <see cref="Game.IsEfrenVariant"/>
+    /// boolean. When the third discipline lands, this becomes
+    /// <c>game.Discipline</c> (a real field on Game) and this helper
+    /// goes away.
+    /// </summary>
+    internal static GameDiscipline DisciplineOf(Game game) =>
+        game.IsEfrenVariant ? GameDiscipline.Efren99 : GameDiscipline.Standard99;
+
+    public async Task<NinetyNineRating> CalculateRatingAsync(
+        Guid playerId, GameDiscipline discipline, CancellationToken ct = default)
+    {
+        var allCompleted = await gameRepository.GetCompletedByPlayerAsync(playerId, ct);
+        var disciplineGames = allCompleted
+            .Where(g => DisciplineOf(g) == discipline)
+            .ToList();
+        return ComputeRating(discipline, disciplineGames);
+    }
+
+    public async Task<IReadOnlyDictionary<GameDiscipline, NinetyNineRating>>
+        GetAllRatingsAsync(Guid playerId, CancellationToken ct = default)
+    {
+        var allCompleted = await gameRepository.GetCompletedByPlayerAsync(playerId, ct);
+        var byDiscipline = allCompleted
+            .GroupBy(DisciplineOf)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<Game>)g.ToList());
+
+        var result = new Dictionary<GameDiscipline, NinetyNineRating>();
+        foreach (GameDiscipline d in Enum.GetValues<GameDiscipline>())
+        {
+            var games = byDiscipline.TryGetValue(d, out var list)
+                ? list
+                : Array.Empty<Game>();
+            result[d] = ComputeRating(d, games);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Pure computation: given the player's completed games of one
+    /// discipline, produces the rating record. Internally orders by
+    /// <c>WhenPlayed</c> descending — callers don't need to pre-sort.
+    /// Exposed <c>internal</c> so the unit tests can verify the formula
+    /// without spinning up a Mongo container.
+    /// </summary>
+    internal static NinetyNineRating ComputeRating(
+        GameDiscipline discipline, IReadOnlyList<Game> completedDisciplineGames)
+    {
+        int gameCount = completedDisciplineGames.Count;
+        int confidence = Math.Min(gameCount, 20) * 5;
+        bool certified = gameCount >= 20;
+
+        if (gameCount == 0)
+        {
+            return new NinetyNineRating(
+                Discipline: discipline,
+                Rating: 0,
+                GameCount: 0,
+                ConfidencePercent: 0,
+                IsCertified: false,
+                UsedHandicapFormula: false);
+        }
+
+        if (gameCount < 5)
+        {
+            // < 5 games: simple average across all games. The "best 5
+            // of last 20" formula is undefined when N < 5.
+            var simpleAvg = completedDisciplineGames.Average(g => g.TotalScore);
+            return new NinetyNineRating(
+                Discipline: discipline,
+                Rating: simpleAvg,
+                GameCount: gameCount,
+                ConfidencePercent: confidence,
+                IsCertified: false,
+                UsedHandicapFormula: false);
+        }
+
+        // ≥ 5 games: golf-handicap style. Take the most recent 20 games,
+        // then within those the 5 highest scores. Average those 5.
+        var lastTwenty = completedDisciplineGames
+            .OrderByDescending(g => g.WhenPlayed)
+            .Take(20)
+            .ToList();
+        var bestFiveAvg = lastTwenty
+            .OrderByDescending(g => g.TotalScore)
+            .Take(5)
+            .Average(g => g.TotalScore);
+
+        return new NinetyNineRating(
+            Discipline: discipline,
+            Rating: bestFiveAvg,
+            GameCount: gameCount,
+            ConfidencePercent: confidence,
+            IsCertified: certified,
+            UsedHandicapFormula: true);
+    }
 }
