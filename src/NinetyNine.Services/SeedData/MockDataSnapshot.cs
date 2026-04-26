@@ -42,10 +42,12 @@ public static class MockDataSnapshot
     };
 }
 
-/// <summary>Top-level shape of <c>mock-players.json</c>.</summary>
+/// <summary>
+/// Top-level shape of <c>mock-players.json</c>. Schema/description live
+/// in the sibling <c>mock-players.schema.json</c> file (JSON Schema
+/// draft 2020-12) — the data file carries data only.
+/// </summary>
 public sealed record MockPlayersFile(
-    int SchemaVersion,
-    string Description,
     IReadOnlyList<MockPlayerRecord> Amateurs,
     IReadOnlyList<MockPlayerRecord> Pros);
 
@@ -59,8 +61,6 @@ public sealed record MockPlayerRecord(
 
 /// <summary>Top-level shape of <c>mock-communities.json</c>.</summary>
 public sealed record MockCommunitiesFile(
-    int SchemaVersion,
-    string Description,
     IReadOnlyList<MockCommunityRecord> Communities);
 
 public sealed record MockCommunityRecord(
@@ -73,8 +73,6 @@ public sealed record MockCommunityRecord(
 
 /// <summary>Top-level shape of <c>mock-games.json</c>.</summary>
 public sealed record MockGamesFile(
-    int SchemaVersion,
-    string Description,
     IReadOnlyList<MockGameRecord> Games);
 
 public sealed record MockGameRecord(
@@ -91,8 +89,6 @@ public sealed record MockGameRecord(
 
 /// <summary>Top-level shape of <c>mock-matches.json</c>.</summary>
 public sealed record MockMatchesFile(
-    int SchemaVersion,
-    string Description,
     IReadOnlyList<MockMatchRecord> Matches);
 
 public sealed record MockMatchRecord(

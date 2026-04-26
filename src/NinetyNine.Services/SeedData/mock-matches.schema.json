@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mock-matches.schema.json",
+  "title": "Mock Match Histories",
+  "description": "Hand-picked concurrent (alternating-innings) matches between similarly-rated players. Each row in playerFrameScores is one seat in playerDisplayNames order. winnerDisplayName is computed via the same arbiter MatchService.SelectConcurrentWinner uses (highest TotalScore → most PerfectFrames → earliest CompletedAt).",
+  "type": "object",
+  "required": ["matches"],
+  "additionalProperties": false,
+  "properties": {
+    "matches": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/matchRecord" }
+    }
+  },
+  "$defs": {
+    "matchRecord": {
+      "type": "object",
+      "required": [
+        "rotation", "venueName", "daysAgo", "isEfrenVariant",
+        "playerDisplayNames", "playerFrameScores", "winnerDisplayName"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rotation": {
+          "type": "string",
+          "description": "Currently always 'concurrent' (alternating innings; v0.5.5 unified the workflow).",
+          "enum": ["concurrent", "sequential"]
+        },
+        "venueName": {
+          "type": "string"
+        },
+        "daysAgo": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 365
+        },
+        "isEfrenVariant": {
+          "type": "boolean",
+          "description": "When true, every seat in the match plays the Efren variant. Always true for all-pro matches."
+        },
+        "playerDisplayNames": {
+          "type": "array",
+          "description": "Players in seating order (seat 0 breaks first). Each name resolves to a player in mock-players.json.",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "minItems": 2,
+          "maxItems": 4,
+          "uniqueItems": true
+        },
+        "playerFrameScores": {
+          "type": "array",
+          "description": "One int[9] per seat, aligned with playerDisplayNames. Each row's sum is the seat's TotalScore. Highest sum wins (ties → most perfect frames → earliest completion).",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
+            },
+            "minItems": 9,
+            "maxItems": 9
+          },
+          "minItems": 2,
+          "maxItems": 4
+        },
+        "winnerDisplayName": {
+          "type": "string",
+          "description": "Must equal one of the entries in playerDisplayNames.",
+          "pattern": "^[a-z0-9_]+$"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mock-communities.schema.json",
+  "title": "Mock Communities",
+  "description": "Themed mock communities tying the new player roster together. First entry in each memberDisplayNames list is the owner. All seeded communities are public.",
+  "type": "object",
+  "required": ["communities"],
+  "additionalProperties": false,
+  "properties": {
+    "communities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/communityRecord" }
+    }
+  },
+  "$defs": {
+    "communityRecord": {
+      "type": "object",
+      "required": ["name", "slug", "description", "visibility", "memberDisplayNames"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "slug": {
+          "type": "string",
+          "description": "URL-safe identifier (lowercase, kebab-case).",
+          "pattern": "^[a-z0-9-]+$",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "private"]
+        },
+        "memberDisplayNames": {
+          "type": "array",
+          "description": "Display names of members. Index 0 is the owner; remaining entries are regular members. Each name must resolve to a player in mock-players.json.",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

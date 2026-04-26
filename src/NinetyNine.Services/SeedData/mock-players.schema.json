@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mock-players.schema.json",
+  "title": "Mock Player Roster",
+  "description": "Mock player roster for NinetyNine dev/integration testing. Amateurs span the Fargo skill spectrum (270–799); pros are the current top of the world (FargoRate ~810–842) and Efren Reyes. All pros carry efrenOnly=true so every seeded game for them is the Efren variant (no ball-in-hand after break). Score modeling vetted by the project's pool SME.",
+  "type": "object",
+  "required": ["amateurs", "pros"],
+  "additionalProperties": false,
+  "properties": {
+    "amateurs": {
+      "type": "array",
+      "description": "Recreational through elite-amateur players (Fargo 270–799).",
+      "items": { "$ref": "#/$defs/playerRecord" }
+    },
+    "pros": {
+      "type": "array",
+      "description": "Touring pros (Fargo ~810–842) plus Efren Reyes. Always efrenOnly.",
+      "items": { "$ref": "#/$defs/playerRecord" }
+    }
+  },
+  "$defs": {
+    "playerRecord": {
+      "type": "object",
+      "required": ["displayName", "firstName", "fargoRating", "efrenOnly", "bracket"],
+      "additionalProperties": false,
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "Unique URL-safe handle, lowercased. Mock-player handles use prefixes like rookie_/c_/b_/bp_/a_/ap_/elite_/pro_ to encode the bracket.",
+          "pattern": "^[a-z0-9_]+$",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "firstName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lastName": {
+          "type": ["string", "null"]
+        },
+        "fargoRating": {
+          "type": "integer",
+          "description": "FargoRate skill rating. Mock data spans 270–842.",
+          "minimum": 200,
+          "maximum": 850
+        },
+        "efrenOnly": {
+          "type": "boolean",
+          "description": "When true, every seeded game for this player is the Efren variant (no ball-in-hand after break). Always true for pros."
+        },
+        "bracket": {
+          "type": "string",
+          "description": "Human-readable Fargo bracket label.",
+          "enum": [
+            "RecBeginner (270–349)",
+            "DevelopingC (350–449)",
+            "MidAmateurB (450–549)",
+            "StrongAmateurB+ (550–619)",
+            "AdvancedA- (620–699)",
+            "StrongA+ (700–749)",
+            "EliteAmateur (750–799)",
+            "TouringPro (800–850)"
+          ]
+        }
+      }
+    }
+  }
+}

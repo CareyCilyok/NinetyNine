@@ -1,6 +1,4 @@
 {
-  "schemaVersion": 1,
-  "description": "Generated game histories per mock player. Each game's nine FrameScores were drawn from a per-Fargo-bracket distribution tuned so the natural sum-of-9 lands within ±2 of the bracket mean (per George's modeling). For Efren-variant games, each drawn score is multiplied by (1 - bracket_penalty) and rounded stochastically — preserves expected value, knocks ~5% off C-tier totals up to ~13% off pro-tier totals. Per-player RNG is a stable FNV-1a hash of DisplayName, so re-running the exporter produces byte-identical output.",
   "games": [
     {
       "playerDisplayName": "rookie_brad",

@@ -46,15 +46,8 @@ public static class MockDataExporter
         var playersByName = allPlayers.ToDictionary(p => p.DisplayName);
 
         // ── Players ────────────────────────────────────────────────────
+        // Schema + description live in the sibling .schema.json file.
         var playersFile = new MockPlayersFile(
-            SchemaVersion: MockDataSnapshot.SchemaVersion,
-            Description:
-                "Mock player roster for NinetyNine dev/integration testing. " +
-                "Amateurs span the Fargo skill spectrum (270–799); pros are the " +
-                "current top of the world (FargoRate ~810–842) and Efren Reyes. " +
-                "All pros carry EfrenOnly = true so every seeded game for them is " +
-                "the Efren variant (no ball-in-hand after break). " +
-                "Score modeling vetted by the project's pool SME.",
             Amateurs: amateurs.Select(ToPlayerRecord).ToArray(),
             Pros:     pros.Select(ToPlayerRecord).ToArray());
 
@@ -64,11 +57,6 @@ public static class MockDataExporter
 
         // ── Communities ────────────────────────────────────────────────
         var communitiesFile = new MockCommunitiesFile(
-            SchemaVersion: MockDataSnapshot.SchemaVersion,
-            Description:
-                "Themed mock communities tying the new player roster together. " +
-                "First entry in each MemberDisplayNames list is the owner. " +
-                "Visibility is always 'public' for these seed communities.",
             Communities: MockDataTemplates.Communities
                 .Select(c => new MockCommunityRecord(
                     Name: c.Name,
@@ -122,19 +110,7 @@ public static class MockDataExporter
             }
         }
 
-        var gamesFile = new MockGamesFile(
-            SchemaVersion: MockDataSnapshot.SchemaVersion,
-            Description:
-                "Generated game histories per mock player. " +
-                "Each game's nine FrameScores were drawn from a per-Fargo-bracket " +
-                "distribution tuned so the natural sum-of-9 lands within ±2 of the " +
-                "bracket mean (per George's modeling). For Efren-variant games, each " +
-                "drawn score is multiplied by (1 - bracket_penalty) and rounded " +
-                "stochastically — preserves expected value, knocks ~5% off C-tier " +
-                "totals up to ~13% off pro-tier totals. " +
-                "Per-player RNG is a stable FNV-1a hash of DisplayName, so re-running " +
-                "the exporter produces byte-identical output.",
-            Games: gameRecords);
+        var gamesFile = new MockGamesFile(Games: gameRecords);
 
         var gamesPath = Path.Combine(outputDir, GamesFileName);
         File.WriteAllText(gamesPath,
@@ -188,15 +164,7 @@ public static class MockDataExporter
                 WinnerDisplayName: winnerName));
         }
 
-        var matchesFile = new MockMatchesFile(
-            SchemaVersion: MockDataSnapshot.SchemaVersion,
-            Description:
-                "Hand-picked concurrent (alternating-innings) matches between " +
-                "similarly-rated players. Each row in PlayerFrameScores is one seat " +
-                "in PlayerDisplayNames order. The winner is the seat with the " +
-                "highest TotalScore (ties broken by perfect frames, then earliest " +
-                "completion — same arbiter MatchService.SelectConcurrentWinner uses).",
-            Matches: matchRecords);
+        var matchesFile = new MockMatchesFile(Matches: matchRecords);
 
         var matchesPath = Path.Combine(outputDir, MatchesFileName);
         File.WriteAllText(matchesPath,

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mock-games.schema.json",
+  "title": "Mock Game Histories",
+  "description": "Generated game histories per mock player. Each game's nine frameScores were drawn from a per-Fargo-bracket distribution tuned so the natural sum-of-9 lands within ±2 of the bracket mean. For Efren-variant games, each drawn score is multiplied by (1 - bracket_penalty) and rounded stochastically — preserves expected value, knocks ~5% off C-tier totals up to ~13% off pro-tier totals. Per-player RNG is a stable FNV-1a hash of displayName, so re-running the exporter produces byte-identical output.",
+  "type": "object",
+  "required": ["games"],
+  "additionalProperties": false,
+  "properties": {
+    "games": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/gameRecord" }
+    }
+  },
+  "$defs": {
+    "gameRecord": {
+      "type": "object",
+      "required": [
+        "playerDisplayName", "playerFargoRating", "venueName",
+        "tableSize", "isEfrenVariant", "daysAgo", "minutesOffset",
+        "frameScores", "totalScore"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "playerDisplayName": {
+          "type": "string",
+          "description": "Resolves to a player in mock-players.json.",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "playerFargoRating": {
+          "type": "integer",
+          "description": "Denormalized for convenience; matches mock-players.json fargoRating for the same displayName.",
+          "minimum": 200,
+          "maximum": 850
+        },
+        "venueName": {
+          "type": "string",
+          "description": "Real-world venue name. 'Carey's Home Table' is dev-only."
+        },
+        "tableSize": {
+          "type": "string",
+          "enum": ["sixFoot", "sevenFoot", "nineFoot", "tenFoot"]
+        },
+        "isEfrenVariant": {
+          "type": "boolean"
+        },
+        "daysAgo": {
+          "type": "integer",
+          "description": "Days before the seed-time 'now' that the game was played. Window 0–90 days.",
+          "minimum": 0,
+          "maximum": 365
+        },
+        "minutesOffset": {
+          "type": "integer",
+          "description": "Additional minutes subtracted from now after the days offset, so games scatter throughout the day.",
+          "minimum": 0,
+          "maximum": 1440
+        },
+        "frameScores": {
+          "type": "array",
+          "description": "Per-frame scores. Exactly 9 values, each in [0, 11]. Sum equals totalScore.",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 11
+          },
+          "minItems": 9,
+          "maxItems": 9
+        },
+        "totalScore": {
+          "type": "integer",
+          "description": "Sum of frameScores. Always in [0, 99].",
+          "minimum": 0,
+          "maximum": 99
+        }
+      }
+    }
+  }
+}

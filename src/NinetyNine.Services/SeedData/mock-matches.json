@@ -1,6 +1,4 @@
 {
-  "schemaVersion": 1,
-  "description": "Hand-picked concurrent (alternating-innings) matches between similarly-rated players. Each row in PlayerFrameScores is one seat in PlayerDisplayNames order. The winner is the seat with the highest TotalScore (ties broken by perfect frames, then earliest completion — same arbiter MatchService.SelectConcurrentWinner uses).",
   "matches": [
     {
       "rotation": "concurrent",

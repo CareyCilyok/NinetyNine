@@ -1,6 +1,4 @@
 {
-  "schemaVersion": 1,
-  "description": "Themed mock communities tying the new player roster together. First entry in each MemberDisplayNames list is the owner. Visibility is always 'public' for these seed communities.",
   "communities": [
     {
       "name": "Rocket City Pool League",

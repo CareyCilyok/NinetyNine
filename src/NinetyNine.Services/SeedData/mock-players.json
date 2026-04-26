@@ -1,6 +1,4 @@
 {
-  "schemaVersion": 1,
-  "description": "Mock player roster for NinetyNine dev/integration testing. Amateurs span the Fargo skill spectrum (270–799); pros are the current top of the world (FargoRate ~810–842) and Efren Reyes. All pros carry EfrenOnly = true so every seeded game for them is the Efren variant (no ball-in-hand after break). Score modeling vetted by the project's pool SME.",
   "amateurs": [
     {
       "displayName": "rookie_brad",
