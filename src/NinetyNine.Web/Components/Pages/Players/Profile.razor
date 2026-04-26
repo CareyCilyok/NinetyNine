@@ -183,6 +183,67 @@
             }
         </section>
 
+        @* ── 3a. Ratings card (v0.9.1) — per-discipline handicap ────────── *@
+        @if (_ratings is not null && _ratings.Count > 0)
+        {
+            <section class="nn-profile-page__card nn-profile-page__ratings-card"
+                     aria-label="Player ratings by discipline">
+                <h2 class="nn-profile-page__card-title">Ratings</h2>
+                <ul class="nn-profile-page__ratings-list" role="list">
+                    @foreach (var (discipline, rating) in _ratings.OrderBy(kv => (int)kv.Key))
+                    {
+                        <li class="nn-profile-page__rating-row" role="listitem">
+                            <div class="nn-profile-page__rating-header">
+                                <span class="nn-profile-page__rating-discipline">
+                                    @DisciplineLabel(discipline)
+                                </span>
+                                @if (rating.IsCertified)
+                                {
+                                    <span class="nn-profile-page__rating-certified"
+                                          title="Certified — at least 20 completed games of this discipline"
+                                          aria-label="certified">Certified</span>
+                                }
+                            </div>
+
+                            @if (!rating.HasRating)
+                            {
+                                <p class="nn-profile-page__rating-empty">
+                                    No games yet.
+                                </p>
+                            }
+                            else
+                            {
+                                <div class="nn-profile-page__rating-row-body">
+                                    <span class="nn-profile-page__rating-value font-monospace">
+                                        @rating.DisplayRating.ToString("F1")
+                                    </span>
+                                    <div class="nn-profile-page__rating-meta">
+                                        <div class="nn-profile-page__rating-confidence-bar"
+                                             role="progressbar"
+                                             aria-valuemin="0" aria-valuemax="100"
+                                             aria-valuenow="@rating.ConfidencePercent"
+                                             aria-label="@($"Rating confidence {rating.ConfidencePercent}%")">
+                                            <span class="nn-profile-page__rating-confidence-fill"
+                                                  style="width: @(rating.ConfidencePercent)%;"></span>
+                                        </div>
+                                        <span class="nn-profile-page__rating-confidence-label">
+                                            @rating.ConfidencePercent% confidence
+                                            (@rating.GameCount @(rating.GameCount == 1 ? "game" : "games"))
+                                        </span>
+                                        <span class="nn-profile-page__rating-formula">
+                                            @(rating.UsedHandicapFormula
+                                                ? "Best 5 of last 20"
+                                                : $"Average of {rating.GameCount}")
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+
         @* ── 3b. Communities card (Sprint 2 S2.5) ────────────────────────
            Shows the target player's communities. For privacy, the service
            layer is responsible for filtering — but since ICommunityService
@@ -318,6 +379,7 @@
 
     private ViewerScopedPlayerProfile? _profile;
     private PlayerStats? _stats;
+    private IReadOnlyDictionary<GameDiscipline, NinetyNineRating>? _ratings;
     private string? _avatarUrl;
     private List<Game> _recentGames = [];
     private Dictionary<Guid, string> _venueNames = new();
@@ -373,6 +435,16 @@
             catch (Exception ex)
             {
                 Logger.LogWarning(ex, "Failed to load stats for player {PlayerId}.", PlayerId);
+            }
+
+            // Load per-discipline ratings (v0.9.1) — best-effort.
+            try
+            {
+                _ratings = await StatisticsService.GetAllRatingsAsync(PlayerId);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to load ratings for player {PlayerId}.", PlayerId);
             }
 
             // Load recent games + resolve venue names, masking private
@@ -486,6 +558,17 @@
     }
 
     // ── Display helpers ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Display label for a <see cref="GameDiscipline"/>. Add a case here
+    /// when each new discipline ships.
+    /// </summary>
+    private static string DisciplineLabel(GameDiscipline d) => d switch
+    {
+        GameDiscipline.Standard99 => "Standard 99",
+        GameDiscipline.Efren99    => "Efren 99",
+        _                         => d.ToString(),
+    };
 
     private static string RelativeTime(DateTime utc)
     {

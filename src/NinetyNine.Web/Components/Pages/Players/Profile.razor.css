@@ -363,10 +363,133 @@
     border: 1px solid var(--nn-border-default);
 }
 
+/* ── Ratings card (v0.9.1) — per-discipline handicap display ─────────────── */
+.nn-profile-page__ratings-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-3);
+}
+
+.nn-profile-page__rating-row {
+    padding: var(--nn-space-3) var(--nn-space-4);
+    background-color: var(--nn-bg-primary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+}
+
+.nn-profile-page__rating-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--nn-space-3);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-profile-page__rating-discipline {
+    font-family: var(--nn-font-sans);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--nn-text-tertiary);
+}
+
+/* "Certified" badge — gold treatment matches the WIP-pill vocabulary,
+   but with stronger fill so it reads as positive rather than provisional. */
+.nn-profile-page__rating-certified {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 8px;
+    height: 1.125rem;
+    font-size: 0.5625rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--nn-text-on-accent);
+    background-color: var(--nn-accent-gold);
+    border: 1px solid var(--nn-accent-gold);
+    border-radius: var(--nn-radius-sm);
+    line-height: 1;
+}
+
+.nn-profile-page__rating-empty {
+    color: var(--nn-text-tertiary);
+    font-style: italic;
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.nn-profile-page__rating-row-body {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-4);
+}
+
+.nn-profile-page__rating-value {
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.nn-profile-page__rating-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-1);
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.nn-profile-page__rating-confidence-bar {
+    width: 100%;
+    height: 6px;
+    background-color: var(--nn-bg-tertiary);
+    border-radius: var(--nn-radius-full);
+    overflow: hidden;
+}
+
+.nn-profile-page__rating-confidence-fill {
+    display: block;
+    height: 100%;
+    background-color: var(--nn-accent-teal);
+    border-radius: inherit;
+    transition: width var(--nn-transition-base);
+}
+
+.nn-profile-page__rating-confidence-label,
+.nn-profile-page__rating-formula {
+    font-family: var(--nn-font-sans);
+    font-size: 0.75rem;
+    color: var(--nn-text-tertiary);
+}
+
+.nn-profile-page__rating-formula {
+    font-style: italic;
+}
+
+@media (max-width: 480px) {
+    .nn-profile-page__rating-row-body {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--nn-space-2);
+    }
+    .nn-profile-page__rating-meta {
+        width: 100%;
+    }
+}
+
 /* ── Reduced motion ──────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
     .nn-profile-page__game-row,
-    .nn-profile-page__game-link {
+    .nn-profile-page__game-link,
+    .nn-profile-page__rating-confidence-fill {
         transition: none;
     }
 }

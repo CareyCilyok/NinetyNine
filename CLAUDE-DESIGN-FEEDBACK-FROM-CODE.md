@@ -188,6 +188,43 @@ All pros generate Efren-only games. Standard-mode Reyes/SVB/Filler data does NOT
 
 ---
 
+## Milestone v0.9 — Per-discipline rating system
+
+### What shipped (v0.9.0 → v0.9.1)
+
+| Tag | Scope |
+| --- | --- |
+| v0.9.0 | `GameDiscipline` enum (`Standard99`, `Efren99`); `NinetyNineRating` record (Rating, GameCount, ConfidencePercent, IsCertified, UsedHandicapFormula); `IStatisticsService.CalculateRatingAsync` + `GetAllRatingsAsync`; 10 formula tests. |
+| v0.9.1 | Profile page renders a "Ratings" card per discipline — large rating value, teal confidence-bar progress meter, "Certified" gold pill at 20+ games, "Best 5 of last 20" / "Average of N" formula hint. |
+
+### The thesis (per the user spec)
+
+Golf-handicap-style. For each discipline the player has games in:
+
+- **< 5 games:** rating = simple average of all completed games of that discipline.
+- **≥ 5 games:** rating = average of the **5 highest game totals** from the player's **last 20 completed games** of that discipline.
+- **Confidence** = `min(GameCount, 20) × 5%`. At 20 games the rating is **"certified"**.
+- **Per-discipline:** Standard 99 and Efren 99 are independent ratings. The dictionary returned by `GetAllRatingsAsync` is keyed on `GameDiscipline` so adding a new discipline (8-ball, 9-ball, etc.) just appends an enum value.
+
+### Design questions for v0.9
+
+1. **Rating card layout (v0.9.1)** — currently a vertical stack of one row per discipline (Standard 99, Efren 99). Each row: discipline label (small caps), large mono rating number, teal confidence bar + "X% confidence (N games)" + italicized formula hint, "Certified" gold pill when applicable.
+   - **Question:** Is the formula hint ("Best 5 of last 20" vs "Average of N") useful at this density, or noise? Could surface only on hover/tooltip instead.
+   - **Question:** When a player has both Standard 99 and Efren 99 ratings, the card stacks them vertically — fine for two, awkward for ten future disciplines. Worth a horizontal scroll or grid layout once the dictionary grows?
+   - **Question:** "Certified" pill uses the gold-fill treatment (white text on gold). The WIP pill uses outlined gold. Are both gold-vocabulary signals distinguishable enough?
+
+2. **Where else should ratings surface?**
+   - `/players/browse` currently shows `Player.FargoRating` (the external FargoRate skill). Should it ALSO show the in-app NinetyNine rating? Both? Toggle?
+   - `/stats` leaderboard currently sorts by AverageScore from `LeaderboardEntry`. Should there be a "Ratings leaderboard" sorted by the handicap-formula rating instead? (More resistant to a single high-scoring outlier.)
+   - The hero section at the top of the Profile page currently shows display name + member-since. A "Standard 99: 73" rating at-a-glance there might be valuable; or it might clutter.
+
+### Open structural questions
+
+- **F.** Do we display ratings on the Browse Players page (currently shows FargoRating only)? Two ratings on the same row is busy.
+- **G.** Does the Concurrent Match Play view (the live scoring shell) want to show each seat's NinetyNine rating in the Up Next card? Useful for context but adds another stat to the compact card.
+
+---
+
 ## How Claude Design replies
 
 Add your feedback in any of these forms — Claude Code reads this file at session start:
