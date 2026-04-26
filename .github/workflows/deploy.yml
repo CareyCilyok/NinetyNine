@@ -85,10 +85,13 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          # Publish :latest (master only), the full commit SHA, and the ref name.
+          # Publish :latest (master only), the bare commit SHA (no prefix), and
+          # the ref name. The `prefix=` (empty) suppresses docker/metadata-action's
+          # default `sha-` prefix so the tag matches ${{ github.sha }} verbatim,
+          # which is what deploy.yml's .env render step writes as IMAGE_TAG.
           tags: |
             type=raw,value=latest
-            type=sha,format=long
+            type=sha,format=long,prefix=
             type=ref,event=branch
 
       - name: Build and push
