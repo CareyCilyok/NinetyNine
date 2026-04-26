@@ -587,6 +587,15 @@ public sealed partial class DataSeeder(
             ("kyle",    "Kyle",   null,     500, true),
         };
 
+        // Has firstRun already fired in some prior startup? If yes we can
+        // gap-fill any of the original 3 that are missing (they may have
+        // been dropped by a mid-flight CreateAsync failure that left
+        // firstRun's `carey is null` gate flipped). If no, defer original-3
+        // creation to the firstRun branch — it also seeds their hand-crafted
+        // demo games.
+        var careyExistsNow = await playerRepository.GetByDisplayNameAsync(
+            IDataSeeder.TestPlayerDisplayNames[0], ct) is not null;
+
         int touched = 0;
         foreach (var (displayName, firstName, lastName, fargoRating, createOnReconcile) in templates)
         {
@@ -594,7 +603,11 @@ public sealed partial class DataSeeder(
 
             if (player is null)
             {
-                if (!createOnReconcile) continue;
+                // Beta-only entries always create on first sight. Originals
+                // (CreateOnReconcile=false) only when firstRun has already
+                // fired — gap-fill for partially-completed seeds, without
+                // racing firstRun on a truly fresh DB.
+                if (!createOnReconcile && !careyExistsNow) continue;
 
                 player = CreateTestPlayer(displayName, firstName, lastName, fargoRating);
                 await playerRepository.CreateAsync(player, ct);
@@ -627,16 +640,32 @@ public sealed partial class DataSeeder(
                 changed = true;
             }
 
+            // Always-on password assertion: if the existing hash doesn't
+            // validate against DevPassword (drift, a manual password change,
+            // or the account was originally registered through the public
+            // flow with a different password), reset to the canonical dev
+            // password so the documented Test1234!a credential always works.
+            // Costs one PBKDF2 verify per beta account per startup (~100ms
+            // each on the live VM); steady-state runs do no writes.
+            if (string.IsNullOrEmpty(player.PasswordHash) ||
+                passwordHasher.VerifyHashedPassword(player, player.PasswordHash, DevPassword)
+                    == PasswordVerificationResult.Failed)
+            {
+                player.PasswordHash = passwordHasher.HashPassword(player, DevPassword);
+                changed = true;
+                logger.LogWarning(
+                    "Beta-test player {DisplayName} had a non-canonical password hash; reset to DevPassword.",
+                    displayName);
+            }
+
             // Schema-gated template converge. Immutable fields (PlayerId,
-            // CreatedAt) are never touched.
+            // CreatedAt) are never touched. Password hash is handled
+            // unconditionally above and intentionally not duplicated here.
             if (player.SchemaVersion < CurrentPlayerSchemaVersion)
             {
                 player.EmailAddress = $"{displayName}@example.local";
                 player.FirstName = firstName;
                 player.LastName = lastName;
-
-                if (string.IsNullOrEmpty(player.PasswordHash))
-                    player.PasswordHash = passwordHasher.HashPassword(player, DevPassword);
 
                 // Visibility: converge to the canonical template defaults.
                 player.Visibility.EmailAudience = Audience.Private;
