@@ -111,9 +111,15 @@ jobs:
     timeout-minutes: 15
     # "production" environment lets the repo optionally gate deploys with
     # required reviewers and records deployment history. Harmless if unconfigured.
+    #
+    # NOTE: environment.url cannot reference secrets.* — GitHub Actions disallows
+    # the secrets context in that field (HTTP 422 "Unrecognized named-value:
+    # 'secrets'" at workflow validation). To re-enable a clickable URL, mirror the
+    # VM host into a repository Variable (Settings -> Secrets and variables ->
+    # Actions -> Variables tab) and reference it as vars.AZURE_VM_HOST. The IP
+    # isn't sensitive, so a Variable is fine. Omitted for now.
     environment:
       name: production
-      url: http://${{ secrets.AZURE_VM_HOST }}/
     steps:
       - name: Checkout
         uses: actions/checkout@v4
