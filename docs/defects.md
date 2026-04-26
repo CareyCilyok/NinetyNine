@@ -369,7 +369,7 @@ The user introduced the Friends and Communities features in the same session. A 
 ## DEF-009 — Skip-to-main-content link is permanently visible on screen
 
 **Discovered**: 2026-04-12 during Sprint 6 live verification
-**Status**: Open — scheduled for Sprint 7
+**Status**: Resolved in Sprint 7 — commit `5783b96` ("Fix DEF-009: skip-to-main-content link permanently visible"), 2026-04-13
 **Severity**: Medium — accessibility link is visually distracting; should only appear on keyboard focus
 **Owner**: frontend
 
@@ -389,3 +389,36 @@ The standard accessible-hiding pattern uses `clip: rect(0, 0, 0, 0)` with `width
 ### Fix
 
 Replace the `top: -100%` approach with the `clip-rect` visually-hidden pattern. On `:focus`, reset all clip/overflow properties and position the link at the top of the viewport with `position: fixed`.
+
+### Resolution
+
+Applied in commit `5783b96` in Sprint 7. [MainLayout.razor.css](src/NinetyNine.Web/Components/Layout/MainLayout.razor.css) now hides the skip link via the `clip: rect(0,0,0,0)` / `width: 1px; height: 1px; overflow: hidden` pattern and reveals it via `:focus` / `:focus-visible` pseudo-class. This also closes accessibility-audit F-D4 (WCAG 2.4.1 Bypass Blocks).
+
+---
+
+## DEF-010 — MailKit 4.15.1 has a moderate-severity advisory (GHSA-9j88-vvj5-vhgr)
+
+**Discovered**: 2026-04-19 during UX-020 smoke test dry run (post-Sprint 10 baseline capture)
+**Status**: Open — scheduled for v0.1.8 polish sprint
+**Severity**: Medium — supply chain advisory, not a runtime exploit path in current app usage
+**Owner**: backend / dependencies
+
+### Symptom
+
+`dotnet build NinetyNine.sln` now fails on [src/NinetyNine.Web/NinetyNine.Web.csproj](src/NinetyNine.Web/NinetyNine.Web.csproj) (which sets `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` at line 7). NuGet restore emits `NU1902: Package 'MailKit' 4.15.1 has a known moderate severity vulnerability`, which escalates to an error on the Web project. Test project [tests/NinetyNine.Web.Tests/NinetyNine.Web.Tests.csproj](tests/NinetyNine.Web.Tests/NinetyNine.Web.Tests.csproj) emits the same NU1902 as a warning (no `TreatWarningsAsErrors`).
+
+The advisory ([GHSA-9j88-vvj5-vhgr](https://github.com/advisories/GHSA-9j88-vvj5-vhgr)) was published after the Sprint 10 close; at v0.1.7 tag time the build was clean.
+
+### Impact
+
+`dotnet build NinetyNine.sln -warnaserror` fails until the package is bumped or the warning is suppressed. Workaround for local development: `dotnet build NinetyNine.sln -p:NuGetAudit=false`.
+
+### Fix options
+
+1. **Preferred**: upgrade `MailKit` PackageReference in [NinetyNine.Web.csproj](src/NinetyNine.Web/NinetyNine.Web.csproj#L13) to the advisory's fixed version (verify with `dotnet list package --outdated` and check the advisory's "Patched versions" field). Apply the same bump to [tests/NinetyNine.Web.Tests/NinetyNine.Web.Tests.csproj](tests/NinetyNine.Web.Tests/NinetyNine.Web.Tests.csproj) if the dependency is also declared there.
+2. **Acceptable**: add `<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-9j88-vvj5-vhgr" />` to a `<ItemGroup>` in the Web csproj *only if* investigation shows the vulnerable code path is unreachable in the current deployment (the app only uses MailKit for SMTP send; check the advisory for the affected API surface). Document the suppression's justification inline.
+3. **Not acceptable**: disable `TreatWarningsAsErrors` globally to make the problem go away.
+
+### Related
+
+Updates the "0 warnings/errors" claim in [docs/redesign-completion-report.md](docs/redesign-completion-report.md) — that claim was accurate at v0.1.7 but is now stale because of the newly-published advisory.

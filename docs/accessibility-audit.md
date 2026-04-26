@@ -155,7 +155,7 @@ All three changes are additive or corrective, do not rename CSS classes, do not 
 | F-D1 | `src/NinetyNine.Web/Components/Shared/AvatarImage.razor` | Inner `<img alt="Avatar for @DisplayName">` duplicates the container's `aria-label`, causing double-announcement. Fix: change inner `alt` to `""`. | WP-20 bUnit test `AvatarImageTests.AvatarImage_RendersImg_WhenAvatarUrlSupplied` asserts the `alt` attribute contains the display name. Changing it would break that assertion. Coordinate with WP-20 owner to update the test and then apply the fix. |
 | F-D2 | `src/NinetyNine.Web/Components/Shared/FrameInputDialog.razor` | No focus trap — Tab can escape dialog into background content. Fix: implement a focus-trap (JS interop or a Blazor FocusScope wrapper). | Structural change requiring new Blazor/JS infrastructure. |
 | F-D3 | `src/NinetyNine.Web/Components/Layout/UserMenu.razor` | Focus is not explicitly returned to the trigger button when the dropdown closes via Escape or item selection. | Requires storing the trigger element reference and calling `FocusAsync()` on close — structural. |
-| F-D4 | `src/NinetyNine.Web/Components/Layout/MainLayout.razor` | No skip-to-main-content link. WCAG 2.4.1 Bypass Blocks. | Requires adding a visually-hidden anchor before the sidebar, with a visible `:focus-visible` style and an href pointing to the `#nn-layout-main` id. Cross-WP design decision required. |
+| F-D4 | `src/NinetyNine.Web/Components/Layout/MainLayout.razor` | ~~No skip-to-main-content link. WCAG 2.4.1 Bypass Blocks.~~ **Resolved** in Sprint 7 (commit `5783b96`, tracked as DEF-009). Skip link present in `MainLayout.razor`; `MainLayout.razor.css` hides it via the `clip-rect` visually-hidden pattern and reveals on `:focus` / `:focus-visible`. | — |
 | F-D5 | `src/NinetyNine.Web/wwwroot/css/app.css` | `.btn-sm` has `min-height: 2rem` (32px), below the project's 44px touch target goal. | This is in Wave 1's territory (`app.css`). Additionally, a design decision is needed on list-row density vs. touch target size. Flagged for Wave 1 owner. |
 
 ---
@@ -166,7 +166,7 @@ All three changes are additive or corrective, do not rename CSS classes, do not 
 
 2. **Automated axe integration.** Add `axe-core` to the Playwright or Cypress end-to-end test suite. Even a single `cy.checkA11y()` on each page route would catch many class-level violations automatically on each CI run.
 
-3. **Skip-to-main-content link (F-D4).** Before the product goes to external users, implement a skip link in `MainLayout.razor`. This is the single most impactful remaining gap for keyboard-only users.
+3. ~~**Skip-to-main-content link (F-D4).** Before the product goes to external users, implement a skip link in `MainLayout.razor`. This is the single most impactful remaining gap for keyboard-only users.~~ **Resolved** in Sprint 7 (see DEF-009 / commit `5783b96`).
 
 4. **Focus trap for FrameInputDialog (F-D2).** The score-entry dialog is the most-used interactive surface in the app. Ensuring focus cannot escape is critical for screen reader and keyboard users actively entering scores.
 
