@@ -56,6 +56,20 @@
     font-style: italic;
 }
 
+/* ── Hierarchy tree (v0.8.x) ─────────────────────────────────────────
+   Top-level <ul> for the recursive CommunityTreeNode component. The
+   per-node + children styling lives in CommunityTreeNode.razor.css —
+   this just frames the outermost list. */
+.nn-community-tree {
+    list-style: none;
+    margin: 0;
+    padding: var(--nn-space-3) var(--nn-space-4);
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    box-shadow: var(--nn-shadow-sm);
+}
+
 .nn-communities-page__grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));

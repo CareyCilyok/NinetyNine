@@ -1,0 +1,71 @@
+/* =====================================================================
+   CommunityTreeNode.razor.css  (Blazor scoped)
+   Recursive tree-node styling — indented list rows with a teal vertical
+   guide on each level. Invoked by Communities/Index.razor at depth 0.
+   ===================================================================== */
+
+.nn-community-tree__node {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nn-community-tree__link {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-2) var(--nn-space-3);
+    color: var(--nn-text-primary);
+    text-decoration: none;
+    border-radius: var(--nn-radius-sm);
+    border: 1px solid transparent;
+    transition: background-color var(--nn-transition-fast),
+                border-color var(--nn-transition-fast),
+                color var(--nn-transition-fast);
+}
+
+.nn-community-tree__link:hover {
+    background-color: var(--nn-bg-tertiary);
+    border-color: var(--nn-border-subtle);
+    color: var(--nn-accent-teal);
+    text-decoration: none;
+}
+
+.nn-community-tree__link:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+}
+
+.nn-community-tree__name {
+    font-family: var(--nn-font-sans);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: inherit;
+}
+
+.nn-community-tree__child-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.375rem;
+    margin-left: auto;
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    border-radius: 999px;
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.15);
+    color: var(--nn-accent-teal);
+    border: 1px solid rgba(var(--nn-accent-teal-rgb), 0.4);
+}
+
+/* Children list — indented with a vertical teal guide line so deep
+   trees are scannable. */
+.nn-community-tree__children {
+    list-style: none;
+    margin: var(--nn-space-1) 0 0 0;
+    padding: 0 0 0 var(--nn-space-4);
+    border-left: 1px dashed var(--nn-border-default);
+}

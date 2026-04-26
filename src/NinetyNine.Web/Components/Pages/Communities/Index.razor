@@ -31,6 +31,26 @@
             </div>
         }
 
+        @* ── Hierarchy (v0.8.x) ───────────────────────────────────── *@
+        <section class="nn-communities-page__section" aria-label="Community hierarchy">
+            <h2 class="nn-communities-page__section-title">Hierarchy</h2>
+            @if (_tree.Count == 0)
+            {
+                <p class="nn-communities-page__section-empty">
+                    No public communities yet.
+                </p>
+            }
+            else
+            {
+                <ul class="nn-community-tree" role="tree" aria-label="Community hierarchy">
+                    @foreach (var root in _tree)
+                    {
+                        <CommunityTreeNode Node="root" />
+                    }
+                </ul>
+            }
+        </section>
+
         @* ── My communities ────────────────────────────────────────── *@
         <section class="nn-communities-page__section" aria-label="My communities">
             <h2 class="nn-communities-page__section-title">My communities</h2>
@@ -115,6 +135,7 @@
     private SearchModel _searchModel { get; set; } = new();
 
     private Guid? _viewerId;
+    private IReadOnlyList<CommunityNode> _tree = [];
     private List<Community> _myCommunities = [];
     private HashSet<Guid> _myCommunityIds = [];
     private Dictionary<Guid, long> _myMemberCounts = [];
@@ -149,6 +170,7 @@
             return;
         }
 
+        _tree = await CommunityService.GetTreeAsync();
         _myCommunities = (await CommunityService.ListCommunitiesForPlayerAsync(_viewerId.Value)).ToList();
         _myCommunityIds = _myCommunities.Select(c => c.CommunityId).ToHashSet();
 

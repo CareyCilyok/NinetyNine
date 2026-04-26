@@ -1,0 +1,33 @@
+@*
+    CommunityTreeNode — recursive renderer for the v0.8.x community
+    hierarchy. Each node shows the community's name (linked to its
+    detail page) and indents its children below. Designed to be
+    invoked at depth 0 by Communities/Index.razor's tree section;
+    recurses into itself for descendants.
+*@
+
+<li class="nn-community-tree__node">
+    <a href="/communities/@Node.Community.CommunityId"
+       class="nn-community-tree__link">
+        <span class="nn-community-tree__name">@Node.Community.Name</span>
+        @if (Node.Children.Count > 0)
+        {
+            <span class="nn-community-tree__child-count" aria-label="@($"{Node.Children.Count} sub-communit{(Node.Children.Count == 1 ? "y" : "ies")}")">
+                @Node.Children.Count
+            </span>
+        }
+    </a>
+    @if (Node.Children.Count > 0)
+    {
+        <ul class="nn-community-tree__children" role="list">
+            @foreach (var child in Node.Children)
+            {
+                <CommunityTreeNode Node="child" />
+            }
+        </ul>
+    }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public CommunityNode Node { get; set; } = default!;
+}
