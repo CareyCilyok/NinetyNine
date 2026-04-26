@@ -266,17 +266,20 @@ public sealed partial class DataSeeder(
     /// </summary>
     private async Task<int> ReconcileSeededFriendshipsAsync(CancellationToken ct)
     {
-        // Resolve the three seeded display names to PlayerIds. If any of
-        // them does not exist yet (fresh DB before the main seed runs),
-        // skip — the main seed branch will create them and the pass will
-        // succeed on the next startup.
+        // Resolve every seeded display name to a Player. Skip any that
+        // don't exist yet (fresh DB, partial seed, or a manually-deleted
+        // record): we still want the rest to end up mutually friended
+        // rather than aborting the whole pass. Anything missing this
+        // time will be picked up on the next reconcile run, since
+        // friendship inserts are idempotent via the unique pair index.
         var players = new List<Player>();
         foreach (var displayName in IDataSeeder.TestPlayerDisplayNames)
         {
             var p = await playerRepository.GetByDisplayNameAsync(displayName, ct);
-            if (p is null) return 0;
+            if (p is null) continue;
             players.Add(p);
         }
+        if (players.Count < 2) return 0;
 
         int added = 0;
         for (int i = 0; i < players.Count; i++)

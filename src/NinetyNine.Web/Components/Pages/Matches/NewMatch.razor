@@ -32,15 +32,18 @@
                 <a href="/venues/new" class="btn btn-primary">Add a venue</a>
             </div>
         }
-        else if (_opponents.Count == 0)
-        {
-            <div class="nn-empty-state">
-                <p>You need at least one friend to start a match.</p>
-                <a href="/friends" class="btn btn-primary">Find friends</a>
-            </div>
-        }
         else
         {
+            @if (_opponents.Count == 0)
+            {
+                <div class="alert alert-info" role="status">
+                    You don't have any friends yet — you can still start a
+                    <strong>solo match</strong> below.
+                    <a href="/friends" class="alert-link">Find friends</a>
+                    to add opponents to future matches.
+                </div>
+            }
+
             <EditForm Model="_model"
                       OnValidSubmit="HandleSubmitAsync">
                 <DataAnnotationsValidator />
@@ -192,6 +195,7 @@
     private const int MinOpponents = 0;
 
     private bool CanAddSeat =>
+        _opponents.Count > 0 &&
         _model.OpponentSeats.Count < MaxOpponents;
 
     private bool CanRemoveSeat =>
@@ -225,9 +229,12 @@
         _venues = (await VenueService.ListAsync(includePrivate: true)).ToList();
         _opponents = (await FriendService.ListFriendsAsync(_creatorId)).ToList();
 
-        // Default roster: one empty opponent slot (= 2-player match). The
-        // user can grow it up to three opponent slots for a 4-player match.
-        if (_model.OpponentSeats.Count == 0)
+        // Default roster: one empty opponent slot when the user has at
+        // least one friend (= 2-player match), so the "add a friend" path
+        // is discoverable. With no friends, default to zero opponent seats
+        // (true solo) — an empty slot would render an opponent dropdown
+        // with only the placeholder, which is confusing.
+        if (_model.OpponentSeats.Count == 0 && _opponents.Count > 0)
             _model.OpponentSeats.Add(new OpponentSeatModel());
     }
 
