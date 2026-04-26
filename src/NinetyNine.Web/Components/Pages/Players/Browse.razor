@@ -1,0 +1,81 @@
+@page "/players/browse"
+@attribute [Authorize]
+@inject IPlayerRepository PlayerRepository
+@inject NavigationManager Navigation
+
+<PageTitle>Browse players &mdash; NinetyNine</PageTitle>
+
+<div class="nn-page nn-browse-players-page">
+    <div class="nn-browse-players-page__inner">
+        <header class="nn-browse-players-page__header">
+            <div class="nn-browse-players-page__heading">
+                <h1 class="nn-browse-players-page__title">Browse players</h1>
+                <span class="nn-browse-players-page__wip"
+                      title="Under construction — may have rough edges"
+                      aria-label="under construction — may have rough edges">WIP</span>
+            </div>
+            <p class="nn-browse-players-page__subtitle">
+                Every player on NinetyNine. Click a row to view their profile and game history.
+            </p>
+        </header>
+
+        @if (_players.Count == 0)
+        {
+            <p class="nn-browse-players-page__empty">No players to browse yet.</p>
+        }
+        else
+        {
+            <div class="nn-browse-players-page__filter">
+                <input type="search"
+                       class="form-control"
+                       placeholder="Filter by display name…"
+                       @bind="_filter"
+                       @bind:event="oninput"
+                       aria-label="Filter players by display name" />
+                <span class="nn-browse-players-page__count">
+                    Showing @FilteredPlayers.Count of @_players.Count
+                </span>
+            </div>
+
+            <ul class="nn-browse-players-page__list" role="list">
+                @foreach (var p in FilteredPlayers)
+                {
+                    <li class="nn-browse-players-page__row">
+                        <a class="nn-browse-players-page__link"
+                           href="/players/@p.PlayerId">
+                            <span class="nn-browse-players-page__name">@p.DisplayName</span>
+                            @if (p.FargoRating is int fr)
+                            {
+                                <span class="nn-browse-players-page__fargo"
+                                      title="@($"FargoRate skill rating: {fr}")"
+                                      aria-label="@($"Fargo {fr}")">
+                                    @fr
+                                </span>
+                            }
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Player> _players = [];
+    private string _filter = "";
+
+    private List<Player> FilteredPlayers => string.IsNullOrWhiteSpace(_filter)
+        ? _players
+        : _players.Where(p =>
+            p.DisplayName.Contains(_filter.Trim(), StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var all = await PlayerRepository.ListAllAsync();
+        _players = all
+            .Where(p => p.RetiredAt is null)              // hide retired/soft-deleted
+            .OrderBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+}

@@ -168,6 +168,21 @@
 
     <li class="nn-nav__item">
         <NavLink class="nn-nav__link"
+                 href="players/browse"
+                 Match="NavLinkMatch.All"
+                 @onclick="HandleNavigate">
+            <img src="icons/phosphor/regular/users-three.svg"
+                 alt=""
+                 role="presentation"
+                 class="nn-nav__icon" />
+            <span class="nn-nav__label">Browse players</span>
+            <span class="nn-nav__wip" title="Under construction — may have rough edges"
+                  aria-label="under construction — may have rough edges">WIP</span>
+        </NavLink>
+    </li>
+
+    <li class="nn-nav__item">
+        <NavLink class="nn-nav__link"
                  href="about"
                  Match="NavLinkMatch.All"
                  @onclick="HandleNavigate">

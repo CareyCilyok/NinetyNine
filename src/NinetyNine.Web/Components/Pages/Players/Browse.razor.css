@@ -1,0 +1,147 @@
+/* =====================================================================
+   Players/Browse.razor.css  (Blazor scoped)
+   v0.8.2 — minimal browse-all-players page (WIP). Filter input +
+   single-column row list. Matches the visual vocabulary of
+   Communities/Index.razor and Friends/Index.razor.
+   ===================================================================== */
+
+.nn-browse-players-page {
+    display: flex;
+    justify-content: center;
+    padding: var(--nn-space-6) var(--nn-space-4);
+}
+
+.nn-browse-players-page__inner {
+    width: 100%;
+    max-width: 48rem;
+}
+
+.nn-browse-players-page__header {
+    margin-bottom: var(--nn-space-5);
+}
+
+.nn-browse-players-page__heading {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-browse-players-page__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin: 0;
+}
+
+.nn-browse-players-page__wip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 6px;
+    height: 1.125rem;
+    font-size: 0.5625rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--nn-accent-gold);
+    background-color: rgba(var(--nn-accent-gold-rgb), 0.12);
+    border: 1px solid rgba(var(--nn-accent-gold-rgb), 0.45);
+    border-radius: var(--nn-radius-sm);
+    line-height: 1;
+}
+
+.nn-browse-players-page__subtitle {
+    color: var(--nn-text-secondary);
+    margin: 0;
+}
+
+/* ── Filter row ──────────────────────────────────────────────────── */
+.nn-browse-players-page__filter {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-browse-players-page__filter .form-control {
+    flex: 1 1 auto;
+}
+
+.nn-browse-players-page__count {
+    flex: 0 0 auto;
+    color: var(--nn-text-tertiary);
+    font-family: var(--nn-font-mono);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ── List ────────────────────────────────────────────────────────── */
+.nn-browse-players-page__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background-color: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    box-shadow: var(--nn-shadow-sm);
+    overflow: hidden;     /* clip child :hover backgrounds at the radius */
+}
+
+.nn-browse-players-page__row + .nn-browse-players-page__row {
+    border-top: 1px solid var(--nn-border-subtle);
+}
+
+.nn-browse-players-page__link {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-3) var(--nn-space-4);
+    color: var(--nn-text-primary);
+    text-decoration: none;
+    transition: background-color var(--nn-transition-fast),
+                color var(--nn-transition-fast);
+    min-height: var(--nn-touch-target);
+}
+
+.nn-browse-players-page__link:hover {
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-accent-teal);
+    text-decoration: none;
+}
+
+.nn-browse-players-page__link:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: -2px;       /* inside the row so it doesn't bleed */
+}
+
+.nn-browse-players-page__name {
+    flex: 1 1 auto;
+    font-weight: 600;
+    font-size: 0.9375rem;
+}
+
+.nn-browse-players-page__fargo {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    padding: 2px 8px;
+    font-family: var(--nn-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--nn-text-secondary);
+    background-color: var(--nn-bg-primary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-sm);
+}
+
+.nn-browse-players-page__empty {
+    color: var(--nn-text-tertiary);
+    font-style: italic;
+    padding: var(--nn-space-6);
+    text-align: center;
+}
