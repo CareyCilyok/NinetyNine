@@ -106,6 +106,24 @@
     line-height: 1.4;
 }
 
+/* Solo-match hint — same typography as the main hint, distinguished by
+   a teal left border so the "you can play alone" affordance is easy to
+   spot during the new-match scan. */
+.nn-new-match-page__roster-solo-hint {
+    color: var(--nn-text-secondary);
+    margin-bottom: 0;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    padding: var(--nn-space-2) var(--nn-space-3);
+    border-left: 3px solid var(--nn-accent-teal);
+    background-color: rgba(var(--nn-accent-teal-rgb), 0.08);
+    border-radius: 0 var(--nn-radius-sm) var(--nn-radius-sm) 0;
+}
+
+.nn-new-match-page__roster-solo-hint strong {
+    color: var(--nn-accent-teal);
+}
+
 .nn-new-match-page__roster-row {
     display: flex;
     align-items: center;

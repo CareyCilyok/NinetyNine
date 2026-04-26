@@ -109,14 +109,41 @@ public class MatchServiceConcurrentTests(MongoFixture fixture)
     }
 
     [Fact]
-    public async Task CreateConcurrentMatchAsync_OnePlayer_Fails()
+    public async Task CreateConcurrentMatchAsync_SoloPlayer_Succeeds()
+    {
+        // v0.9.2 lowered ConcurrentMinPlayers from 2 to 1 so the unified
+        // /matches/new flow can record solo games. A 1-player match is
+        // just the player's own 9-frame game accessed through the match
+        // shell — same scoring rules, same Game document.
+        var (svc, gameSvc, _) = CreateServices();
+        var p = Guid.NewGuid();
+
+        var result = await svc.CreateConcurrentMatchAsync(
+            creatorPlayerId: p,
+            players: Setups(p),
+            venueId: Guid.NewGuid(),
+            tableSize: TableSize.SevenFoot,
+            breakMethod: BreakMethod.Lagged);
+
+        result.Success.Should().BeTrue();
+        result.Value!.PlayerIds.Should().Equal(p);
+        result.Value.GameIds.Should().HaveCount(1, "solo match starts exactly one Game");
+
+        var game = await gameSvc.GetGameAsync(result.Value.GameIds[0]);
+        game.Should().NotBeNull();
+        game!.PlayerId.Should().Be(p);
+        game.GameState.Should().Be(GameState.InProgress);
+    }
+
+    [Fact]
+    public async Task CreateConcurrentMatchAsync_ZeroPlayers_Fails()
     {
         var (svc, _, _) = CreateServices();
         var p = Guid.NewGuid();
 
         var result = await svc.CreateConcurrentMatchAsync(
             creatorPlayerId: p,
-            players: Setups(p),
+            players: Array.Empty<ConcurrentMatchPlayerSetup>(),
             venueId: Guid.NewGuid(),
             tableSize: TableSize.SevenFoot,
             breakMethod: BreakMethod.Lagged);

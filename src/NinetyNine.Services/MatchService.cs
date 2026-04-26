@@ -185,7 +185,13 @@ public sealed class MatchService(
 
     // ── Concurrent (multi-player, alternating-innings) matches ───────────────
 
-    public const int ConcurrentMinPlayers = 2;
+    /// <summary>
+    /// Minimum players for a concurrent match. v0.9.2 lowered this from
+    /// 2 to 1 to allow solo matches — a 1-player match is just the
+    /// player's own 9-frame game, recorded through the unified match
+    /// flow (see CLAUDE.md: there's one workflow for all play).
+    /// </summary>
+    public const int ConcurrentMinPlayers = 1;
     public const int ConcurrentMaxPlayers = 4;
 
     public async Task<ServiceResult<Match>> CreateConcurrentMatchAsync(

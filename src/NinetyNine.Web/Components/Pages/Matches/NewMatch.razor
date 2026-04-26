@@ -16,7 +16,7 @@
         <header class="nn-new-match-page__header">
             <h1 class="nn-new-match-page__title">Start a match</h1>
             <p class="nn-new-match-page__subtitle">
-                Players alternate innings frame-by-frame; each player runs their own 9-frame game.
+                Solo or multi-player. Each player runs their own 9-frame game; multi-player matches alternate innings frame-by-frame.
             </p>
         </header>
 
@@ -45,14 +45,19 @@
                       OnValidSubmit="HandleSubmitAsync">
                 <DataAnnotationsValidator />
 
-                @* ─ Roster: 2–4 players with per-player Efren ───────────── *@
+                @* ─ Roster: 1–4 players with per-player Efren ───────────── *@
                 <fieldset class="nn-new-match-page__roster">
                     <legend class="form-label">Players</legend>
                     <p class="form-text nn-new-match-page__roster-hint">
-                        Add 1–3 friends to play alongside you (2–4 players total).
+                        Add up to 3 friends to play alongside you (1–4 players total).
                         Innings rotate seat 1 → seat 2 → … → seat 1 frame 2 → … .
                         Efren mode is per player — flip the gold ring on whoever
                         is running it out from where the cue ball lies.
+                    </p>
+                    <p class="form-text nn-new-match-page__roster-solo-hint">
+                        <strong>Solo match?</strong> Just leave the opponent slot
+                        empty (or remove it) — you'll record your own 9-frame
+                        game with no opponent.
                     </p>
 
                     @* Seat 0: the creator (you) — fixed slot. *@
@@ -177,10 +182,14 @@
     private Guid _creatorId;
     private string _errorMessage = "";
 
-    // Matches require 2–4 players total. Seat 0 is the creator, so opponent
-    // slots range from 1 (a 2-player match) to 3 (a 4-player match).
+    // Matches accept 1–4 players total. Seat 0 is the creator, so opponent
+    // slots range from 0 (solo match — record your own 9-frame game) to 3
+    // (4-player concurrent). The roster shows one empty opponent slot by
+    // default to make the "add a friend" path discoverable, but the user
+    // can remove it for a solo match (or just leave it unpicked — the
+    // submit handler skips empty slots).
     private const int MaxOpponents = 3;
-    private const int MinOpponents = 1;
+    private const int MinOpponents = 0;
 
     private bool CanAddSeat =>
         _model.OpponentSeats.Count < MaxOpponents;
@@ -254,9 +263,11 @@
             .Where(s => s.PlayerId != Guid.Empty)
             .Select(s => new ConcurrentMatchPlayerSetup(s.PlayerId, s.IsEfrenVariant)));
 
-        if (setups.Count < 2)
+        if (setups.Count < 1)
         {
-            _errorMessage = "Pick at least one other player to start a match.";
+            // Should be unreachable since the creator is always seat 0,
+            // but defend against the empty case anyway.
+            _errorMessage = "Could not resolve the current player.";
             return;
         }
 
