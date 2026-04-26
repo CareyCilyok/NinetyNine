@@ -74,9 +74,11 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   properties: {
     securityRules: [
       {
+        // Long-form rationale lives in repo docs, not Azure metadata —
+        // NSG descriptions cap at 140 chars. See git blame for context.
         name: 'allow-ssh-operator'
         properties: {
-          description: 'SSH from operator IP — explicit allow for direct user access. Documents intent even though allow-ssh-internet (priority 110) makes it functionally redundant. If you ever lock SSH back down to operator-only, just delete the allow-ssh-internet rule and this one continues to work.'
+          description: 'SSH from operator IP. Redundant with allow-ssh-internet but documents intent; delete allow-ssh-internet to lock SSH down to operator only.'
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '22'
@@ -88,9 +90,12 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
         }
       }
       {
+        // Required for GitHub Actions deploy.yml — runners come from rotating
+        // Azure IP ranges, allowlisting impractical. Key-only auth + fail2ban
+        // are the protection. Delete this rule to restore operator-only SSH.
         name: 'allow-ssh-internet'
         properties: {
-          description: 'SSH from Internet, required for GitHub Actions deploy.yml to SSH into the VM (runners come from Azure-owned IP ranges that rotate; allowlisting is impractical at the NSG\'s rule limit). Security relies on key-only auth (cloud-init disables PasswordAuthentication), strong ed25519 keys, fail2ban (5-failure ban), and a single non-root user (azureuser). To restore operator-only SSH, delete this rule via portal or `az network nsg rule delete --name allow-ssh-internet`.'
+          description: 'SSH from Internet for GitHub Actions deploy. Protected by key-only auth + fail2ban. Delete to restore operator-only SSH.'
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '22'
