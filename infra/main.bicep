@@ -76,7 +76,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
       {
         name: 'allow-ssh-operator'
         properties: {
-          description: 'SSH from operator IP only. Update operatorIpCidr parameter if your IP changes.'
+          description: 'SSH from operator IP — explicit allow for direct user access. Documents intent even though allow-ssh-internet (priority 110) makes it functionally redundant. If you ever lock SSH back down to operator-only, just delete the allow-ssh-internet rule and this one continues to work.'
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '22'
@@ -84,6 +84,20 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
           destinationAddressPrefix: '*'
           access: 'Allow'
           priority: 100
+          direction: 'Inbound'
+        }
+      }
+      {
+        name: 'allow-ssh-internet'
+        properties: {
+          description: 'SSH from Internet, required for GitHub Actions deploy.yml to SSH into the VM (runners come from Azure-owned IP ranges that rotate; allowlisting is impractical at the NSG\'s rule limit). Security relies on key-only auth (cloud-init disables PasswordAuthentication), strong ed25519 keys, fail2ban (5-failure ban), and a single non-root user (azureuser). To restore operator-only SSH, delete this rule via portal or `az network nsg rule delete --name allow-ssh-internet`.'
+          protocol: 'Tcp'
+          sourcePortRange: '*'
+          destinationPortRange: '22'
+          sourceAddressPrefix: 'Internet'
+          destinationAddressPrefix: '*'
+          access: 'Allow'
+          priority: 110
           direction: 'Inbound'
         }
       }
@@ -97,7 +111,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
           sourceAddressPrefix: 'Internet'
           destinationAddressPrefix: '*'
           access: 'Allow'
-          priority: 110
+          priority: 120
           direction: 'Inbound'
         }
       }
