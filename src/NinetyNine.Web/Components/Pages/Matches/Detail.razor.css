@@ -1,0 +1,306 @@
+/* =====================================================================
+   Matches/Detail.razor.css — scoped styles for the Match Detail page.
+   Shows head-to-head result, game-by-game score, and frame comparison.
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   Pattern mirrors Games/Details.razor.css for visual consistency.
+   ===================================================================== */
+
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.nn-match-detail-page {
+    padding: var(--nn-space-6) var(--nn-space-4);
+    max-width: 72rem;
+    margin-inline: auto;
+}
+
+.nn-match-detail-page__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-5);
+}
+
+/* ── Not found state ─────────────────────────────────────────────────── */
+.nn-match-detail-page__not-found {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--nn-space-10);
+    gap: var(--nn-space-4);
+}
+
+.nn-match-detail-page__not-found h1 {
+    color: var(--nn-text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.nn-match-detail-page__not-found .btn:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.nn-match-detail-page__header {
+    padding: var(--nn-space-5);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-match-detail-page__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+    line-height: 1.2;
+}
+
+.nn-match-detail-page__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--nn-space-1);
+    color: var(--nn-text-tertiary);
+    font-size: 0.875rem;
+    margin-bottom: var(--nn-space-3);
+}
+
+.nn-match-detail-page__status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--nn-space-3);
+    margin-bottom: var(--nn-space-4);
+}
+
+/* Status badges — modifier classes map to MatchStatus enum values
+   lowercased: created | inprogress | completed | abandoned. */
+.nn-match-detail-page__status-badge {
+    display: inline-block;
+    padding: var(--nn-space-1) var(--nn-space-3);
+    border-radius: var(--nn-radius-full);
+    font-size: 0.775rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.nn-match-detail-page__status-badge--completed {
+    background-color: var(--nn-success-bg);
+    color: var(--nn-success);
+    border-color: var(--nn-success-border);
+}
+
+.nn-match-detail-page__status-badge--inprogress {
+    background-color: var(--nn-accent-gold-muted);
+    color: var(--nn-accent-gold);
+    border-color: var(--nn-accent-gold-muted);
+}
+
+.nn-match-detail-page__status-badge--created {
+    background-color: var(--nn-bg-tertiary);
+    color: var(--nn-text-secondary);
+    border-color: var(--nn-border-default);
+}
+
+.nn-match-detail-page__status-badge--abandoned {
+    background-color: var(--nn-warning-bg);
+    color: var(--nn-warning);
+    border-color: var(--nn-warning-border);
+}
+
+.nn-match-detail-page__winner {
+    color: var(--nn-text-secondary);
+    font-size: 0.95rem;
+}
+
+.nn-match-detail-page__winner strong {
+    color: var(--nn-accent-gold);
+    font-weight: 700;
+}
+
+/* ── Player-score block (in header) ──────────────────────────────────── */
+.nn-match-detail-page__score {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-3);
+    background: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+}
+
+.nn-match-detail-page__player-score {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-2) var(--nn-space-3);
+}
+
+.nn-match-detail-page__player-name {
+    color: var(--nn-text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.nn-match-detail-page__player-wins {
+    font-family: var(--nn-font-mono);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-accent-teal);
+    line-height: 1;
+}
+
+/* ── Games section ───────────────────────────────────────────────────── */
+.nn-match-detail-page__games {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-4);
+}
+
+.nn-match-detail-page__section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--nn-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0;
+}
+
+/* ── Single game card ────────────────────────────────────────────────── */
+.nn-match-detail-page__game {
+    padding: var(--nn-space-4) var(--nn-space-5);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-md);
+    box-shadow: var(--nn-shadow-sm);
+}
+
+.nn-match-detail-page__game-header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--nn-space-3);
+    margin-bottom: var(--nn-space-3);
+    padding-bottom: var(--nn-space-3);
+    border-bottom: 1px solid var(--nn-border-subtle);
+}
+
+.nn-match-detail-page__game-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin: 0;
+    margin-right: var(--nn-space-2);
+}
+
+.nn-match-detail-page__game-breaker {
+    font-size: 0.875rem;
+    color: var(--nn-text-secondary);
+    flex: 1 1 auto;
+}
+
+.nn-match-detail-page__game-score {
+    font-family: var(--nn-font-mono);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--nn-accent-teal);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-space-2);
+}
+
+.nn-match-detail-page__perfect {
+    color: var(--nn-accent-gold);
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: var(--nn-space-1) var(--nn-space-2);
+    background-color: var(--nn-accent-gold-muted);
+    border-radius: var(--nn-radius-full);
+    text-shadow: var(--nn-shadow-glow-gold);
+    letter-spacing: 0.04em;
+}
+
+/* ── Frame grid (9 columns to match game frames) ─────────────────────── */
+.nn-match-detail-page__frames {
+    display: grid;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: var(--nn-space-2);
+}
+
+.nn-match-detail-page__frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--nn-space-1);
+    padding: var(--nn-space-2) var(--nn-space-1);
+    background: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-sm);
+    min-height: 3rem;
+}
+
+.nn-match-detail-page__frame-num {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--nn-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.nn-match-detail-page__frame-score {
+    font-family: var(--nn-font-mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    line-height: 1;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .nn-match-detail-page {
+        padding: var(--nn-space-4) var(--nn-space-3);
+    }
+
+    .nn-match-detail-page__header,
+    .nn-match-detail-page__game {
+        padding: var(--nn-space-4);
+    }
+
+    .nn-match-detail-page__title {
+        font-size: 1.25rem;
+    }
+
+    .nn-match-detail-page__player-wins {
+        font-size: 1.5rem;
+    }
+
+    /* Two rows of frames on narrow viewports for readability. */
+    .nn-match-detail-page__frames {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    .nn-match-detail-page__score {
+        grid-template-columns: 1fr;
+    }
+
+    .nn-match-detail-page__frames {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

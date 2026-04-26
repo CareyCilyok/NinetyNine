@@ -1,0 +1,296 @@
+/* =====================================================================
+   Matches/Play.razor.css — scoped styles for the Match Play page.
+   Handles three distinct visual states:
+     1. Match complete (winner + final score)
+     2. Privacy interstitial (shared-device turn hand-off)
+     3. In-progress scoreboard + current-game CTA
+   Uses only var(--nn-*) tokens. No hardcoded colors.
+   ===================================================================== */
+
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.nn-match-play-page {
+    display: flex;
+    justify-content: center;
+    padding: var(--nn-space-5) var(--nn-space-4);
+    min-height: calc(100vh - var(--nn-navbar-height));
+}
+
+.nn-match-play-page__inner {
+    width: 100%;
+    max-width: 40rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-space-4);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.nn-match-play-page__header {
+    padding: var(--nn-space-4) var(--nn-space-5);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-sm);
+}
+
+.nn-match-play-page__title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-1);
+}
+
+.nn-match-play-page__format {
+    color: var(--nn-text-tertiary);
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+/* ── Scoreboard ──────────────────────────────────────────────────────── */
+.nn-match-play-page__scoreboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--nn-space-3);
+    padding: var(--nn-space-4) var(--nn-space-5);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-match-play-page__player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--nn-space-2);
+    padding: var(--nn-space-3);
+    background: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+}
+
+.nn-match-play-page__player-name {
+    color: var(--nn-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: center;
+}
+
+.nn-match-play-page__player-wins {
+    font-family: var(--nn-font-mono);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--nn-accent-teal);
+    line-height: 1;
+}
+
+/* ── Current-game CTA card ───────────────────────────────────────────── */
+.nn-match-play-page__current-game {
+    padding: var(--nn-space-5);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-left: 3px solid var(--nn-accent-teal);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-md);
+}
+
+.nn-match-play-page__current-game-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    margin-bottom: var(--nn-space-2);
+}
+
+.nn-match-play-page__current-game-body {
+    color: var(--nn-text-secondary);
+    margin-bottom: var(--nn-space-4);
+}
+
+.nn-match-play-page__current-game .btn {
+    min-height: var(--nn-touch-target);
+    min-width: 12rem;
+}
+
+.nn-match-play-page__current-game .btn:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    box-shadow: var(--nn-shadow-glow-teal);
+}
+
+/* ── Abandon-match section (low visual weight) ───────────────────────── */
+.nn-match-play-page__section {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: var(--nn-space-2);
+}
+
+/* ── Privacy interstitial ──────────────────────────────────────────────
+   Full-height visual gate between games on a shared device. The goal is
+   to hide the outgoing player's score from the incoming player until
+   they've confirmed they're ready. High contrast, single CTA, no chrome.
+   ─────────────────────────────────────────────────────────────────── */
+.nn-match-play-page__interstitial {
+    min-height: calc(100vh - var(--nn-navbar-height) - var(--nn-space-8));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--nn-space-5);
+    padding: var(--nn-space-8) var(--nn-space-5);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-lg);
+    text-align: center;
+}
+
+.nn-match-play-page__interstitial-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    line-height: 1.2;
+    margin: 0;
+    max-width: 22rem;
+}
+
+.nn-match-play-page__interstitial-body {
+    color: var(--nn-text-secondary);
+    font-size: 1.05rem;
+    margin: 0;
+    max-width: 22rem;
+}
+
+.nn-match-play-page__interstitial .btn {
+    min-height: var(--nn-touch-target);
+    min-width: 10rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.nn-match-play-page__interstitial .btn:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+    box-shadow: var(--nn-shadow-glow-teal);
+}
+
+/* ── Match-complete celebration ──────────────────────────────────────── */
+.nn-match-play-page__complete {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--nn-space-4);
+    padding: var(--nn-space-7) var(--nn-space-5);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-default);
+    border-radius: var(--nn-radius-lg);
+    box-shadow: var(--nn-shadow-lg);
+    text-align: center;
+}
+
+.nn-match-play-page__complete-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--nn-text-primary);
+    margin: 0;
+}
+
+.nn-match-play-page__winner {
+    font-size: 1.125rem;
+    color: var(--nn-text-secondary);
+    margin: 0;
+}
+
+.nn-match-play-page__winner strong {
+    color: var(--nn-accent-gold);
+    font-weight: 700;
+}
+
+.nn-match-play-page__score {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--nn-space-4);
+    width: 100%;
+    max-width: 24rem;
+    margin-top: var(--nn-space-3);
+}
+
+.nn-match-play-page__player-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--nn-space-1);
+    padding: var(--nn-space-3);
+    background: var(--nn-bg-tertiary);
+    border: 1px solid var(--nn-border-subtle);
+    border-radius: var(--nn-radius-md);
+}
+
+.nn-match-play-page__player-score span {
+    color: var(--nn-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.nn-match-play-page__player-score strong {
+    font-family: var(--nn-font-mono);
+    font-size: 2rem;
+    color: var(--nn-accent-teal);
+    line-height: 1;
+}
+
+.nn-match-play-page__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--nn-space-3);
+    margin-top: var(--nn-space-4);
+}
+
+.nn-match-play-page__actions .btn {
+    min-height: var(--nn-touch-target);
+}
+
+.nn-match-play-page__actions .btn:focus-visible {
+    outline: 2px solid var(--nn-accent-teal);
+    outline-offset: 2px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .nn-match-play-page {
+        padding: var(--nn-space-4) var(--nn-space-3);
+    }
+
+    .nn-match-play-page__inner {
+        gap: var(--nn-space-3);
+    }
+
+    .nn-match-play-page__header,
+    .nn-match-play-page__scoreboard,
+    .nn-match-play-page__current-game,
+    .nn-match-play-page__complete {
+        padding: var(--nn-space-4);
+    }
+
+    .nn-match-play-page__title,
+    .nn-match-play-page__complete-title,
+    .nn-match-play-page__interstitial-title {
+        font-size: 1.375rem;
+    }
+
+    .nn-match-play-page__player-wins {
+        font-size: 2rem;
+    }
+
+    .nn-match-play-page__actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .nn-match-play-page__actions .btn {
+        width: 100%;
+    }
+}
