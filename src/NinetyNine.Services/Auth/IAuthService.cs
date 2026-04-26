@@ -33,12 +33,16 @@ public interface IAuthService
         CancellationToken ct = default);
 
     /// <summary>
-    /// Authenticates a player using their email address and password.
+    /// Authenticates a player using their email address <em>or</em> display
+    /// name and password. Inputs containing <c>@</c> are dispatched to the
+    /// email lookup; everything else is matched against
+    /// <see cref="Player.DisplayName"/> using the same case-sensitive
+    /// equality the registration uniqueness check uses.
     /// Enforces account lockout after 5 consecutive failures (15-minute window).
     /// Always performs a hash computation even when the account is not found,
-    /// making the timing uniform regardless of whether the email exists.
+    /// making the timing uniform regardless of whether the identifier exists.
     /// </summary>
-    /// <param name="email">Raw email address.</param>
+    /// <param name="emailOrDisplayName">Raw email address or display name.</param>
     /// <param name="password">Plain-text password to verify.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>
@@ -46,7 +50,7 @@ public interface IAuthService
     /// <see cref="AuthResult{Player}.Fail"/> with <c>"Invalid credentials."</c> on any failure.
     /// </returns>
     Task<AuthResult<Player>> LoginAsync(
-        string email,
+        string emailOrDisplayName,
         string password,
         CancellationToken ct = default);
 

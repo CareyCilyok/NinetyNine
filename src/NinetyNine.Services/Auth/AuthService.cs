@@ -156,13 +156,22 @@ public sealed partial class AuthService : IAuthService
 
     /// <inheritdoc />
     public async Task<AuthResult<Player>> LoginAsync(
-        string email,
+        string emailOrDisplayName,
         string password,
         CancellationToken ct = default)
     {
-        var normalizedEmail = email?.Trim().ToLowerInvariant() ?? "";
+        var input = emailOrDisplayName?.Trim() ?? "";
 
-        var player = await _playerRepository.GetByEmailAsync(normalizedEmail, ct);
+        // Dispatch by '@'. Email branch normalizes to lowercase (matches
+        // registration); display-name branch preserves case (matches the
+        // case-sensitive unique-name guarantee in PlayerRepository).
+        Player? player = null;
+        if (input.Length > 0)
+        {
+            player = input.Contains('@')
+                ? await _playerRepository.GetByEmailAsync(input.ToLowerInvariant(), ct)
+                : await _playerRepository.GetByDisplayNameAsync(input, ct);
+        }
 
         // Timing guard: even when the player is not found, execute a dummy hash verification
         // so the response time is indistinguishable from a real failed verification.
@@ -170,7 +179,7 @@ public sealed partial class AuthService : IAuthService
         {
             // Discard result — purely for constant-time behavior.
             _passwordHasher.VerifyHashedPassword(new Player(), _dummyHash, password);
-            _logger.LogWarning("Login failed: email not found.");
+            _logger.LogWarning("Login failed: identifier not found.");
             return AuthResult<Player>.Fail("Invalid credentials.");
         }
 

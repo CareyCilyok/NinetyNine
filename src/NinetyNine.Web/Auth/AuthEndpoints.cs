@@ -26,8 +26,10 @@ public static class AuthEndpoints
         string Password,
         string ConfirmPassword);
 
-    /// <summary>Request body for the login endpoint.</summary>
-    private sealed record LoginRequest(string Email, string Password);
+    /// <summary>Request body for the login endpoint. <see cref="EmailOrDisplayName"/>
+    /// accepts either an email (anything containing <c>@</c>) or a display
+    /// name; the dispatch happens inside <c>AuthService.LoginAsync</c>.</summary>
+    private sealed record LoginRequest(string EmailOrDisplayName, string Password);
 
     /// <summary>Request body for the resend-verification endpoint.</summary>
     private sealed record ResendVerificationRequest(string Email);
@@ -84,7 +86,7 @@ public static class AuthEndpoints
             await antiforgery.ValidateRequestAsync(context);
 
             var result = await authService.LoginAsync(
-                request.Email,
+                request.EmailOrDisplayName,
                 request.Password,
                 context.RequestAborted);
 

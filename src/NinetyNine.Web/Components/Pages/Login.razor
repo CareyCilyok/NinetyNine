@@ -44,12 +44,12 @@
             <DataAnnotationsValidator />
 
             <div class="form-group">
-                <label class="form-label" for="email">Email address</label>
-                <InputText id="email" type="email"
+                <label class="form-label" for="identifier">Email or display name</label>
+                <InputText id="identifier" type="text"
                            class="form-control"
-                           @bind-Value="_model.Email"
-                           autocomplete="email" required />
-                <ValidationMessage For="() => _model.Email" />
+                           @bind-Value="_model.EmailOrDisplayName"
+                           autocomplete="username" required />
+                <ValidationMessage For="() => _model.EmailOrDisplayName" />
             </div>
 
             <div class="form-group">
@@ -171,7 +171,7 @@
 
         try
         {
-            var result = await AuthService.LoginAsync(_model.Email, _model.Password);
+            var result = await AuthService.LoginAsync(_model.EmailOrDisplayName, _model.Password);
 
             if (result.Success && result.Value is Player player)
             {
@@ -194,10 +194,11 @@
             }
             else
             {
-                _errorMessage = "Invalid email or password.";
+                _errorMessage = "Invalid credentials.";
             }
 
-            Logger.LogInformation("Login failed for {Email}: {Error}", _model.Email, error);
+            Logger.LogInformation(
+                "Login failed for {Identifier}: {Error}", _model.EmailOrDisplayName, error);
         }
         finally
         {
@@ -207,9 +208,11 @@
 
     private sealed class LoginModel
     {
-        [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
-        public string Email { get; set; } = "";
+        // Either an email (containing '@') or a display name. The dispatch
+        // happens inside AuthService.LoginAsync — no front-end format check
+        // needed here beyond Required.
+        [Required(ErrorMessage = "Email or display name is required.")]
+        public string EmailOrDisplayName { get; set; } = "";
 
         [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; } = "";
