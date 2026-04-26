@@ -1,81 +1,23 @@
 @inherits LayoutComponentBase
-@inject IFriendService FriendService
-@inject ICommunityInvitationRepository InvitationRepository
-@inject INotificationService NotificationService
-@inject IHttpContextAccessor HttpContextAccessor
 
 @*
     MainLayout — application shell.
     -----------------------------------------------------------------
-    Persistent left sidebar (brand + NavMenu + UserMenu) on the left,
-    a flex-growing main content pane on the right, and a thin footer
-    pinned below @Body. On mobile (<768px) the sidebar becomes an
-    off-canvas drawer toggled by a hamburger button. The drawer state
-    is pure Blazor bool + CSS — no JS interop required.
-
-    Auth state is cascaded globally via Program.cs
-    (AddCascadingAuthenticationState), so no <CascadingAuthenticationState>
-    wrapper is needed here.
-
-    Pending-friend-request count is computed once per render from
-    IFriendService and exposed to NavMenu and UserMenu via a
-    CascadingValue so both can render badges without duplicating the
-    Mongo round trip. See docs/plans/friends-communities-v1.md
-    Sprint 1 S1.3.
+    Static SSR by design: a Blazor layout cannot opt into an
+    interactive render mode because @Body is a non-serializable
+    RenderFragment. Interactivity (hamburger toggle, NavMenu close
+    callback, UserMenu dropdown, badge counts) lives in the
+    <Sidebar /> child component, which IS InteractiveServer.
 *@
 
-<CascadingValue Value="_pendingFriendRequestCount" Name="PendingFriendRequestCount">
-<CascadingValue Value="_unreadNotificationCount" Name="UnreadNotificationCount">
-<div class="nn-layout @(_sidebarOpen ? "nn-layout--sidebar-open" : string.Empty)">
+<div class="nn-layout">
 
     @* Skip-to-main — visually hidden, appears on focus (WCAG 2.4.1). *@
     <a href="#nn-main-content" class="nn-layout__skip-link">
         Skip to main content
     </a>
 
-    @* Hamburger — visible only on mobile via scoped CSS. *@
-    <button type="button"
-            class="nn-layout__menu-button"
-            aria-label="Toggle navigation"
-            aria-expanded="@(_sidebarOpen ? "true" : "false")"
-            aria-controls="nn-primary-sidebar"
-            @onclick="ToggleSidebar">
-        <img src="icons/phosphor/regular/list.svg"
-             alt=""
-             role="presentation"
-             class="nn-layout__menu-icon" />
-    </button>
-
-    @* Off-canvas dimming overlay — only rendered on mobile when open. *@
-    @if (_sidebarOpen)
-    {
-        <div class="nn-layout__overlay"
-             role="presentation"
-             @onclick="CloseSidebar"></div>
-    }
-
-    <aside id="nn-primary-sidebar"
-           class="nn-sidebar"
-           aria-label="Primary navigation">
-
-        <div class="nn-sidebar__brand">
-            <a href="/" class="nn-sidebar__brand-link" @onclick="CloseSidebar">
-                <img src="icons/pool/cue-sports-pictogram.svg"
-                     alt=""
-                     role="presentation"
-                     class="nn-sidebar__brand-glyph" />
-                <span class="nn-sidebar__brand-text">NinetyNine</span>
-            </a>
-        </div>
-
-        <nav class="nn-sidebar__nav" role="navigation" aria-label="Main">
-            <NavMenu OnNavigate="CloseSidebar" />
-        </nav>
-
-        <div class="nn-sidebar__footer">
-            <UserMenu />
-        </div>
-    </aside>
+    <Sidebar />
 
     <main id="nn-main-content" class="nn-layout__main" role="main">
         <div class="nn-layout__content">
@@ -89,37 +31,9 @@
         </footer>
     </main>
 </div>
-</CascadingValue>
-</CascadingValue>
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <a class="dismiss" role="button" tabindex="0" aria-label="Dismiss error">&#x2715;</a>
 </div>
-
-@code {
-    private bool _sidebarOpen;
-    private int _pendingFriendRequestCount;
-    private long _unreadNotificationCount;
-
-    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
-
-    private void CloseSidebar() => _sidebarOpen = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var user = HttpContextAccessor.HttpContext?.User;
-        var claim = user?.FindFirst(ClaimNames.PlayerId)?.Value;
-        if (!Guid.TryParse(claim, out var viewerId))
-            return;
-
-        // Friends badge counts friend requests + community invitations,
-        // matching the single Requests inbox on /friends (Sprint 2 S2.4).
-        var incomingFriends = await FriendService.ListIncomingRequestsAsync(viewerId);
-        var incomingInvites = await InvitationRepository.ListByInviteeAsync(
-            viewerId, CommunityInvitationStatus.Pending);
-        _pendingFriendRequestCount = incomingFriends.Count + incomingInvites.Count;
-        _unreadNotificationCount = await NotificationService.CountUnreadAsync(viewerId);
-    }
-}

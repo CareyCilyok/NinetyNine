@@ -6,13 +6,14 @@ namespace NinetyNine.Services;
 ///   <item><see cref="SeedMode.Production"/> — seeds only the public real-
 ///     world venues (the "live" data shared across deployments). Skips
 ///     all mock players, mock games, mock matches, mock communities, and
-///     the original 3 dev test players. Idempotent.</item>
+///     the dev beta-test players. Idempotent.</item>
 ///   <item><see cref="SeedMode.Development"/> — full mock seed: every
-///     production venue + the private dev home table + the original 3
-///     test players (carey/george/carey_b) + their hand-crafted demo
-///     games + the seeded "Pocket Sports" community + the 33 mock
-///     player roster + their generated game histories + the 20 mock
-///     concurrent matches + the 5 themed mock communities. Idempotent.</item>
+///     production venue + the private dev home table + the seven dev
+///     beta-test players (carey/george/carey_b/tom/jeri/eli/kyle) + the
+///     original three's hand-crafted demo games + the seeded "Pocket
+///     Sports" community + the 33 mock player roster + their generated
+///     game histories + the 20 mock concurrent matches + the 5 themed
+///     mock communities. Idempotent.</item>
 /// </list>
 /// <para>
 /// The mode is selected by the caller from <c>Seed:Mode</c> config.
@@ -23,20 +24,28 @@ namespace NinetyNine.Services;
 public interface IDataSeeder
 {
     /// <summary>
-    /// The display names of the original three dev test players, in
-    /// display order. Used by the mock auth endpoints to list
-    /// "sign in as" options. NOT seeded in <see cref="SeedMode.Production"/>.
+    /// The display names of the dev beta-test players, in display order.
+    /// Used by the mock auth endpoints to list "sign in as" options.
+    /// NOT seeded in <see cref="SeedMode.Production"/>. Every account
+    /// in this list is reconciled to be email-verified and unlocked on
+    /// every dev startup so beta testers cannot brick themselves out.
     /// </summary>
     /// <remarks>
     /// There are two Careys on the original score cards — the primary user
     /// (Carey Cilyok) and a second player also named Carey. DisplayName must
-    /// be unique, so the second Carey is seeded as <c>carey_b</c>.
+    /// be unique, so the second Carey is seeded as <c>carey_b</c>. <c>tom</c>,
+    /// <c>jeri</c>, <c>eli</c>, and <c>kyle</c> are beta-only additions with
+    /// no preset demo games (real beta testers build their own game history).
     /// </remarks>
     public static readonly IReadOnlyList<string> TestPlayerDisplayNames = new[]
     {
         "carey",
         "george",
-        "carey_b"
+        "carey_b",
+        "tom",
+        "jeri",
+        "eli",
+        "kyle",
     };
 
     /// <summary>

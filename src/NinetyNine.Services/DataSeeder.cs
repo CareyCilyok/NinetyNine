@@ -6,10 +6,11 @@ using NinetyNine.Repository.Repositories;
 namespace NinetyNine.Services;
 
 /// <summary>
-/// Dev-mode data seeder. Populates the database with three test players
-/// (matching the Ninety-Nine score card photos in <c>docs/</c>), two venues,
-/// and a handful of games in various states so the UX can be prototyped
-/// against realistic data.
+/// Dev-mode data seeder. Populates the database with the seven dev beta-test
+/// players (carey/george/carey_b matching the Ninety-Nine score card photos
+/// in <c>docs/</c>, plus tom/jeri/eli/kyle as fresh-account beta testers),
+/// the seeded venues, and a handful of games in various states so the UX
+/// can be prototyped against realistic data.
 /// </summary>
 public sealed partial class DataSeeder(
     IPlayerRepository playerRepository,
@@ -143,7 +144,10 @@ public sealed partial class DataSeeder(
         var mockGamesAdded = await ReconcileMockGameHistoriesAsync(ct);
         var (mockMatchesAdded, mockMatchGamesAdded) = await ReconcileMockMatchesAsync(ct);
 
-        // ── Canonical 3 test players: create on first run only. ──────
+        // ── Original 3 test players + their demo games: create on first
+        //    run only. tom (and any other beta-only entries with
+        //    CreateOnReconcile=true) are seeded by ReconcileSeededPlayersAsync
+        //    above so adding a new beta tester takes effect on existing dev DBs.
         var carey = await playerRepository.GetByDisplayNameAsync(
             IDataSeeder.TestPlayerDisplayNames[0], ct);
         bool firstRun = carey is null;
@@ -220,7 +224,8 @@ public sealed partial class DataSeeder(
         if (firstRun)
         {
             logger.LogInformation(
-                "Seed complete: 3 test players, {VenueCount} venues, 6 demo games + 1 in-progress, " +
+                "Seed complete: 7 beta-test players (carey, george, carey_b, tom, jeri, eli, kyle), " +
+                "{VenueCount} venues, 6 demo games + 1 in-progress, " +
                 "Global root + {CommunityCount} mock communities + Pocket Sports, " +
                 "{MockPlayerCount} mock players, {MockGameCount} mock games, {MockMatchCount} mock matches.",
                 SeededVenueDefinitions.Length, mockCommunitiesCreated,
@@ -559,48 +564,99 @@ public sealed partial class DataSeeder(
     /// </summary>
     private async Task<int> ReconcileSeededPlayersAsync(CancellationToken ct)
     {
-        var templates = new (string DisplayName, string FirstName, string? LastName)[]
+        // CreateOnReconcile=false: seeded by the firstRun branch alongside
+        //   demo games, so reconcile must not race ahead and create a bare
+        //   record (otherwise firstRun's `carey is null` gate flips and the
+        //   demo games never get inserted on a fresh DB).
+        // CreateOnReconcile=true: beta-only additions. Reconcile creates
+        //   them on first sight so adding a new tester to this list takes
+        //   effect on the next startup of an existing dev DB.
+        var templates = new (
+            string DisplayName, string FirstName, string? LastName,
+            int FargoRating, bool CreateOnReconcile)[]
         {
-            ("carey", "Carey", "Cilyok"),
-            ("george", "George", null),
-            ("carey_b", "Carey", null),
+            ("carey",   "Carey",  "Cilyok", 550, false),
+            ("george",  "George", null,     625, false),
+            ("carey_b", "Carey",  null,     480, false),
+            ("tom",     "Tom",    null,     500, true),
+            ("jeri",    "Jeri",   null,     500, true),
+            ("eli",     "Eli",    null,     500, true),
+            ("kyle",    "Kyle",   null,     500, true),
         };
 
-        int reconciled = 0;
-        foreach (var (displayName, firstName, lastName) in templates)
+        int touched = 0;
+        foreach (var (displayName, firstName, lastName, fargoRating, createOnReconcile) in templates)
         {
             var player = await playerRepository.GetByDisplayNameAsync(displayName, ct);
-            if (player is null) continue; // Not yet created — first-run seed will handle it.
 
-            if (player.SchemaVersion >= CurrentPlayerSchemaVersion) continue;
+            if (player is null)
+            {
+                if (!createOnReconcile) continue;
 
-            // Converge all template fields. Immutable fields (PlayerId,
+                player = CreateTestPlayer(displayName, firstName, lastName, fargoRating);
+                await playerRepository.CreateAsync(player, ct);
+                touched++;
+                logger.LogInformation(
+                    "Seeded beta-test player {DisplayName} (created via reconcile)",
+                    displayName);
+                continue;
+            }
+
+            bool changed = false;
+
+            // Always-on login-enable assertions for beta accounts. Ensures a
+            // tester who locked themselves out on the previous run gets
+            // unstuck on the next deploy without manual mongosh surgery.
+            // These run regardless of SchemaVersion.
+            if (!player.EmailVerified)
+            {
+                player.EmailVerified = true;
+                changed = true;
+            }
+            if (player.LockedOutUntil.HasValue)
+            {
+                player.LockedOutUntil = null;
+                changed = true;
+            }
+            if (player.FailedLoginAttempts != 0)
+            {
+                player.FailedLoginAttempts = 0;
+                changed = true;
+            }
+
+            // Schema-gated template converge. Immutable fields (PlayerId,
             // CreatedAt) are never touched.
-            player.EmailAddress = $"{displayName}@example.local";
-            player.EmailVerified = true;
-            player.FirstName = firstName;
-            player.LastName = lastName;
+            if (player.SchemaVersion < CurrentPlayerSchemaVersion)
+            {
+                player.EmailAddress = $"{displayName}@example.local";
+                player.FirstName = firstName;
+                player.LastName = lastName;
 
-            if (string.IsNullOrEmpty(player.PasswordHash))
-                player.PasswordHash = passwordHasher.HashPassword(player, DevPassword);
+                if (string.IsNullOrEmpty(player.PasswordHash))
+                    player.PasswordHash = passwordHasher.HashPassword(player, DevPassword);
 
-            // Visibility: converge to the canonical template defaults.
-            player.Visibility.EmailAudience = Audience.Private;
-            player.Visibility.PhoneAudience = Audience.Private;
-            player.Visibility.RealNameAudience = Audience.Private;
-            player.Visibility.AvatarAudience = Audience.Public;
+                // Visibility: converge to the canonical template defaults.
+                player.Visibility.EmailAudience = Audience.Private;
+                player.Visibility.PhoneAudience = Audience.Private;
+                player.Visibility.RealNameAudience = Audience.Private;
+                player.Visibility.AvatarAudience = Audience.Public;
 
-            player.SchemaVersion = CurrentPlayerSchemaVersion;
+                player.SchemaVersion = CurrentPlayerSchemaVersion;
+                changed = true;
+            }
 
-            await playerRepository.UpdateAsync(player, ct);
-            reconciled++;
+            if (changed)
+            {
+                await playerRepository.UpdateAsync(player, ct);
+                touched++;
 
-            logger.LogInformation(
-                "Reconciled seeded player {DisplayName} to SchemaVersion {Version}",
-                displayName, CurrentPlayerSchemaVersion);
+                logger.LogInformation(
+                    "Reconciled seeded beta-test player {DisplayName} (login-enable + SchemaVersion {Version})",
+                    displayName, player.SchemaVersion);
+            }
         }
 
-        return reconciled;
+        return touched;
     }
 
     // HealNonSeededPlayerVisibilityAsync removed in Sprint 6 S6.2.

@@ -1,0 +1,109 @@
+@rendermode InteractiveServer
+@inject IFriendService FriendService
+@inject ICommunityInvitationRepository InvitationRepository
+@inject INotificationService NotificationService
+
+@*
+    Sidebar — interactive shell child.
+    -----------------------------------------------------------------
+    Owns the hamburger toggle, dimming overlay, brand block, NavMenu,
+    and UserMenu. Lives as an InteractiveServer child of MainLayout
+    (which must remain static SSR because @Body is a non-serializable
+    RenderFragment).
+
+    State:
+      _sidebarOpen          — mobile drawer open/closed; toggled by
+                              hamburger or backdrop click; CSS targets
+                              .nn-sidebar--open on the <aside> root.
+      _pendingFriendRequestCount / _unreadNotificationCount
+                            — cascaded to NavMenu + UserMenu so both
+                              show matching badges without duplicating
+                              the Mongo round trip.
+
+    Auth state is pulled via [CascadingParameter] Task<AuthenticationState>
+    rather than IHttpContextAccessor so the badge counts populate
+    correctly under both prerender and the interactive circuit.
+    See docs/plans/friends-communities-v1.md Sprint 1 S1.3.
+*@
+
+<CascadingValue Value="_pendingFriendRequestCount" Name="PendingFriendRequestCount">
+<CascadingValue Value="_unreadNotificationCount" Name="UnreadNotificationCount">
+
+    @* Hamburger — visible only on mobile via scoped CSS. *@
+    <button type="button"
+            class="nn-layout__menu-button"
+            aria-label="Toggle navigation"
+            aria-expanded="@(_sidebarOpen ? "true" : "false")"
+            aria-controls="nn-primary-sidebar"
+            @onclick="ToggleSidebar">
+        <img src="icons/phosphor/regular/list.svg"
+             alt=""
+             role="presentation"
+             class="nn-layout__menu-icon" />
+    </button>
+
+    @* Off-canvas dimming overlay — only rendered on mobile when open. *@
+    @if (_sidebarOpen)
+    {
+        <div class="nn-layout__overlay"
+             role="presentation"
+             @onclick="CloseSidebar"></div>
+    }
+
+    <aside id="nn-primary-sidebar"
+           class="nn-sidebar @(_sidebarOpen ? "nn-sidebar--open" : string.Empty)"
+           aria-label="Primary navigation">
+
+        <div class="nn-sidebar__brand">
+            <a href="/" class="nn-sidebar__brand-link" @onclick="CloseSidebar">
+                <img src="icons/pool/cue-sports-pictogram.svg"
+                     alt=""
+                     role="presentation"
+                     class="nn-sidebar__brand-glyph" />
+                <span class="nn-sidebar__brand-text">NinetyNine</span>
+            </a>
+        </div>
+
+        <nav class="nn-sidebar__nav" role="navigation" aria-label="Main">
+            <NavMenu OnNavigate="CloseSidebar" />
+        </nav>
+
+        <div class="nn-sidebar__footer">
+            <UserMenu />
+        </div>
+    </aside>
+
+</CascadingValue>
+</CascadingValue>
+
+@code {
+    private bool _sidebarOpen;
+    private int _pendingFriendRequestCount;
+    private long _unreadNotificationCount;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
+
+    private void CloseSidebar() => _sidebarOpen = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationStateTask is null)
+            return;
+
+        var authState = await AuthenticationStateTask;
+        var claim = authState.User.FindFirst(ClaimNames.PlayerId)?.Value;
+        if (!Guid.TryParse(claim, out var viewerId))
+            return;
+
+        // Friends badge counts friend requests + community invitations,
+        // matching the single Requests inbox on /friends (Sprint 2 S2.4).
+        var incomingFriends = await FriendService.ListIncomingRequestsAsync(viewerId);
+        var incomingInvites = await InvitationRepository.ListByInviteeAsync(
+            viewerId, CommunityInvitationStatus.Pending);
+        _pendingFriendRequestCount = incomingFriends.Count + incomingInvites.Count;
+        _unreadNotificationCount = await NotificationService.CountUnreadAsync(viewerId);
+    }
+}

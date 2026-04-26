@@ -34,6 +34,13 @@ services:
       # ASP.NET Core's convention of mapping __ → : in env var names.
       Auth__Google__ClientId: ${GOOGLE_CLIENT_ID}
       Auth__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET}
+      # Pre-production beta phase: seed the full mock dataset (venues + the
+      # 5 dev beta-test players + mock players/games/matches/communities) so
+      # beta testers can exercise every integration path against realistic
+      # data. SET TO Production BEFORE THE FIRST REAL LAUNCH so mock data
+      # stops being written to the live Atlas DB. Override at deploy time
+      # with SEED_MODE=Production in the GitHub Actions environment / VM env.
+      Seed__Mode: ${SEED_MODE:-Development}
 
     healthcheck:
       # /healthz is mapped via MapHealthChecks in Program.cs and includes a
