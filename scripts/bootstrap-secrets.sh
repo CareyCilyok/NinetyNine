@@ -6,15 +6,25 @@
 #   AZURE_VM_USER            azureuser (default; matches Bicep adminUsername)
 #   AZURE_VM_SSH_KEY         Private key contents from ~/.ssh/ninetynine_deploy
 #   MONGO_CONNECTION_STRING  Atlas connection string with /NinetyNine in path
-#   GOOGLE_CLIENT_ID         From Google Cloud Console OAuth credentials
-#   GOOGLE_CLIENT_SECRET     From Google Cloud Console OAuth credentials
+#   GOOGLE_CLIENT_ID         Placeholder — Google OAuth deferred (see v2-roadmap)
+#   GOOGLE_CLIENT_SECRET     Placeholder — Google OAuth deferred (see v2-roadmap)
+#
+# Google OAuth note:
+#   The app does not currently consume Auth:Google config (no AddGoogle() in
+#   Program.cs, no Google.AspNetCore.Authentication.Google package). Google
+#   OAuth integration is tracked as deferred work in
+#   docs/plans/v2-roadmap.md → Deferred / unscheduled backlog → Google OAuth.
+#   This script writes documented placeholder strings for the two GOOGLE_*
+#   secrets so deploy.yml's .env rendering stays valid.
 #
 # What it does:
 #   1. Validates gh CLI installed and authenticated
 #   2. Resolves the VM IP (from --vm-ip arg, or auto-detected from latest deployment)
 #   3. Reads the SSH private key from disk
-#   4. Prompts (no echo) for the three external secrets
-#   5. Pipes each value through `gh secret set` to your repo
+#   4. Prompts (no echo) for MONGO_CONNECTION_STRING (the only external secret
+#      currently required)
+#   5. Pipes all six secrets through `gh secret set` to your repo (Google ones
+#      use placeholder strings)
 #   6. Verifies all six secrets are set
 #
 # Usage:
@@ -122,6 +132,15 @@ if [ "$KEY_PERMS" != "600" ] && [ "$KEY_PERMS" != "400" ]; then
 fi
 
 # ── Prompt for external secrets ──────────────────────────────────────────────
+# Google OAuth is deferred for the initial deployment — see
+# docs/plans/v2-roadmap.md "Deferred / unscheduled backlog" for the tracked
+# work. The app does not currently consume Auth:Google config (no AddGoogle()
+# in Program.cs, no Google.AspNetCore.Authentication.Google package). The
+# deploy.yml workflow still renders these two env vars into the .env, so we
+# write documented placeholder strings here to keep the rendering valid; the
+# app reads neither.
+GOOGLE_OAUTH_PLACEHOLDER="deferred-see-v2-roadmap-backlog"
+
 cat <<EOF
 
 ──────────────────────────────────────────────────────────────────────────────
@@ -131,8 +150,13 @@ About to set six secrets on $REPO:
   AZURE_VM_USER           = $VM_USER
   AZURE_VM_SSH_KEY        = (private key contents from $SSH_PRIVATE_KEY_PATH)
   MONGO_CONNECTION_STRING = (you'll be prompted)
-  GOOGLE_CLIENT_ID        = (you'll be prompted)
-  GOOGLE_CLIENT_SECRET    = (you'll be prompted)
+  GOOGLE_CLIENT_ID        = $GOOGLE_OAUTH_PLACEHOLDER  (deferred — see v2-roadmap)
+  GOOGLE_CLIENT_SECRET    = $GOOGLE_OAUTH_PLACEHOLDER  (deferred — see v2-roadmap)
+
+Google OAuth integration is tracked in
+  docs/plans/v2-roadmap.md → Deferred / unscheduled backlog → Google OAuth
+The app does not currently consume Auth:Google config — these placeholders
+exist only to satisfy deploy.yml's .env rendering.
 
 Existing secret values will be overwritten silently. The new values are sent
 to GitHub via gh secret set and never logged.
@@ -163,12 +187,6 @@ _prompt_secret() {
 MONGO_CS="$(_prompt_secret 'MONGO_CONNECTION_STRING' \
     'Atlas connection string. Format: mongodb+srv://user:pass@host/NinetyNine?retryWrites=true&w=majority')"
 
-GOOGLE_ID="$(_prompt_secret 'GOOGLE_CLIENT_ID' \
-    'Google OAuth Client ID. Ends in .apps.googleusercontent.com')"
-
-GOOGLE_SECRET="$(_prompt_secret 'GOOGLE_CLIENT_SECRET' \
-    'Google OAuth Client Secret. Generated when the credential was created.')"
-
 # ── Push secrets ─────────────────────────────────────────────────────────────
 _info "Setting AZURE_VM_HOST..."
 printf '%s' "$VM_IP" | gh secret set AZURE_VM_HOST --repo "$REPO" --body -
@@ -182,14 +200,14 @@ gh secret set AZURE_VM_SSH_KEY --repo "$REPO" < "$SSH_PRIVATE_KEY_PATH"
 _info "Setting MONGO_CONNECTION_STRING..."
 printf '%s' "$MONGO_CS" | gh secret set MONGO_CONNECTION_STRING --repo "$REPO" --body -
 
-_info "Setting GOOGLE_CLIENT_ID..."
-printf '%s' "$GOOGLE_ID" | gh secret set GOOGLE_CLIENT_ID --repo "$REPO" --body -
+_info "Setting GOOGLE_CLIENT_ID (deferred placeholder — Google OAuth not yet wired in app)..."
+printf '%s' "$GOOGLE_OAUTH_PLACEHOLDER" | gh secret set GOOGLE_CLIENT_ID --repo "$REPO" --body -
 
-_info "Setting GOOGLE_CLIENT_SECRET..."
-printf '%s' "$GOOGLE_SECRET" | gh secret set GOOGLE_CLIENT_SECRET --repo "$REPO" --body -
+_info "Setting GOOGLE_CLIENT_SECRET (deferred placeholder — Google OAuth not yet wired in app)..."
+printf '%s' "$GOOGLE_OAUTH_PLACEHOLDER" | gh secret set GOOGLE_CLIENT_SECRET --repo "$REPO" --body -
 
 # Clear from environment ASAP. Variable is still in script memory until exit.
-unset MONGO_CS GOOGLE_ID GOOGLE_SECRET
+unset MONGO_CS
 
 # ── Verify ───────────────────────────────────────────────────────────────────
 _info "Verifying secrets are set on $REPO..."

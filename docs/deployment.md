@@ -57,7 +57,7 @@ GitHub push to master
 
 This is the **primary deployment path**. The `infra/main.bicep` template plus the three scripts under `scripts/` replace the manual `az` and SSH steps that used to live in Parts 1 and 2 of this runbook (those are preserved as Appendix C: Manual Provisioning Reference for fallback/reference).
 
-End-to-end time once Atlas + Google OAuth credentials exist: ~10 minutes.
+End-to-end time once Atlas exists: ~10 minutes. (Google OAuth setup is **deferred** for the initial deploy — see [Part 4](#part-4-google-oauth-setup) for the rationale and the tracked work in the v2 roadmap backlog.)
 
 ### What gets created
 
@@ -80,7 +80,7 @@ Cloud-init (`infra/cloud-init.yaml`) runs on first boot and installs Docker Engi
 2. GitHub CLI installed and authenticated (`gh auth status`).
 3. Deploy SSH keypair generated at `~/.ssh/ninetynine_deploy` (see `ssh-keygen` command in [Prerequisites](#prerequisites) below).
 4. MongoDB Atlas M0 cluster created (still manual — see [Part 3](#part-3-mongodb-atlas-setup)). Copy the connection string with `/NinetyNine` in the path.
-5. Google OAuth client created (still manual — see [Part 4](#part-4-google-oauth-setup)). Use a placeholder redirect URI like `http://localhost/signin-google` for now; update after you have the VM IP.
+5. ~~Google OAuth client created~~ **Deferred — skip for the initial deploy.** Google OAuth is not yet wired into the app code. See [Part 4](#part-4-google-oauth-setup) for the rationale and the tracked deferred work in the v2 roadmap backlog. `bootstrap-secrets.sh` writes documented placeholder values for the two `GOOGLE_*` secrets so the deploy pipeline still renders a valid `.env`.
 
 ### Three commands to deploy
 
@@ -92,11 +92,11 @@ Cloud-init (`infra/cloud-init.yaml`) runs on first boot and installs Docker Engi
 # → prints VM_PUBLIC_IP
 
 # 2. Update Atlas Network Access: add VM_PUBLIC_IP to the allowlist.
-# 3. Update Google OAuth: add http://VM_PUBLIC_IP/signin-google as authorized redirect URI.
+# 3. (Deferred — Google OAuth not yet wired in app; skip for initial deploy.)
 
 # 4. Populate GitHub Actions secrets (auto-detects VM IP from latest deployment).
 ./scripts/bootstrap-secrets.sh
-# → prompts for MONGO_CONNECTION_STRING, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# → prompts for MONGO_CONNECTION_STRING only; writes Google placeholders
 
 # 5. Trigger the deploy workflow.
 git push origin master           # if there are unpushed commits
@@ -108,7 +108,7 @@ gh run watch                     # follow live
 curl -fsS http://VM_PUBLIC_IP/healthz
 ```
 
-Then exercise Google OAuth in a browser and create a test game per [Part 7: Verification](#part-7-verification).
+Then sign in with email/password (the production-ready auth path) and create a test game per [Part 7: Verification](#part-7-verification). (Google OAuth is deferred — see [Part 4](#part-4-google-oauth-setup).)
 
 ### Useful overrides
 
@@ -256,6 +256,14 @@ When you outgrow the free tier, upgrade to M2 ($9/mo) or M5 ($25/mo) in the Atla
 ---
 
 ## Part 4: Google OAuth Setup
+
+> **Deferred for the initial production deploy.** The app does not currently consume `Auth:Google:ClientId` / `Auth:Google:ClientSecret` config — there is no `AddGoogle()` in `src/NinetyNine.Web/Program.cs` and no Google authentication NuGet package is referenced. Email/password authentication is fully wired and works in production without this step.
+>
+> The work to wire up Google OAuth is tracked in [`docs/plans/v2-roadmap.md`](./plans/v2-roadmap.md) → **Deferred / unscheduled backlog** → **TD-1: Google OAuth integration**, which captures the package add, `Program.cs` changes, endpoint wiring, UI, and tests required.
+>
+> `scripts/bootstrap-secrets.sh` writes the literal placeholder string `deferred-see-v2-roadmap-backlog` for both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` so that `deploy.yml`'s `.env` rendering stays valid; the app reads neither value.
+>
+> The walkthrough below remains accurate and is preserved for the eventual integration. **Skip this entire Part 4 for the initial deploy** and proceed to Part 5.
 
 ### Create the OAuth 2.0 credentials
 

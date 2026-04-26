@@ -851,6 +851,52 @@ Per the HCD accessibility audit, two pre-existing issues must be resolved before
 
 ---
 
+## Deferred / unscheduled backlog
+
+Items captured here are accepted technical debt or scoped-but-deferred features that are not yet assigned to a sprint. They will be promoted into a sprint when prioritized.
+
+### TD-1 — Google OAuth integration
+
+**Status:** Deferred from initial production deploy (2026-04-25)
+**Severity:** Low — email/password auth already works; OAuth is an additional convenience, not a gap
+**Owner:** Backend (when scheduled)
+
+**Context:**
+
+The deployment runbook (`docs/deployment.md` Part 4) and the original `bootstrap-secrets.sh` script both treated Google OAuth as a required setup step for production. That was premature: the app does not currently consume `Auth:Google:ClientId` / `Auth:Google:ClientSecret` config. There is no `AddGoogle()` in `src/NinetyNine.Web/Program.cs`, no `Microsoft.AspNetCore.Authentication.Google` (or `Google.AspNetCore.Authentication.Google`) package reference in `src/NinetyNine.Web/NinetyNine.Web.csproj`, and no `/signin-google` callback handler in `src/NinetyNine.Web/Auth/`. The config keys exist as forward-looking stubs (`appsettings.json` has empty strings; `appsettings.Development.json` has `"dev-noop"` placeholders).
+
+Email/password authentication is fully wired and works in production: `AuthEndpoints.cs` handles login/registration; `PasswordHasher<Player>` (PBKDF2 via ASP.NET Core Identity) is registered in `Program.cs:94`; `MailKit` is wired for verification email delivery. Mock auth (`MockAuthEndpoints`) is gated to Development + an explicit flag.
+
+**What "deferring" means operationally:**
+
+`scripts/bootstrap-secrets.sh` writes the literal string `deferred-see-v2-roadmap-backlog` for both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` GitHub secrets. The `deploy.yml` workflow renders both into the `.env` file on the VM as `GOOGLE_CLIENT_ID=deferred-see-v2-roadmap-backlog` etc. The app reads neither, so nothing breaks. This keeps the deploy pipeline shape stable so re-enabling OAuth later is purely additive (drop in real values, don't have to change pipeline structure).
+
+**When this is scheduled, the work is:**
+
+1. Add NuGet package `Microsoft.AspNetCore.Authentication.Google` to `src/NinetyNine.Web/NinetyNine.Web.csproj`
+2. In `Program.cs`, extend the existing `.AddAuthentication(...).AddCookie(...)` chain with `.AddGoogle(o => { o.ClientId = builder.Configuration["Auth:Google:ClientId"]!; o.ClientSecret = builder.Configuration["Auth:Google:ClientSecret"]!; o.CallbackPath = "/signin-google"; })`
+3. In `AuthEndpoints.cs`, add a `MapGet("/login/google", ...)` endpoint that issues a `Challenge(GoogleDefaults.AuthenticationScheme, ...)` redirect, and a callback handler that maps the Google `ClaimTypes.NameIdentifier` to a `Player` via `PlayerService.RegisterAsync(displayName, "Google", providerUserId)` (the existing service already understands a `"Google"` provider string — see `tests/NinetyNine.Services.Tests/PlayerServiceTests.cs`)
+4. UI: add a "Sign in with Google" button to the login page below the existing email/password form
+5. Provision real Google Cloud OAuth credentials per the existing `docs/deployment.md` Part 4 walkthrough — that section is preserved and accurate
+6. Update the GitHub secrets `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` with the real values (re-run `bootstrap-secrets.sh` after the integration ships, OR set them manually via `gh secret set`)
+7. Add the production redirect URI `http://<VM_IP>/signin-google` (or `https://<domain>/signin-google` once TLS lands) to the Google OAuth client's authorized redirect URIs
+8. Acceptance: a user can click "Sign in with Google" → complete the OAuth flow → land on the registration page (first time) or home (subsequent) → an integration test in `NinetyNine.Web.Tests` covers the callback path
+
+**Estimated effort:** 5 SP — small package add + endpoint wiring + UI; the data-model side (`PlayerService.RegisterAsync(_, "Google", _)`) already exists and is tested.
+
+**Files affected:**
+
+- `src/NinetyNine.Web/NinetyNine.Web.csproj` (package reference)
+- `src/NinetyNine.Web/Program.cs` (auth pipeline)
+- `src/NinetyNine.Web/Auth/AuthEndpoints.cs` (challenge + callback)
+- `src/NinetyNine.Web/Components/Pages/Login.razor` (sign-in button)
+- `tests/NinetyNine.Web.Tests/Auth/GoogleOAuthCallbackTests.cs` (new)
+- `docs/deployment.md` (un-mark Part 4 as deferred; cross-link removed)
+- `scripts/bootstrap-secrets.sh` (re-introduce prompts for Google secrets, remove placeholder logic)
+- `docs/plans/v2-roadmap.md` (mark TD-1 as completed; remove from this section)
+
+---
+
 ## Architectural decisions
 
 ### AD-1: Static SSR + selective SignalR (not global InteractiveServer)
