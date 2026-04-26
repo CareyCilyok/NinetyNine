@@ -53,6 +53,111 @@ GitHub push to master
 
 ---
 
+## Quick Start (Automated)
+
+This is the **primary deployment path**. The `infra/main.bicep` template plus the three scripts under `scripts/` replace the manual `az` and SSH steps that used to live in Parts 1 and 2 of this runbook (those are preserved as Appendix C: Manual Provisioning Reference for fallback/reference).
+
+End-to-end time once Atlas + Google OAuth credentials exist: ~10 minutes.
+
+### What gets created
+
+The Bicep template provisions everything in a single resource group:
+
+| Resource | Bicep type | Notes |
+|---|---|---|
+| Standard_B2s VM | `Microsoft.Compute/virtualMachines` | Ubuntu 22.04 LTS Gen2, SSH key auth only, cloud-init bootstrap |
+| Standard SSD OS disk | (inline on VM) | 30 GB; deleted with VM |
+| Static public IP | `Microsoft.Network/publicIPAddresses` | Standard SKU, IPv4 |
+| Network interface | `Microsoft.Network/networkInterfaces` | Bound to vnet + public IP + NSG |
+| Virtual network | `Microsoft.Network/virtualNetworks` | 10.0.0.0/16 with subnet 10.0.1.0/24 |
+| Network security group | `Microsoft.Network/networkSecurityGroups` | SSH from operator IP only; HTTP :80 from Internet |
+
+Cloud-init (`infra/cloud-init.yaml`) runs on first boot and installs Docker Engine + Compose v2 from the official Docker apt repo, adds `azureuser` to the `docker` group, creates `/opt/ninetynine`, and enables `fail2ban` + `unattended-upgrades` (security-only). After it finishes, the VM is ready for the `deploy.yml` workflow to SSH in.
+
+### Prerequisites for the automated path
+
+1. Azure free or PAYG account, signed in via `az login`. Verify with `az account show`.
+2. GitHub CLI installed and authenticated (`gh auth status`).
+3. Deploy SSH keypair generated at `~/.ssh/ninetynine_deploy` (see `ssh-keygen` command in [Prerequisites](#prerequisites) below).
+4. MongoDB Atlas M0 cluster created (still manual — see [Part 3](#part-3-mongodb-atlas-setup)). Copy the connection string with `/NinetyNine` in the path.
+5. Google OAuth client created (still manual — see [Part 4](#part-4-google-oauth-setup)). Use a placeholder redirect URI like `http://localhost/signin-google` for now; update after you have the VM IP.
+
+### Three commands to deploy
+
+```bash
+# 1. Provision Azure infrastructure (creates RG, VM, IP, NSG; runs cloud-init).
+#    Auto-detects your operator IP for the SSH NSG rule, prompts to confirm
+#    parameters before deploying. Takes 2-4 minutes.
+./scripts/provision-azure.sh
+# → prints VM_PUBLIC_IP
+
+# 2. Update Atlas Network Access: add VM_PUBLIC_IP to the allowlist.
+# 3. Update Google OAuth: add http://VM_PUBLIC_IP/signin-google as authorized redirect URI.
+
+# 4. Populate GitHub Actions secrets (auto-detects VM IP from latest deployment).
+./scripts/bootstrap-secrets.sh
+# → prompts for MONGO_CONNECTION_STRING, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+
+# 5. Trigger the deploy workflow.
+git push origin master           # if there are unpushed commits
+# or
+gh workflow run deploy.yml       # manual dispatch
+gh run watch                     # follow live
+
+# 6. Verify health.
+curl -fsS http://VM_PUBLIC_IP/healthz
+```
+
+Then exercise Google OAuth in a browser and create a test game per [Part 7: Verification](#part-7-verification).
+
+### Useful overrides
+
+`provision-azure.sh` accepts flags for cases where defaults don't fit. See `./scripts/provision-azure.sh --help`. Common ones:
+
+```bash
+--location westus2                          # different Azure region
+--operator-ip 1.2.3.4                       # override IP auto-detect (e.g. behind CGNAT)
+--vm-size Standard_B1s                      # downgrade for free-tier 12-month VM hours
+--resource-group rg-ninetynine-prod-westus2 # custom RG name
+```
+
+### Re-running the provision script
+
+The Bicep template is idempotent. Re-running `provision-azure.sh` against an existing deployment will reconcile drift (e.g., re-applies your operator IP to the SSH NSG rule if it changed). It will not destroy or recreate the VM unless you change a property that requires replacement (VM size changes are in-place; image changes are not).
+
+### Tearing it all down
+
+```bash
+./scripts/teardown-azure.sh
+# Lists everything in the RG, requires you to type the RG name to confirm,
+# then deletes the entire group asynchronously. External services (Atlas,
+# Google OAuth, GHCR images) are untouched.
+```
+
+### Troubleshooting the automated path
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `provision-azure.sh` fails with `SkuNotAvailable` | B2s not available in your subscription's region/zone | Pass `--location <other-region>` (try `westus2`, `centralus`, `northeurope`) |
+| `provision-azure.sh` fails with `OperationNotAllowed: vCPU quota exceeded` | New subscriptions have low default CPU quotas in some regions | Request a quota increase via the portal: Subscriptions → Usage + quotas → Compute (typically approved within minutes for B-series) |
+| `provision-azure.sh` succeeds but SSH fails with "connection refused" | Cloud-init is still running on the VM | Wait 3-5 minutes; check `sudo cloud-init status --long` after SSH connects |
+| `deploy.yml` step "Trust VM host key" fails with `ssh-keyscan` error | NSG SSH rule blocks GitHub Actions runner IPs | Open SSH temporarily to `0.0.0.0/0` for the deploy, or use the host-key-known-good pattern documented in `.github/workflows/deploy.yml` comments |
+| `bootstrap-secrets.sh` can't auto-detect VM IP | Wrong `--resource-group` (you used a non-default region) | Pass `--resource-group rg-ninetynine-prod-<your-region>` or `--vm-ip <ip>` |
+| Bicep deployment fails with `InvalidParameter` on `sshPublicKey` | Public key isn't a valid OpenSSH format | Confirm the key starts with `ssh-ed25519` or `ssh-rsa`. Do NOT pass the private key. |
+| `cloud-init status` shows `error` after VM provisions | Docker apt repo unreachable, or apt lock contention with unattended-upgrades during first-boot | SSH in, `sudo cat /var/log/cloud-init-output.log` for the failing step. Often re-runnable: `sudo cloud-init clean --logs && sudo cloud-init init && sudo cloud-init modules --mode=final` |
+
+### When to use the manual path instead
+
+Use the Manual Provisioning Reference (Appendix C, originally Parts 1–2 of this doc) when:
+
+- You're debugging the automated path and need to bisect which step is failing
+- You're learning Azure resource creation and want to see each command explicitly
+- You need a one-off resource configuration that the Bicep template doesn't parameterize
+
+The manual and automated paths produce identical end states; you can mix them (e.g., provision via Bicep, then add an additional resource manually).
+
+---
+
 ## Prerequisites
 
 Before starting, confirm you have:
@@ -73,249 +178,11 @@ This produces `~/.ssh/ninetynine_deploy` (private key) and `~/.ssh/ninetynine_de
 
 ---
 
-## Part 1: Provision the Azure VM
+## Parts 1 + 2 — moved to Appendix C
 
-### Resource group and naming
+The manual Azure CLI walkthrough and VM bootstrap steps that used to live here have been moved to **[Appendix C: Manual Provisioning Reference](#appendix-c-manual-provisioning-reference)** at the end of this document. The primary path is now [Quick Start (Automated)](#quick-start-automated) above, which uses `infra/main.bicep` + `scripts/provision-azure.sh` to perform the same work in two commands.
 
-Create a dedicated resource group. Suggested naming convention:
-
-```
-rg-ninetynine-prod-<region-shortcode>
-```
-
-Examples: `rg-ninetynine-prod-eastus`, `rg-ninetynine-prod-westeurope`
-
-Choose a region near your expected users. The VM and MongoDB Atlas cluster should be in the same or adjacent regions to minimize round-trip latency.
-
-### Public IP: static vs. dynamic
-
-Azure assigns a dynamic public IP by default. This is acceptable for initial deployment, but the IP will change if you deallocate (stop) the VM. A static IP costs a small additional amount (~$3–4/mo) but avoids having to update your GitHub secrets and MongoDB Atlas allowlist after a VM restart.
-
-**Recommendation**: allocate a static IP from the start (`--public-ip-sku Standard` with `--public-ip-address-allocation Static`). The cost is minor relative to debugging a broken deployment after an accidental deallocation.
-
-### Azure CLI: step-by-step
-
-Install the Azure CLI from [https://learn.microsoft.com/en-us/cli/azure/install-azure-cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) if you do not already have it, then log in:
-
-```bash
-az login
-```
-
-Set your default subscription if you have more than one:
-
-```bash
-az account set --subscription "<your-subscription-name-or-id>"
-```
-
-**Step 1 — Create the resource group:**
-
-```bash
-az group create \
-  --name rg-ninetynine-prod-eastus \
-  --location eastus
-```
-
-- `--name`: the resource group name (follow the convention above)
-- `--location`: Azure region identifier; run `az account list-locations -o table` for the full list
-
-**Step 2 — Create the VM:**
-
-```bash
-az vm create \
-  --resource-group rg-ninetynine-prod-eastus \
-  --name vm-ninetynine-prod \
-  --image Ubuntu2204 \
-  --size Standard_B2s \
-  --admin-username azureuser \
-  --ssh-key-values ~/.ssh/ninetynine_deploy.pub \
-  --public-ip-sku Standard \
-  --public-ip-address-allocation Static \
-  --public-ip-address pip-ninetynine-prod \
-  --nsg nsg-ninetynine-prod \
-  --output table
-```
-
-Flag explanations:
-
-| Flag | Purpose |
-|---|---|
-| `--image Ubuntu2204` | Ubuntu 22.04 LTS — current stable LTS, supported until 2027 |
-| `--size Standard_B2s` | 2 vCPU, 4 GiB RAM; burstable B-series handles low/medium traffic without wasted spend |
-| `--admin-username azureuser` | The login user on the VM; avoid `root` |
-| `--ssh-key-values` | Your public key — Azure injects it into `~/.ssh/authorized_keys` |
-| `--public-ip-sku Standard` | Required for static allocation |
-| `--public-ip-address-allocation Static` | IP will not change on deallocation |
-| `--public-ip-address pip-ninetynine-prod` | Names the public IP resource for easy reference |
-| `--nsg nsg-ninetynine-prod` | Creates a new Network Security Group attached to the NIC |
-
-**Step 3 — Open inbound ports:**
-
-The VM creation above creates an NSG but does not open any ports. Add the required rules:
-
-```bash
-# SSH — restricted to your operator IP only
-az network nsg rule create \
-  --resource-group rg-ninetynine-prod-eastus \
-  --nsg-name nsg-ninetynine-prod \
-  --name allow-ssh \
-  --protocol Tcp \
-  --direction Inbound \
-  --priority 100 \
-  --source-address-prefixes "<your-operator-ip>/32" \
-  --destination-port-ranges 22 \
-  --access Allow
-
-# HTTP — open to the internet
-az network nsg rule create \
-  --resource-group rg-ninetynine-prod-eastus \
-  --nsg-name nsg-ninetynine-prod \
-  --name allow-http \
-  --protocol Tcp \
-  --direction Inbound \
-  --priority 110 \
-  --source-address-prefixes "*" \
-  --destination-port-ranges 80 \
-  --access Allow
-```
-
-Replace `<your-operator-ip>` with your current public IP. You can find it with `curl -s ifconfig.me`.
-
-**Step 4 — Record the VM's public IP:**
-
-```bash
-az network public-ip show \
-  --resource-group rg-ninetynine-prod-eastus \
-  --name pip-ninetynine-prod \
-  --query ipAddress \
-  --output tsv
-```
-
-Save this IP. You will need it for MongoDB Atlas allowlisting and GitHub secrets.
-
-### Alternative: Azure Portal walkthrough
-
-If you prefer the portal:
-
-1. Navigate to **Virtual Machines** → **Create** → **Azure virtual machine**
-2. Resource group: create new, use the naming convention above
-3. VM name: `vm-ninetynine-prod`
-4. Region: your target region
-5. Image: **Ubuntu Server 22.04 LTS**
-6. Size: **Standard_B2s** (search "B2s" in the size picker)
-7. Authentication type: **SSH public key** — paste the contents of `~/.ssh/ninetynine_deploy.pub`
-8. Inbound port rules: select **SSH (22)** for now; you will restrict the source IP and add port 80 after creation
-9. On the **Networking** tab: create a new NSG, set the public IP to **Static**
-10. Review + Create, then post-creation go to the NSG to add the HTTP rule and restrict SSH to your IP
-
----
-
-## Part 2: VM Initial Setup
-
-SSH into the VM using the IP you recorded above:
-
-```bash
-ssh -i ~/.ssh/ninetynine_deploy azureuser@<VM_PUBLIC_IP>
-```
-
-### Update packages
-
-```bash
-sudo apt update && sudo apt upgrade -y
-```
-
-This may take a few minutes on a fresh VM. Reboot if the upgrade includes a kernel update:
-
-```bash
-sudo reboot
-```
-
-Reconnect via SSH after the reboot.
-
-### Install Docker Engine
-
-Use the official Docker repository, not the Ubuntu snap or the default apt package (which is typically outdated):
-
-```bash
-# Remove any old versions
-sudo apt remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
-
-# Install prerequisites
-sudo apt install -y ca-certificates curl gnupg lsb-release
-
-# Add Docker's GPG key
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-  | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
-
-# Add the repository
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" \
-  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Install Docker Engine and the Compose v2 plugin
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-```
-
-### Add the deploy user to the docker group
-
-```bash
-sudo usermod -aG docker azureuser
-```
-
-Log out and back in for the group change to take effect:
-
-```bash
-exit
-# reconnect
-ssh -i ~/.ssh/ninetynine_deploy azureuser@<VM_PUBLIC_IP>
-```
-
-### Verify Docker is working
-
-```bash
-docker run hello-world
-docker compose version
-```
-
-Both commands should succeed without `sudo`. If `hello-world` fails with a permission denied error, the group change has not taken effect yet — log out and reconnect.
-
-### Create the application directory
-
-```bash
-sudo mkdir -p /opt/ninetynine
-sudo chown azureuser:azureuser /opt/ninetynine
-```
-
-The GitHub Actions deploy workflow writes `docker-compose.yml` and `.env` into this directory on each deployment.
-
-### Log rotation
-
-Log rotation is already configured in `docker-compose.yml` via the `json-file` driver with `max-size: 10m` and `max-file: 5`. No additional host-level configuration is required — Docker handles rotation automatically at 10 MB per file, keeping a maximum of 5 rotated files (50 MB total per service).
-
-### Optional: unattended security upgrades
-
-Enable automatic security patches to reduce the maintenance burden:
-
-```bash
-sudo apt install -y unattended-upgrades
-sudo dpkg-reconfigure --priority=low unattended-upgrades
-```
-
-Accept the default (enable automatic updates).
-
-### Optional: fail2ban for SSH protection
-
-```bash
-sudo apt install -y fail2ban
-sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
-```
-
-The default configuration bans IPs after 5 failed SSH login attempts. This complements the NSG rule restricting SSH to your operator IP.
+If the automated path fails or you want to understand the underlying steps, jump to Appendix C.
 
 ---
 
@@ -778,3 +645,253 @@ Prices are approximate as of April 2026. Azure pricing varies by region and chan
 | Static IP → Azure DDoS Basic | No cost (included) |
 | Azure Bastion for SSH (instead of open port 22) | +$140/mo — not recommended for this scale |
 | Custom domain (varies by registrar) | ~$10–15/yr |
+
+---
+
+## Appendix C: Manual Provisioning Reference
+
+The Quick Start (Automated) section is the primary deployment path. This appendix preserves the original manual `az` and SSH walkthrough for use as a fallback, for debugging the automated path step-by-step, or for understanding what `infra/main.bicep` and `infra/cloud-init.yaml` are doing under the hood.
+
+The end state produced by these manual steps is identical to running `./scripts/provision-azure.sh`.
+
+### C.1 Provision the Azure VM (manual)
+
+#### Resource group and naming
+
+Create a dedicated resource group. Suggested naming convention:
+
+```
+rg-ninetynine-prod-<region-shortcode>
+```
+
+Examples: `rg-ninetynine-prod-eastus`, `rg-ninetynine-prod-westeurope`
+
+Choose a region near your expected users. The VM and MongoDB Atlas cluster should be in the same or adjacent regions to minimize round-trip latency.
+
+#### Public IP: static vs. dynamic
+
+Azure assigns a dynamic public IP by default. This is acceptable for initial deployment, but the IP will change if you deallocate (stop) the VM. A static IP costs a small additional amount (~$3–4/mo) but avoids having to update your GitHub secrets and MongoDB Atlas allowlist after a VM restart.
+
+**Recommendation**: allocate a static IP from the start (`--public-ip-sku Standard` with `--public-ip-address-allocation Static`). The cost is minor relative to debugging a broken deployment after an accidental deallocation.
+
+#### Azure CLI: step-by-step
+
+Install the Azure CLI from [https://learn.microsoft.com/en-us/cli/azure/install-azure-cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) if you do not already have it, then log in:
+
+```bash
+az login
+```
+
+Set your default subscription if you have more than one:
+
+```bash
+az account set --subscription "<your-subscription-name-or-id>"
+```
+
+**Step 1 — Create the resource group:**
+
+```bash
+az group create \
+  --name rg-ninetynine-prod-eastus \
+  --location eastus
+```
+
+- `--name`: the resource group name (follow the convention above)
+- `--location`: Azure region identifier; run `az account list-locations -o table` for the full list
+
+**Step 2 — Create the VM:**
+
+```bash
+az vm create \
+  --resource-group rg-ninetynine-prod-eastus \
+  --name vm-ninetynine-prod \
+  --image Ubuntu2204 \
+  --size Standard_B2s \
+  --admin-username azureuser \
+  --ssh-key-values ~/.ssh/ninetynine_deploy.pub \
+  --public-ip-sku Standard \
+  --public-ip-address-allocation Static \
+  --public-ip-address pip-ninetynine-prod \
+  --nsg nsg-ninetynine-prod \
+  --output table
+```
+
+Flag explanations:
+
+| Flag | Purpose |
+|---|---|
+| `--image Ubuntu2204` | Ubuntu 22.04 LTS — current stable LTS, supported until 2027 |
+| `--size Standard_B2s` | 2 vCPU, 4 GiB RAM; burstable B-series handles low/medium traffic without wasted spend |
+| `--admin-username azureuser` | The login user on the VM; avoid `root` |
+| `--ssh-key-values` | Your public key — Azure injects it into `~/.ssh/authorized_keys` |
+| `--public-ip-sku Standard` | Required for static allocation |
+| `--public-ip-address-allocation Static` | IP will not change on deallocation |
+| `--public-ip-address pip-ninetynine-prod` | Names the public IP resource for easy reference |
+| `--nsg nsg-ninetynine-prod` | Creates a new Network Security Group attached to the NIC |
+
+**Step 3 — Open inbound ports:**
+
+The VM creation above creates an NSG but does not open any ports. Add the required rules:
+
+```bash
+# SSH — restricted to your operator IP only
+az network nsg rule create \
+  --resource-group rg-ninetynine-prod-eastus \
+  --nsg-name nsg-ninetynine-prod \
+  --name allow-ssh \
+  --protocol Tcp \
+  --direction Inbound \
+  --priority 100 \
+  --source-address-prefixes "<your-operator-ip>/32" \
+  --destination-port-ranges 22 \
+  --access Allow
+
+# HTTP — open to the internet
+az network nsg rule create \
+  --resource-group rg-ninetynine-prod-eastus \
+  --nsg-name nsg-ninetynine-prod \
+  --name allow-http \
+  --protocol Tcp \
+  --direction Inbound \
+  --priority 110 \
+  --source-address-prefixes "*" \
+  --destination-port-ranges 80 \
+  --access Allow
+```
+
+Replace `<your-operator-ip>` with your current public IP. You can find it with `curl -s ifconfig.me`.
+
+**Step 4 — Record the VM's public IP:**
+
+```bash
+az network public-ip show \
+  --resource-group rg-ninetynine-prod-eastus \
+  --name pip-ninetynine-prod \
+  --query ipAddress \
+  --output tsv
+```
+
+Save this IP. You will need it for MongoDB Atlas allowlisting and GitHub secrets.
+
+#### Alternative: Azure Portal walkthrough
+
+If you prefer the portal:
+
+1. Navigate to **Virtual Machines** → **Create** → **Azure virtual machine**
+2. Resource group: create new, use the naming convention above
+3. VM name: `vm-ninetynine-prod`
+4. Region: your target region
+5. Image: **Ubuntu Server 22.04 LTS**
+6. Size: **Standard_B2s** (search "B2s" in the size picker)
+7. Authentication type: **SSH public key** — paste the contents of `~/.ssh/ninetynine_deploy.pub`
+8. Inbound port rules: select **SSH (22)** for now; you will restrict the source IP and add port 80 after creation
+9. On the **Networking** tab: create a new NSG, set the public IP to **Static**
+10. Review + Create, then post-creation go to the NSG to add the HTTP rule and restrict SSH to your IP
+
+### C.2 VM Initial Setup (manual)
+
+SSH into the VM using the IP you recorded above:
+
+```bash
+ssh -i ~/.ssh/ninetynine_deploy azureuser@<VM_PUBLIC_IP>
+```
+
+#### Update packages
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+This may take a few minutes on a fresh VM. Reboot if the upgrade includes a kernel update:
+
+```bash
+sudo reboot
+```
+
+Reconnect via SSH after the reboot.
+
+#### Install Docker Engine
+
+Use the official Docker repository, not the Ubuntu snap or the default apt package (which is typically outdated):
+
+```bash
+# Remove any old versions
+sudo apt remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
+
+# Install prerequisites
+sudo apt install -y ca-certificates curl gnupg lsb-release
+
+# Add Docker's GPG key
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+# Add the repository
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install Docker Engine and the Compose v2 plugin
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+#### Add the deploy user to the docker group
+
+```bash
+sudo usermod -aG docker azureuser
+```
+
+Log out and back in for the group change to take effect:
+
+```bash
+exit
+# reconnect
+ssh -i ~/.ssh/ninetynine_deploy azureuser@<VM_PUBLIC_IP>
+```
+
+#### Verify Docker is working
+
+```bash
+docker run hello-world
+docker compose version
+```
+
+Both commands should succeed without `sudo`. If `hello-world` fails with a permission denied error, the group change has not taken effect yet — log out and reconnect.
+
+#### Create the application directory
+
+```bash
+sudo mkdir -p /opt/ninetynine
+sudo chown azureuser:azureuser /opt/ninetynine
+```
+
+The GitHub Actions deploy workflow writes `docker-compose.yml` and `.env` into this directory on each deployment.
+
+#### Log rotation
+
+Log rotation is already configured in `docker-compose.yml` via the `json-file` driver with `max-size: 10m` and `max-file: 5`. No additional host-level configuration is required — Docker handles rotation automatically at 10 MB per file, keeping a maximum of 5 rotated files (50 MB total per service).
+
+#### Optional: unattended security upgrades
+
+Enable automatic security patches to reduce the maintenance burden:
+
+```bash
+sudo apt install -y unattended-upgrades
+sudo dpkg-reconfigure --priority=low unattended-upgrades
+```
+
+Accept the default (enable automatic updates).
+
+#### Optional: fail2ban for SSH protection
+
+```bash
+sudo apt install -y fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+```
+
+The default configuration bans IPs after 5 failed SSH login attempts. This complements the NSG rule restricting SSH to your operator IP.

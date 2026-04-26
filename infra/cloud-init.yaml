@@ -1,0 +1,101 @@
+#cloud-config
+# NinetyNine VM first-boot bootstrap.
+#
+# Replaces manual Part 2 of docs/deployment.md (VM Initial Setup). Runs once on
+# first boot via cloud-init, with all output captured in /var/log/cloud-init-output.log.
+# Subsequent reboots no-op (cloud-init records first-boot completion).
+#
+# Side effects after successful run:
+#   - Docker Engine + Compose v2 plugin installed from the official Docker apt repo
+#   - azureuser added to the docker group (can run `docker` without sudo)
+#   - /opt/ninetynine created, owned by azureuser:azureuser, mode 750
+#   - fail2ban installed and enabled (default jail bans IPs after 5 failed SSH attempts)
+#   - unattended-upgrades installed for automatic security patches
+#   - System packages updated to latest patch versions
+#
+# After cloud-init finishes, the VM is ready for the deploy.yml workflow to SSH
+# in and `docker compose pull && up -d`. No manual intervention required.
+#
+# Troubleshooting:
+#   sudo cat /var/log/cloud-init-output.log
+#   sudo cloud-init status --long
+#   sudo cloud-init analyze show
+
+package_update: true
+package_upgrade: true
+
+# Packages installed via apt before runcmd executes.
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+  - fail2ban
+  - unattended-upgrades
+
+write_files:
+  # Pin unattended-upgrades to security updates only (default config sometimes
+  # enables -updates which can pull in non-security changes that need reboots).
+  - path: /etc/apt/apt.conf.d/50unattended-upgrades-ninetynine
+    content: |
+      Unattended-Upgrade::Allowed-Origins {
+        "${distro_id}:${distro_codename}-security";
+        "${distro_id}ESMApps:${distro_codename}-apps-security";
+        "${distro_id}ESM:${distro_codename}-infra-security";
+      };
+      Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+      Unattended-Upgrade::MinimalSteps "true";
+      Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+      Unattended-Upgrade::Automatic-Reboot "false";
+    permissions: '0644'
+    owner: root:root
+
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    permissions: '0644'
+    owner: root:root
+
+# Ordered shell commands. Each line runs as root in /. Failures abort cloud-init
+# and surface in /var/log/cloud-init-output.log with non-zero exit codes.
+runcmd:
+  # ── Docker Engine + Compose v2 from the official Docker apt repo ────────────
+  # Avoid the Ubuntu default `docker.io` and `snap install docker` — both lag
+  # upstream and have integration quirks with rootless setups.
+  - install -m 0755 -d /etc/apt/keyrings
+  - |
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+      | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  - chmod a+r /etc/apt/keyrings/docker.gpg
+  - |
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+    https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+      > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  # ── Application dirs and group membership ──────────────────────────────────
+  - usermod -aG docker azureuser
+  - install -d -o azureuser -g azureuser -m 0750 /opt/ninetynine
+
+  # ── Service enablement ─────────────────────────────────────────────────────
+  - systemctl enable --now docker
+  - systemctl enable --now fail2ban
+  - systemctl enable --now unattended-upgrades
+
+  # ── Smoke test: confirm docker works for the deploy user ───────────────────
+  # Runs the official hello-world image as azureuser via sudo -u (group
+  # membership doesn't apply to existing root sessions, so this is the
+  # cleanest way to validate from within cloud-init's root context). On
+  # failure, surfaces in /var/log/cloud-init-output.log for debugging.
+  - sudo -u azureuser docker run --rm hello-world
+
+# Final message in /var/log/cloud-init-output.log when bootstrap finishes.
+# Useful for confirming first-boot completion when SSHing in.
+final_message: |
+  NinetyNine VM bootstrap complete after $UPTIME seconds.
+  Docker, Compose, fail2ban, and unattended-upgrades are installed and active.
+  /opt/ninetynine is ready for the deploy.yml workflow to SSH in.
+  Cloud-init log: /var/log/cloud-init-output.log
