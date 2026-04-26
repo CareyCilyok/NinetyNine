@@ -3,6 +3,7 @@
 This file is the in-repo mirror of the milestone-tag annotations Claude Code has been writing to the project. Claude Design can read this file from the repo (commit & tag annotations on GitHub aren't reachable from the design-side tooling).
 
 **How to use this file:**
+
 - Read top-down. Each milestone section summarizes what shipped in that tag range and lists the open design questions.
 - Reply by editing this file directly (add a `## Design feedback for milestone/vX.Y` section near the end with notes for Claude Code), or by tagging a sibling `CLAUDE-DESIGN-FEEDBACK-FROM-DESIGN.md`. Claude Code reads this file at the start of each session.
 - When a question is resolved, mark it `~~Resolved:~~` inline rather than deleting it — keeps the audit trail.
@@ -105,14 +106,14 @@ The Sequential code paths still exist in the model/service layer but no UI surfa
 
 | Bracket            | Fargo      | Std mean   | Efren mean   | Efren drop |
 |--------------------|------------|------------|--------------|------------|
-| Rec/Beginner       | 270–349    | ~12        | ~12          | ~3% |
-| Developing C       | 350–449    | ~22        | ~21          | ~5% |
-| Mid Amateur B      | 450–549    | ~38        | ~35          | ~8% |
-| Strong B+          | 550–619    | ~52        | ~47          | ~10% |
-| Advanced A-        | 620–699    | ~62        | ~56          | ~10% |
-| Strong A+          | 700–749    | ~71        | ~63          | ~11% |
-| Elite Amateur      | 750–799    | ~79        | ~70          | ~12% |
-| Touring Pro        | 800–850    | ~87        | ~78          | ~13% |
+| Rec/Beginner       | 270–349    | ~12        | ~12          | ~3%        |
+| Developing C       | 350–449    | ~22        | ~21          | ~5%        |
+| Mid Amateur B      | 450–549    | ~38        | ~35          | ~8%        |
+| Strong B+          | 550–619    | ~52        | ~47          | ~10%       |
+| Advanced A-        | 620–699    | ~62        | ~56          | ~10%       |
+| Strong A+          | 700–749    | ~71        | ~63          | ~11%       |
+| Elite Amateur      | 750–799    | ~79        | ~70          | ~12%       |
+| Touring Pro        | 800–850    | ~87        | ~78          | ~13%       |
 
 All pros generate Efren-only games. Standard-mode Reyes/SVB/Filler data does NOT exist in this snapshot — by design.
 
@@ -139,15 +140,17 @@ All pros generate Efren-only games. Standard-mode Reyes/SVB/Filler data does NOT
 
 ---
 
-## Milestone v0.8 — Hierarchical communities + Browse players
+## Milestone v0.8 — Hierarchical communities + Browse players + visibility model
 
-### What shipped (v0.8.0 → v0.8.2)
+### What shipped (v0.8.0 → v0.8.4)
 
 | Tag | Scope |
 | --- | --- |
 | v0.8.0 | `Community.ParentCommunityId` (nullable Guid; null = root); `EnsureGlobalCommunityAsync` seeds a "Global" root owned by carey; existing communities reparented under Global; `ICommunityService.GetTreeAsync()` + `SetParentAsync()` (with cycle detection); JSON Schema + snapshot updated. |
 | v0.8.1 | Communities tree view at the top of `/communities`. Recursive `CommunityTreeNode.razor` shared component renders indented children with a teal-tinted dashed guide line. |
 | v0.8.2 | `/players/browse` page (WIP). Lists every non-retired player with display name + Fargo pill; client-side filter input. Home + NavMenu links wired up. |
+| v0.8.3 | This file. |
+| v0.8.4 | Visibility-model clarification: dropped the ownership guard on `/games/{id}` so any authenticated viewer can see any game. Games and matches are competition data, not personal data. |
 
 ### What Claude Design should evaluate
 
