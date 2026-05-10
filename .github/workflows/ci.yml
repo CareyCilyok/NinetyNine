@@ -150,7 +150,7 @@ jobs:
       # Builds the image without pushing, using the GHA cache backend so that
       # subsequent CI runs reuse layers and stay well under the 10 min budget.
       - name: Build image (no push)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
