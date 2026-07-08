@@ -40,7 +40,7 @@ RUN dotnet publish src/NinetyNine.Web/NinetyNine.Web.csproj \
 # aspnet:8.0-alpine produces an image ~100-130 MB vs ~220 MB for the Debian
 # variant. The official Microsoft aspnet images ship with a pre-created non-root
 # user whose UID is exposed via the $APP_UID build argument (default 1654).
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 
 WORKDIR /app
 
